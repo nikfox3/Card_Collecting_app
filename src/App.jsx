@@ -2600,14 +2600,19 @@ export default function App() {
     console.log('Adding card to collection:', card.name);
     
     // Find the main collection (Pokemon Collection)
-    const targetCollection = mockUserData.collections.find(c => c.id === 1);
+    const targetCollection = mockUserData.collections.find(c => c.id === 'pokemon-collection');
     if (!targetCollection) {
-      console.error('Collection not found');
+      console.error('Collection not found. Available collections:', mockUserData.collections.map(c => c.id));
       return;
     }
     
+    // Initialize cards array if it doesn't exist
+    if (!targetCollection.cards) {
+      targetCollection.cards = [];
+    }
+    
     // Check if card already exists in collection
-    const existingCard = targetCollection.cards?.find(c => 
+    const existingCard = targetCollection.cards.find(c => 
       c.name === card.name && c.set === (card.set?.name || card.set)
     );
     
@@ -2633,16 +2638,13 @@ export default function App() {
         collected: true
       };
       
-      if (!targetCollection.cards) {
-        targetCollection.cards = [];
-      }
       targetCollection.cards.push(newCard);
       console.log(`Added new card ${card.name} to collection`);
     }
     
     // Update collection stats
     targetCollection.totalCards = (targetCollection.totalCards || 0) + 1;
-    targetCollection.totalValue = (targetCollection.totalValue || 0) + (card.price || card.currentValue || 0);
+    targetCollection.totalValue = (targetCollection.totalValue || 0) + (card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0);
     
     // Add to recent activity
     recentActivityData.unshift({
@@ -2653,8 +2655,13 @@ export default function App() {
       time: "Just now"
     });
     
-    // Show success feedback (you could add a toast notification here)
+    // Show success feedback
     console.log(`Successfully added ${card.name} to collection!`);
+    console.log('Collection now has', targetCollection.cards.length, 'cards');
+    console.log('Total collection value:', targetCollection.totalValue);
+    
+    // Show a simple alert for now (you could replace this with a toast notification)
+    alert(`✅ Added ${card.name} to your collection!`);
   }
 
   const handleCloseCardProfile = () => {
