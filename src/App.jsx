@@ -1139,34 +1139,6 @@ export default function App() {
         collected: true
       },
       {
-        id: "fossil-15",
-        name: "Mew",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Psychic"],
-        set: {
-          id: "fossil",
-          name: "Fossil",
-          series: "Base",
-          printedTotal: 62,
-          total: 62
-        },
-        number: "15",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/fossil/15.png",
-          large: "https://images.pokemontcg.io/fossil/15_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 35.0 }
-          }
-        },
-        currentValue: 35.0,
-        quantity: 1,
-        collected: true
-      },
-      {
         id: "base1-58",
         name: "Pikachu",
         supertype: "Pokémon",
@@ -1404,7 +1376,7 @@ export default function App() {
       const newCard = {
         ...baseCard,
         id: `${baseCard.id}-${i + 100}`,
-        name: `${baseCard.name} (${i + 1})`,
+        name: baseCard.name,
         currentValue: baseCard.currentValue + (Math.random() - 0.5) * 50,
         changePercent: (Math.random() - 0.5) * 100
       }
