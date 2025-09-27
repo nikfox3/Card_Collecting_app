@@ -2637,6 +2637,74 @@ export default function App() {
     setShowGradeDropdown(false);
   }
 
+  // Calculate dynamic price based on variant, condition, and grade
+  const calculateDynamicPrice = (card) => {
+    if (!card) return 0;
+    
+    // Base price from the card
+    let basePrice = card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || 
+                   card.tcgplayer?.prices?.normal?.market || card.tcgplayer?.prices?.reverseHolofoil?.market ||
+                   card.tcgplayer?.prices?.firstEditionHolofoil?.market || 0;
+    
+    // Variant multipliers
+    const variantMultipliers = {
+      'normal': 1.0,
+      'holo': 1.5,
+      'reverse-holo': 1.2,
+      'first-edition': 3.0,
+      'shadowless': 2.5,
+      'unlimited': 1.0
+    };
+    
+    // Condition multipliers (for raw cards)
+    const conditionMultipliers = {
+      'Near Mint': 1.0,
+      'Lightly Played': 0.8,
+      'Moderately Played': 0.6,
+      'Heavily Played': 0.4,
+      'Damaged': 0.2
+    };
+    
+    // Grade multipliers (for graded cards)
+    const gradeMultipliers = {
+      '10': 2.0,
+      '9.5': 1.8,
+      '9': 1.5,
+      '8.5': 1.3,
+      '8': 1.1,
+      '7.5': 0.9,
+      '7': 0.8,
+      '6.5': 0.7,
+      '6': 0.6,
+      '5.5': 0.5,
+      '5': 0.4
+    };
+    
+    // Grading service multipliers
+    const serviceMultipliers = {
+      'PSA': 1.0,
+      'BGS': 1.1,
+      'CGC': 0.9,
+      'TAG': 0.8,
+      'ACE': 0.7
+    };
+    
+    // Apply variant multiplier
+    let adjustedPrice = basePrice * (variantMultipliers[selectedVariant] || 1.0);
+    
+    // Apply condition or grade multiplier
+    if (isGraded) {
+      // For graded cards, apply grade and service multipliers
+      adjustedPrice *= (gradeMultipliers[selectedGrade] || 1.0);
+      adjustedPrice *= (serviceMultipliers[selectedGradingService] || 1.0);
+    } else {
+      // For raw cards, apply condition multiplier
+      adjustedPrice *= (conditionMultipliers[addCardCondition] || 1.0);
+    }
+    
+    return Math.round(adjustedPrice * 100) / 100; // Round to 2 decimal places
+  }
+
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
     if (!cardToAdd) return;
@@ -6631,7 +6699,76 @@ export default function App() {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{cardToAdd.name}</h3>
                   <p style={{ color: '#888', fontSize: '14px', margin: '0 0 4px 0' }}>{cardToAdd.set?.name || cardToAdd.set || 'Unknown Set'}</p>
-                  <p style={{ color: '#888', fontSize: '12px', margin: 0 }}>{cardToAdd.rarity || 'Unknown Rarity'}</p>
+                  <p style={{ color: '#888', fontSize: '12px', margin: '0 0 8px 0' }}>{cardToAdd.rarity || 'Unknown Rarity'}</p>
+                  
+                  {/* Dynamic Price Display */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    padding: '8px 12px',
+                    backgroundColor: '#444',
+                    borderRadius: '6px',
+                    border: '1px solid #555'
+                  }}>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: '500' }}>Est. Value:</span>
+                    <span style={{ 
+                      color: '#6865E7', 
+                      fontSize: '16px', 
+                      fontWeight: 'bold' 
+                    }}>
+                      ${calculateDynamicPrice(cardToAdd).toFixed(2)}
+                    </span>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px',
+                      marginLeft: 'auto'
+                    }}>
+                      <span style={{ 
+                        color: '#888', 
+                        fontSize: '10px',
+                        backgroundColor: '#555',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}>
+                        {selectedVariant.charAt(0).toUpperCase() + selectedVariant.slice(1).replace('-', ' ')}
+                      </span>
+                      {!isGraded && (
+                        <span style={{ 
+                          color: '#888', 
+                          fontSize: '10px',
+                          backgroundColor: '#555',
+                          padding: '2px 6px',
+                          borderRadius: '4px'
+                        }}>
+                          {addCardCondition}
+                        </span>
+                      )}
+                      {isGraded && (
+                        <>
+                          <span style={{ 
+                            color: '#888', 
+                            fontSize: '10px',
+                            backgroundColor: '#555',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            {selectedGradingService}
+                          </span>
+                          <span style={{ 
+                            color: '#888', 
+                            fontSize: '10px',
+                            backgroundColor: '#555',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            {selectedGrade}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
