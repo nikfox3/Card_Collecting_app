@@ -2404,18 +2404,18 @@ export default function App() {
       
       // Set the scanned card and show confirmation ONLY after card is identified
       setScannedCard(newCard)
-      setShowScanConfirm(true)
-      setIsScanConfirmFading(false)
-      
+    setShowScanConfirm(true)
+    setIsScanConfirmFading(false)
+    
       // Start fade animation after showing success for longer
-      setTimeout(() => {
-        setIsScanConfirmFading(true)
+    setTimeout(() => {
+      setIsScanConfirmFading(true)
       }, 1500)
-      
+    
       // Auto-close after fade completes (1500ms display + 500ms fade = 2000ms total)
-      setTimeout(() => {
-        setShowScanConfirm(false)
-        setIsScanConfirmFading(false)
+    setTimeout(() => {
+      setShowScanConfirm(false)
+      setIsScanConfirmFading(false)
         setScannedCard(null)
       }, 2000)
       
@@ -3088,7 +3088,7 @@ export default function App() {
                   {/* Card Image */}
                   <div className="w-[217px] h-[301px]">
                     <HolographicCard
-                      src={cardImages[selectedCard.id]}
+                      src={selectedCard.imageUrl || cardImages[selectedCard.id]}
                       alt={selectedCard.name}
                       className="w-full h-full bg-transparent rounded-xl overflow-hidden"
                       enableGyroscope={true}
@@ -3104,7 +3104,7 @@ export default function App() {
                     {/* Card Name with Status */}
                     <div className="flex items-center gap-2 justify-center">
                       <h2 className="text-lg font-semibold text-white leading-tight whitespace-nowrap">{selectedCard.name}</h2>
-                      {selectedCard.collected ? (
+                      {(selectedCard.collected !== false && (selectedCard.quantity > 0 || selectedCard.collected === true)) ? (
                         <img src="/Assets/Collected=Yes.svg" alt="Collected" className="w-[18px] h-[18px] flex-shrink-0" />
                       ) : (
                         <img src="/Assets/Collected=No.svg" alt="Not Collected" className="w-[18px] h-[18px] flex-shrink-0" />
@@ -3139,15 +3139,32 @@ export default function App() {
                         <img src="/Assets/Cardnumb_Background.svg" alt="Card Number" className="w-[46px] h-[28px]" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-white text-xs font-bold">
-                            {selectedCard.number || '001'}/{selectedCard.printed_total || selectedCard.set?.total || '001'}
+                            {selectedCard.number ? selectedCard.number.replace('#', '') : '001'}
                           </span>
                         </div>
                       </div>
                       
                       {/* Set and Expansion Info */}
                       <div className="flex flex-col">
-                        <span className="text-white text-sm font-medium">{selectedCard.set_name || selectedCard.set?.name || 'Set Name'}</span>
-                        <span className="text-gray-300 text-xs">{selectedCard.set?.series || selectedCard.series || 'Series Name'}</span>
+                        <span className="text-white text-sm font-medium">{selectedCard.set_name || selectedCard.set || 'Set Name'}</span>
+                        <span className="text-gray-300 text-xs">
+                          {(() => {
+                            const set = selectedCard.set_name || selectedCard.set || '';
+                            // Map set names to their series
+                            const seriesMap = {
+                              'Base Set': 'Base Series',
+                              'Vivid Voltage': 'Sword & Shield Series',
+                              'Silver Tempest': 'Sword & Shield Series',
+                              'Evolving Skies': 'Sword & Shield Series',
+                              'Pokemon GO': 'Sword & Shield Series',
+                              'Darkness Ablaze': 'Sword & Shield Series',
+                              'Chilling Reign': 'Sword & Shield Series',
+                              'Battle Styles': 'Sword & Shield Series',
+                              'Fusion Strike': 'Sword & Shield Series'
+                            };
+                            return seriesMap[set] || selectedCard.set?.series || selectedCard.series || 'Pokemon TCG';
+                          })()}
+                        </span>
                       </div>
                     </div>
                     
@@ -3179,7 +3196,7 @@ export default function App() {
                         </svg>
                       </button>
                     </div>
-                    <span className="text-white text-sm">Qty: {selectedCard.quantity || 0}</span>
+                    <span className="text-white text-sm">Qty: {selectedCard.quantity || 1}</span>
                     <button className="w-6 h-6 text-white">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -3196,11 +3213,11 @@ export default function App() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                           </svg>
                           <span className="text-white text-lg font-bold">
-                            ${selectedCard.current_value || selectedCard.tcgplayer?.prices?.holofoil?.market || selectedCard.tcgplayer?.prices?.normal?.market || 0}
+                            ${selectedCard.current_value || selectedCard.price || selectedCard.tcgplayer?.prices?.holofoil?.market || selectedCard.tcgplayer?.prices?.normal?.market || 0}
                           </span>
                         </div>
-                        <div className="text-green-400 text-sm">
-                          +$2.36 (+23.6%)
+                        <div className={`text-sm ${(selectedCard.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {selectedCard.dailyChange ? `$${Math.abs(selectedCard.dailyChange)}` : '+$2.36'} ({selectedCard.change ? `${selectedCard.change > 0 ? '+' : ''}${selectedCard.change}%` : '+23.6%'})
                         </div>
                         <div className="text-gray-400 text-xs">
                           past 7 days
@@ -4536,9 +4553,9 @@ export default function App() {
             >
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+                </svg>
+              </button>
+            </div>
 
           {/* Search Bar Component */}
           <SearchBar
@@ -4766,12 +4783,12 @@ export default function App() {
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12L18 12" />
                             )}
-                        </svg>
+                      </svg>
                           <span>{activity.action}</span>
-                      </div>
-                  </div>
-                    ))}
-                </div>
+                    </div>
+                    </div>
+                ))}
+              </div>
 
                 <button 
                     onClick={() => setShowActivityModal(true)}
@@ -4818,14 +4835,14 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#1</span>
-                          </div>
-                        </div>
+                      </div>
+                  </div>
                         <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                          </svg>
-                        </div>
+                        </svg>
                       </div>
+                  </div>
                       <div className="flex-1">
                         <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors">Charizard ex</h4>
                         <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
@@ -4845,9 +4862,9 @@ export default function App() {
                       </div>
                         <div className="text-gray-400 text-xs">+$245 today</div>
                   </div>
-                  </div>
                 </div>
-
+              </div>
+              
                   {/* Second Gainer */}
                   <div 
                     onClick={() => handleCardClick(topMoversData[1])}
@@ -4867,14 +4884,14 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#2</span>
-                          </div>
-                        </div>
+              </div>
+                    </div>
                         <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                          </svg>
-                        </div>
+                        </svg>
                       </div>
+                  </div>
                       <div className="flex-1">
                         <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">Blastoise ex</h4>
                         <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
@@ -4894,8 +4911,8 @@ export default function App() {
                       </div>
                         <div className="text-gray-400 text-xs">+$137 today</div>
                   </div>
-                  </div>
                 </div>
+                    </div>
 
                   {/* Top Loser */}
                   <div 
@@ -4916,14 +4933,14 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#3</span>
-                          </div>
-                        </div>
+                      </div>
+                  </div>
                         <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                          </svg>
-                        </div>
+                        </svg>
                       </div>
+                  </div>
                       <div className="flex-1">
                         <h4 className="text-white font-bold text-sm group-hover:text-red-400 transition-colors">Venusaur ex</h4>
                         <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
@@ -4932,7 +4949,7 @@ export default function App() {
                           <span className="text-gray-500 text-xs">•</span>
                           <span className="text-gray-400 text-xs">Qty: 3</span>
                 </div>
-              </div>
+                    </div>
                       <div className="text-right">
                         <div className="text-red-400 font-bold text-lg">$650</div>
                         <div className="flex items-center gap-1 text-red-400 text-sm">
@@ -4944,8 +4961,8 @@ export default function App() {
                         <div className="text-gray-400 text-xs">-$95 today</div>
                   </div>
                 </div>
+                    </div>
                   </div>
-                </div>
 
                 <button 
                   onClick={() => setShowTopMoversModal(true)}
@@ -4956,8 +4973,8 @@ export default function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                         </svg>
                 </button>
-              </div>
-              </div>
+                  </div>
+                </div>
 
             {/* Trending Cards */}
             <div className="px-4 mb-6">
@@ -4995,12 +5012,12 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">🔥</span>
-                          </div>
-                        </div>
+                      </div>
+                  </div>
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-bold">1</span>
-                        </div>
-                      </div>
+                </div>
+              </div>
                       <h4 className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors mb-1">Pikachu VMAX</h4>
                       <p className="text-gray-400 text-xs mb-2">Vivid Voltage</p>
                       <div className="text-orange-400 font-bold text-lg">$89</div>
@@ -5009,9 +5026,9 @@ export default function App() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
                         <span className="font-semibold">+15.2%</span>
-                      </div>
-                  </div>
-                </div>
+              </div>
+              </div>
+            </div>
 
                   {/* Trending Card 2 */}
                   <div 
@@ -5032,11 +5049,11 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">⚡</span>
-                          </div>
-                        </div>
+              </div>
+                    </div>
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-bold">2</span>
-                        </div>
+                  </div>
                       </div>
                       <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors mb-1">Lugia V</h4>
                       <p className="text-gray-400 text-xs mb-2">Silver Tempest</p>
@@ -5069,12 +5086,12 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">🌿</span>
-                          </div>
-                        </div>
+                      </div>
+                  </div>
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-bold">3</span>
-                        </div>
-                      </div>
+                </div>
+                    </div>
                       <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors mb-1">Rayquaza VMAX</h4>
                       <p className="text-gray-400 text-xs mb-2">Evolving Skies</p>
                       <div className="text-green-400 font-bold text-lg">$234</div>
@@ -5106,12 +5123,12 @@ export default function App() {
                           />
                           <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center" style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">✨</span>
-                          </div>
-                        </div>
+                      </div>
+                  </div>
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs font-bold">4</span>
-                        </div>
-                      </div>
+                </div>
+                    </div>
                       <h4 className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors mb-1">Mewtwo V</h4>
                       <p className="text-gray-400 text-xs mb-2">Pokemon GO</p>
                       <div className="text-purple-400 font-bold text-lg">$67</div>
@@ -5122,9 +5139,9 @@ export default function App() {
                         <span className="font-semibold">+12.1%</span>
                       </div>
                   </div>
-                  </div>
                 </div>
-
+              </div>
+              
                 <button 
                   onClick={() => setShowTrendingModal(true)}
                   className="w-full mt-6 py-3 bg-gradient-to-r from-[#6865E7] to-[#8B5CF6] hover:from-[#5A57D1] hover:to-[#7C3AED] rounded-xl text-white text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#6865E7]/25"
@@ -5166,8 +5183,8 @@ export default function App() {
                   Sort
                 </button>
                     )}
-                </div>
-
+              </div>
+              
             {/* Search Results */}
             {showSearchResults && (
               <div className="mb-6">
@@ -5221,8 +5238,8 @@ export default function App() {
                   <div className="text-center py-8">
                     <p className="text-gray-400 text-sm">No cards found matching your search.</p>
               </div>
-                        )}
-                      </div>
+                    )}
+                  </div>
             )}
 
             {/* Trending Cards Section - Only show when no search results */}
@@ -5231,10 +5248,10 @@ export default function App() {
               <div className="flex items-center gap-2 mb-4">
                 <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
+                        </svg>
                 <h3 className="text-white font-medium">Trending Now</h3>
                 <span className="text-gray-400 text-sm ml-2">({visibleCardsCount} of {allTrendingCards.length})</span>
-                          </div>
+                      </div>
               <div className="grid grid-cols-2 gap-4">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
                   <div
@@ -5261,8 +5278,8 @@ export default function App() {
                       ) : null}
                       <div className="absolute inset-0 flex items-center justify-center" style={{ display: card.images?.small ? 'none' : 'flex' }}>
                         <span className="text-gray-400 text-sm">Card Image</span>
-                          </div>
                       </div>
+                  </div>
                     <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
                     <p className="text-gray-400 text-xs mb-2">{card.set?.name || 'Unknown Set'}</p>
                     <div className="flex items-center justify-between">
@@ -5278,9 +5295,9 @@ export default function App() {
                         Add
                 </button>
                       </div>
-                          </div>
+                  </div>
                 ))}
-                    </div>
+                </div>
 
               {/* Loading More Indicator */}
               {isLoadingMore && (
@@ -5288,19 +5305,19 @@ export default function App() {
                   <div className="flex items-center gap-2 text-gray-400">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                     <span className="text-sm">Loading more cards...</span>
-                      </div>
-                          </div>
+                    </div>
+                  </div>
               )}
               
               {/* End of Results */}
               {visibleCardsCount >= allTrendingCards.length && (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">You've reached the end of trending cards!</p>
-                      </div>
-                        )}
-                      </div>
-                        )}
-                      </div>
+                    </div>
+                    )}
+                  </div>
+                    )}
+                  </div>
         )}
 
         {activeTab === 'scan' && (
@@ -5309,15 +5326,15 @@ export default function App() {
               <div className="w-32 h-32 bg-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                            </svg>
-                          </div>
+                        </svg>
+                      </div>
               <h2 className="text-white text-xl font-semibold mb-2">Scan Card</h2>
               <p className="text-gray-400 mb-6">Point your camera at a card to identify it</p>
               <button className="bg-primary text-accent font-semibold py-3 px-8 rounded-xl">
                 Start Scanning
                 </button>
-                      </div>
-                    </div>
+                  </div>
+                </div>
         )}
 
         {activeTab === 'collection' && (
@@ -5327,10 +5344,10 @@ export default function App() {
               <div className="space-y-4">
                 <div className="text-gray-400 text-center py-8">
                   Collection view coming soon...
-                      </div>
-                          </div>
-                      </div>
-                    </div>
+              </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'marketplace' && (
@@ -5340,10 +5357,10 @@ export default function App() {
               <div className="space-y-4">
                 <div className="text-gray-400 text-center py-8">
                   Marketplace view coming soon...
+              </div>
+                  </div>
                       </div>
-                          </div>
-                      </div>
-                    </div>
+                  </div>
         )}
 
         {activeTab === 'profile' && (
@@ -5352,8 +5369,8 @@ export default function App() {
               <div className="w-24 h-24 bg-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
+                        </svg>
+                      </div>
               <div>
                 <h2 className="text-white text-xl font-semibold mb-2">Profile</h2>
                 <p className="text-gray-400 mb-6">Manage your account and preferences</p>
@@ -5367,10 +5384,10 @@ export default function App() {
                 <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-xl text-left">
                   Price Alerts
                 </button>
+                  </div>
+                </div>
+                  </div>
                       </div>
-                    </div>
-                      </div>
-                          </div>
         )}
 
         {/* Create Collection Modal */}
@@ -5429,8 +5446,8 @@ export default function App() {
                   Create Collection
                 </button>
               </div>
-                    </div>
-                  </div>
+              </div>
+                      </div>
         )}
 
         {/* Collections Modal */}
@@ -5445,9 +5462,9 @@ export default function App() {
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                            </svg>
                 </button>
-                </div>
+                    </div>
 
               <div className="space-y-3">
                 {mockUserData.collections.map((collection) => (
@@ -5469,29 +5486,29 @@ export default function App() {
                         <p className="text-gray-400 text-sm">
                           {collection.cardCount} cards • {formatCurrency(collection.totalValue)}
                         </p>
-                    </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         {collection.monthlyChange >= 0 ? (
                           <div className="flex items-center gap-1 text-green-400 text-sm">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
+                            </svg>
                             <span>+{collection.monthlyChange.toFixed(1)}%</span>
-                      </div>
-                    ) : (
+                          </div>
+                        ) : (
                           <div className="flex items-center gap-1 text-red-400 text-sm">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        </svg>
+                            </svg>
                             <span>{collection.monthlyChange.toFixed(1)}%</span>
-                      </div>
+                          </div>
                         )}
                         {selectedCollection === collection.id && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                        )}
+                      </div>
+                    </div>
+                      </div>
                 ))}
 
                 <button 
@@ -5503,12 +5520,12 @@ export default function App() {
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                            </svg>
                   Create New Collection
                 </button>
-              </div>
-            </div>
-          </div>
+                          </div>
+                      </div>
+                    </div>
         )}
 
         {/* Recent Activity Modal */}
@@ -5523,10 +5540,10 @@ export default function App() {
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                            </svg>
                 </button>
-              </div>
-              
+                    </div>
+
               <div className="space-y-3">
                 {recentActivityData.map((activity) => (
                   <div key={activity.id} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
@@ -5534,7 +5551,7 @@ export default function App() {
                       <div className="flex-1">
                         <h4 className="text-white font-medium text-sm">{activity.cardName}</h4>
                         <p className="text-gray-400 text-xs mt-1">{activity.time}</p>
-                    </div>
+                      </div>
                       <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                         activity.type === 'add' 
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
@@ -5546,11 +5563,11 @@ export default function App() {
                           ) : (
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12L18 12" />
                           )}
-                        </svg>
+                            </svg>
                         <span>{activity.action}</span>
+                          </div>
                       </div>
-                  </div>
-                </div>
+                    </div>
                 ))}
                 
                 {recentActivityData.length === 0 && (
@@ -5558,15 +5575,15 @@ export default function App() {
                     <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </div>
+                            </svg>
+                          </div>
                     <h4 className="text-white font-medium mb-2">No Recent Activity</h4>
                     <p className="text-gray-400 text-sm">Start adding cards to your collection to see activity here.</p>
-                  </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-                    </div>
+                      </div>
+                          </div>
+                      </div>
         )}
 
         {/* Bottom Navigation Bar - Glass Effect Design */}
@@ -5585,20 +5602,20 @@ export default function App() {
                   {navigationMode === 'home' ? (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20.04 6.82006L14.28 2.79006C12.71 1.69006 10.3 1.75006 8.78999 2.92006L3.77999 6.83006C2.77999 7.61006 1.98999 9.21006 1.98999 10.4701V17.3701C1.98999 19.9201 4.05999 22.0001 6.60999 22.0001H17.39C19.94 22.0001 22.01 19.9301 22.01 17.3801V10.6001C22.01 9.25006 21.14 7.59006 20.04 6.82006ZM12.75 18.0001C12.75 18.4101 12.41 18.7501 12 18.7501C11.59 18.7501 11.25 18.4101 11.25 18.0001V15.0001C11.25 14.5901 11.59 14.2501 12 14.2501C12.41 14.2501 12.75 14.5901 12.75 15.0001V18.0001Z" fill="#6865E7"/>
-                        </svg>
+                            </svg>
                   ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9.02 2.84004L3.63 7.04004C2.73 7.74004 2 9.23004 2 10.36V17.77C2 20.09 3.89 21.99 6.21 21.99H17.79C20.11 21.99 22 20.09 22 17.78V10.5C22 9.29004 21.19 7.74004 20.2 7.05004L14.02 2.72004C12.62 1.74004 10.37 1.79004 9.02 2.84004Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 17.99V14.99" stroke="#8F8F94" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    )}
-                  </div>
+                            </svg>
+                        )}
+                      </div>
                 {navigationMode === 'home' && (
                   <div className="text-white text-[11px] font-normal leading-[0]">
                     Home
-                </div>
-                    )}
-                  </div>
+                    </div>
+                        )}
+                      </div>
                 </button>
 
             {/* Collection Button */}
@@ -5621,7 +5638,7 @@ export default function App() {
                             <rect width="24" height="24" fill="white" transform="translate(0.333252)"/>
                           </clipPath>
                         </defs>
-                      </svg>
+                            </svg>
                     ) : (
                       <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clipPath="url(#clip0_248_3247)">
@@ -5633,15 +5650,15 @@ export default function App() {
                           <rect width="24" height="24" fill="white" transform="translate(0.333313)"></rect>
                           </clipPath>
                         </defs>
-                      </svg>
-                  )}
-                </div>
+                            </svg>
+                        )}
+                      </div>
                 {navigationMode === 'collection' && (
                   <div className="text-white text-[11px] font-normal leading-[0]">
                     Collection
-                  </div>
-                )}
-              </div>
+                    </div>
+                        )}
+                      </div>
             </button>
 
             {/* Marketplace Button */}
@@ -5665,7 +5682,7 @@ export default function App() {
                             <rect width="24" height="24" fill="white" transform="translate(0.666748)"/>
                           </clipPath>
                         </defs>
-                      </svg>
+                            </svg>
                     ) : (
                       <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clipPath="url(#clip0_144_6148)">
@@ -5677,15 +5694,15 @@ export default function App() {
                             <rect width="24" height="24" fill="white" transform="translate(0.666748)"/>
                           </clipPath>
                         </defs>
-                      </svg>
-                  )}
-                  </div>
+                            </svg>
+                        )}
+                      </div>
                 {navigationMode === 'marketplace' && (
                   <div className="text-white text-[11px] font-normal leading-[0]">
                     Marketplace
-                </div>
-              )}
-          </div>
+                    </div>
+                        )}
+                      </div>
             </button>
 
             {/* Profile Button */}
@@ -5702,20 +5719,20 @@ export default function App() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="#6865E7"/>
                       <path d="M11.9999 14.5C6.98991 14.5 2.90991 17.86 2.90991 22C2.90991 22.28 3.12991 22.5 3.40991 22.5H20.5899C20.8699 22.5 21.0899 22.28 21.0899 22C21.0899 17.86 17.0099 14.5 11.9999 14.5Z" fill="#6865E7"/>
-                        </svg>
-                      ) : (
+                            </svg>
+                        ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M20.59 22C20.59 18.13 16.74 15 12 15C7.26003 15 3.41003 18.13 3.41003 22" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                      )}
-                  </div>
+                        )}
+                      </div>
                 {navigationMode === 'profile' && (
                   <div className="text-white text-[11px] font-normal leading-[0]">
                     Profile
-                  </div>
+                    </div>
                 )}
-                </div>
+              </div>
                 </button>
 
             {/* Active Indicator */}
@@ -5736,13 +5753,13 @@ export default function App() {
                 {/* Main Indicator */}
                 <svg width="64" height="8" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
                   <path d="M59.9277 3.92798C62.1768 3.92798 64 5.75121 64 8.00024H0C0 5.75121 1.82324 3.92798 4.07227 3.92798H25L31.1387 0.802979C31.9937 0.367721 33.0063 0.367721 33.8613 0.802979L40 3.92798H59.9277Z" fill="#6865E7"/>
-                    </svg>
+                        </svg>
                 
                 {/* Subtle Glass Diffusion Effect */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-        </div>
 
         {/* Top Movers Modal */}
         {showTopMoversModal && (
@@ -5753,11 +5770,11 @@ export default function App() {
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
+                        </svg>
+                      </div>
                   <h3 className="text-white text-xl font-bold">All Top Movers</h3>
-                </div>
-                <button
+                  </div>
+                <button 
                   onClick={() => setShowTopMoversModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
@@ -5800,8 +5817,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#{mover.rank}</span>
-                          </div>
-                        </div>
+                    </div>
+                  </div>
                         <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
                           mover.type === 'gain' ? 'bg-green-500' : 'bg-red-500'
                         }`}>
@@ -5811,9 +5828,9 @@ export default function App() {
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                             )}
-                          </svg>
-                        </div>
+                        </svg>
                       </div>
+                  </div>
                       <div className="flex-1">
                         <h4 className={`font-bold text-sm transition-colors ${
                           mover.type === 'gain' ? 'text-white group-hover:text-green-400' : 'text-white group-hover:text-red-400'
@@ -5825,14 +5842,14 @@ export default function App() {
                           <span className="text-white text-xs font-medium">{mover.number}</span>
                           <span className="text-gray-500 text-xs">•</span>
                           <span className="text-gray-400 text-xs">Qty: {mover.quantity}</span>
-                        </div>
-                      </div>
+                </div>
+                    </div>
                       <div className="text-right">
                         <div className={`font-bold text-lg ${
                           mover.type === 'gain' ? 'text-green-400' : 'text-red-400'
                         }`}>
                           ${mover.price.toLocaleString()}
-                        </div>
+                  </div>
                         <div className={`flex items-center gap-1 text-sm ${
                           mover.type === 'gain' ? 'text-green-400' : 'text-red-400'
                         }`}>
@@ -5842,19 +5859,19 @@ export default function App() {
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                             )}
-                          </svg>
+                        </svg>
                           <span className="font-semibold">{Math.abs(mover.change).toFixed(1)}%</span>
-                        </div>
+                      </div>
                         <div className="text-gray-400 text-xs">
                           {mover.dailyChange >= 0 ? '+' : ''}${mover.dailyChange} today
-                        </div>
-                      </div>
+                  </div>
+                </div>
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
+                      </div>
+                  </div>
+                </div>
         )}
 
         {/* Trending Cards Modal */}
@@ -5867,20 +5884,20 @@ export default function App() {
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-                    </svg>
-                  </div>
+                        </svg>
+                      </div>
                   <h3 className="text-white text-xl font-bold">All Trending Cards</h3>
-                </div>
+                  </div>
                 <button
                   onClick={() => setShowTrendingModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                        </svg>
                 </button>
-              </div>
-              
+                </div>
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {trendingCardsData.map((card) => (
                   <div 
@@ -5923,8 +5940,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">{card.emoji}</span>
-                          </div>
-                        </div>
+                    </div>
+                  </div>
                         <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
                           card.color === 'orange' ? 'bg-orange-500' :
                           card.color === 'blue' ? 'bg-blue-500' :
@@ -5936,8 +5953,8 @@ export default function App() {
                           'bg-gray-500'
                         }`}>
                           <span className="text-white text-xs font-bold">{card.rank}</span>
-                        </div>
                       </div>
+                  </div>
                       <h4 className={`font-bold text-sm transition-colors mb-1 ${
                         card.color === 'orange' ? 'text-white group-hover:text-orange-400' :
                         card.color === 'blue' ? 'text-white group-hover:text-blue-400' :
@@ -5962,7 +5979,7 @@ export default function App() {
                         'text-gray-400'
                       }`}>
                         ${card.price}
-                      </div>
+                </div>
                       <div className={`flex items-center gap-1 text-xs ${
                         card.color === 'orange' ? 'text-orange-400' :
                         card.color === 'blue' ? 'text-blue-400' :
@@ -5978,8 +5995,8 @@ export default function App() {
                         </svg>
                         <span className="font-semibold">+{card.change.toFixed(1)}%</span>
                       </div>
-                    </div>
                   </div>
+                </div>
                 ))}
               </div>
             </div>
@@ -6008,10 +6025,10 @@ export default function App() {
                 >
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                        </svg>
                 </button>
               </div>
-
+              
               {/* Menu Content */}
               <div className="p-6">
                 <nav className="space-y-4">
@@ -6020,18 +6037,18 @@ export default function App() {
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-[#6865E7] to-[#5A57D1] rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">JD</span>
-                      </div>
+              </div>
                       <div>
                         <h3 className="text-white font-semibold">John Doe</h3>
                         <p className="text-gray-400 text-sm">john.doe@example.com</p>
-                      </div>
-                    </div>
-                  </div>
+            </div>
+          </div>
+            </div>
 
-                  {/* Navigation Items */}
+            {/* Navigation Items */}
                   <div className="space-y-2">
-                    <button 
-                      onClick={() => {
+                <button
+                  onClick={() => {
                         setActiveTab('home')
                         setNavigationMode('home')
                         setShowSlidingMenu(false)
@@ -6042,10 +6059,10 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                       <span className="text-white">Dashboard</span>
-                    </button>
+                </button>
 
-                    <button 
-                      onClick={() => {
+            <button 
+              onClick={() => {
                         setActiveTab('collection')
                         setNavigationMode('collection')
                         setShowSlidingMenu(false)
@@ -6056,9 +6073,9 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                       <span className="text-white">My Collection</span>
-                    </button>
+            </button>
 
-                    <button 
+          <button 
                       onClick={() => {
                         setActiveTab('marketplace')
                         setNavigationMode('marketplace')
@@ -6068,11 +6085,11 @@ export default function App() {
                     >
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                      </svg>
+            </svg>
                       <span className="text-white">Marketplace</span>
-                    </button>
+          </button>
 
-                    <button 
+            <button
                       onClick={() => {
                         setActiveTab('profile')
                         setNavigationMode('profile')
@@ -6084,8 +6101,8 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span className="text-white">Profile</span>
-                    </button>
-                  </div>
+            </button>
+          </div>
 
                   {/* Settings Section */}
                   <div className="pt-4 border-t border-gray-700">
@@ -6097,26 +6114,26 @@ export default function App() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <span className="text-white">Settings</span>
-                      </button>
+                    </button>
 
                       <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors text-left">
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    </svg>
                         <span className="text-white">Help & Support</span>
-                      </button>
+                  </button>
 
                       <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors text-left">
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
+                    </svg>
                         <span className="text-white">Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                </nav>
+                  </button>
+                </div>
               </div>
-            </div>
+                </nav>
+                </div>
+              </div>
           </>
         )}
       </div>
