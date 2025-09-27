@@ -132,6 +132,12 @@ export default function App() {
   const [selectedGradingService, setSelectedGradingService] = useState('PSA')
   const [selectedGrade, setSelectedGrade] = useState('10')
   const [addNote, setAddNote] = useState('')
+  
+  // Custom dropdown states for Add to Collection modal
+  const [showVariantDropdown, setShowVariantDropdown] = useState(false)
+  const [showConditionDropdown, setShowConditionDropdown] = useState(false)
+  const [showGradingServiceDropdown, setShowGradingServiceDropdown] = useState(false)
+  const [showGradeDropdown, setShowGradeDropdown] = useState(false)
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
   const [quickFilters, setQuickFilters] = useState({
     owned: false,
@@ -2622,6 +2628,13 @@ export default function App() {
     setSelectedGradingService('PSA');
     setSelectedGrade('10');
     setAddNote('');
+    
+    // Reset dropdown states
+    setShowCollectionDropdown(false);
+    setShowVariantDropdown(false);
+    setShowConditionDropdown(false);
+    setShowGradingServiceDropdown(false);
+    setShowGradeDropdown(false);
   }
 
   // Handle actually adding the card to collection with all options
@@ -6535,21 +6548,7 @@ export default function App() {
 
         {/* Add to Collection Modal */}
         {showAddToCollectionModal && cardToAdd && (
-          <>
-            <style>
-              {`
-                .add-to-collection-modal select {
-                  position: relative !important;
-                  z-index: 10 !important;
-                }
-                .add-to-collection-modal select option {
-                  position: relative !important;
-                  z-index: 11 !important;
-                }
-              `}
-            </style>
             <div 
-              className="add-to-collection-modal"
               style={{ 
                 position: 'fixed', 
                 top: 0, 
@@ -6637,11 +6636,10 @@ export default function App() {
               </div>
 
               {/* Collection Selection */}
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
                 <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Collection</label>
-                <select
-                  value={selectedCollectionForAdd}
-                  onChange={(e) => setSelectedCollectionForAdd(e.target.value)}
+                <div
+                  onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -6650,24 +6648,77 @@ export default function App() {
                     borderRadius: '8px',
                     color: 'white',
                     fontSize: '14px',
-                    appearance: 'none',
-                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '16px',
-                    paddingRight: '40px',
                     cursor: 'pointer',
-                    position: 'relative',
-                    zIndex: 2,
-                    boxSizing: 'border-box'
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'relative'
                   }}
                 >
-                  {mockUserData.collections.map(collection => (
-                    <option key={collection.id} value={collection.id} style={{ backgroundColor: '#444', color: 'white' }}>
-                      {collection.name}
-                    </option>
-                  ))}
-                </select>
+                  <span>{mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name || 'Select Collection'}</span>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ 
+                      transform: showCollectionDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </div>
+                
+                {showCollectionDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    zIndex: 1000,
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {mockUserData.collections.map(collection => (
+                      <div
+                        key={collection.id}
+                        onClick={() => {
+                          setSelectedCollectionForAdd(collection.id);
+                          setShowCollectionDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          color: 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: selectedCollectionForAdd === collection.id ? '#6865E7' : 'transparent',
+                          borderBottom: '1px solid #555'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedCollectionForAdd !== collection.id) {
+                            e.target.style.backgroundColor = '#555';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedCollectionForAdd !== collection.id) {
+                            e.target.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {collection.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Quantity Stepper */}
@@ -6717,11 +6768,10 @@ export default function App() {
               </div>
 
               {/* Variant Selection */}
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
                 <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Variant</label>
-                <select
-                  value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(e.target.value)}
+                <div
+                  onClick={() => setShowVariantDropdown(!showVariantDropdown)}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -6730,22 +6780,84 @@ export default function App() {
                     borderRadius: '8px',
                     color: 'white',
                     fontSize: '14px',
-                    appearance: 'none',
-                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '16px',
-                    paddingRight: '40px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'relative'
                   }}
                 >
-                  <option value="normal" style={{ backgroundColor: '#444', color: 'white' }}>Normal</option>
-                  <option value="holo" style={{ backgroundColor: '#444', color: 'white' }}>Holo</option>
-                  <option value="reverse-holo" style={{ backgroundColor: '#444', color: 'white' }}>Reverse Holo</option>
-                  <option value="first-edition" style={{ backgroundColor: '#444', color: 'white' }}>1st Edition</option>
-                  <option value="shadowless" style={{ backgroundColor: '#444', color: 'white' }}>Shadowless</option>
-                  <option value="unlimited" style={{ backgroundColor: '#444', color: 'white' }}>Unlimited</option>
-                </select>
+                  <span>{selectedVariant.charAt(0).toUpperCase() + selectedVariant.slice(1).replace('-', ' ')}</span>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ 
+                      transform: showVariantDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </div>
+                
+                {showVariantDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    zIndex: 1000,
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {[
+                      { value: 'normal', label: 'Normal' },
+                      { value: 'holo', label: 'Holo' },
+                      { value: 'reverse-holo', label: 'Reverse Holo' },
+                      { value: 'first-edition', label: '1st Edition' },
+                      { value: 'shadowless', label: 'Shadowless' },
+                      { value: 'unlimited', label: 'Unlimited' }
+                    ].map(variant => (
+                      <div
+                        key={variant.value}
+                        onClick={() => {
+                          setSelectedVariant(variant.value);
+                          setShowVariantDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          color: 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: selectedVariant === variant.value ? '#6865E7' : 'transparent',
+                          borderBottom: '1px solid #555'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedVariant !== variant.value) {
+                            e.target.style.backgroundColor = '#555';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedVariant !== variant.value) {
+                            e.target.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {variant.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Graded Toggle */}
@@ -6789,11 +6901,10 @@ export default function App() {
 
               {/* Condition (only show if not graded) */}
               {!isGraded && (
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '20px', position: 'relative' }}>
                   <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Condition</label>
-                  <select
-                    value={addCardCondition}
-                    onChange={(e) => setAddCardCondition(e.target.value)}
+                  <div
+                    onClick={() => setShowConditionDropdown(!showConditionDropdown)}
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -6802,35 +6913,93 @@ export default function App() {
                       borderRadius: '8px',
                       color: 'white',
                       fontSize: '14px',
-                      appearance: 'none',
-                      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      backgroundSize: '16px',
-                      paddingRight: '40px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      position: 'relative'
                     }}
                   >
-                    <option value="Near Mint" style={{ backgroundColor: '#444', color: 'white' }}>Near Mint (NM)</option>
-                    <option value="Lightly Played" style={{ backgroundColor: '#444', color: 'white' }}>Lightly Played (LP)</option>
-                    <option value="Moderately Played" style={{ backgroundColor: '#444', color: 'white' }}>Moderately Played (MP)</option>
-                    <option value="Heavily Played" style={{ backgroundColor: '#444', color: 'white' }}>Heavily Played (HP)</option>
-                    <option value="Damaged" style={{ backgroundColor: '#444', color: 'white' }}>Damaged (DM)</option>
-                  </select>
+                    <span>{addCardCondition}</span>
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="white" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      style={{ 
+                        transform: showConditionDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease'
+                      }}
+                    >
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  </div>
+                  
+                  {showConditionDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: '#444',
+                      border: '1px solid #666',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                      zIndex: 1000,
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {[
+                        { value: 'Near Mint', label: 'Near Mint (NM)' },
+                        { value: 'Lightly Played', label: 'Lightly Played (LP)' },
+                        { value: 'Moderately Played', label: 'Moderately Played (MP)' },
+                        { value: 'Heavily Played', label: 'Heavily Played (HP)' },
+                        { value: 'Damaged', label: 'Damaged (DM)' }
+                      ].map(condition => (
+                        <div
+                          key={condition.value}
+                          onClick={() => {
+                            setAddCardCondition(condition.value);
+                            setShowConditionDropdown(false);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            color: 'white',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            backgroundColor: addCardCondition === condition.value ? '#6865E7' : 'transparent',
+                            borderBottom: '1px solid #555'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (addCardCondition !== condition.value) {
+                              e.target.style.backgroundColor = '#555';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (addCardCondition !== condition.value) {
+                              e.target.style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        >
+                          {condition.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Grading Options (only show if graded) */}
               {isGraded && (
                 <>
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '20px', position: 'relative' }}>
                     <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grading Service</label>
-                    <select
-                      value={selectedGradingService}
-                      onChange={(e) => {
-                        setSelectedGradingService(e.target.value);
-                        setSelectedGrade('10'); // Reset grade when service changes
-                      }}
+                    <div
+                      onClick={() => setShowGradingServiceDropdown(!showGradingServiceDropdown)}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
@@ -6839,28 +7008,84 @@ export default function App() {
                         borderRadius: '8px',
                         color: 'white',
                         fontSize: '14px',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        backgroundSize: '16px',
-                        paddingRight: '40px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        position: 'relative'
                       }}
                     >
-                      <option value="PSA" style={{ backgroundColor: '#444', color: 'white' }}>PSA</option>
-                      <option value="BGS" style={{ backgroundColor: '#444', color: 'white' }}>BGS</option>
-                      <option value="CGC" style={{ backgroundColor: '#444', color: 'white' }}>CGC</option>
-                      <option value="TAG" style={{ backgroundColor: '#444', color: 'white' }}>TAG</option>
-                      <option value="ACE" style={{ backgroundColor: '#444', color: 'white' }}>ACE</option>
-                    </select>
+                      <span>{selectedGradingService}</span>
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="white" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        style={{ 
+                          transform: showGradingServiceDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }}
+                      >
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                      </svg>
+                    </div>
+                    
+                    {showGradingServiceDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}>
+                        {['PSA', 'BGS', 'CGC', 'TAG', 'ACE'].map(service => (
+                          <div
+                            key={service}
+                            onClick={() => {
+                              setSelectedGradingService(service);
+                              setSelectedGrade('10'); // Reset grade when service changes
+                              setShowGradingServiceDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGradingService === service ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGradingService !== service) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGradingService !== service) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {service}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '20px', position: 'relative' }}>
                     <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grade</label>
-                    <select
-                      value={selectedGrade}
-                      onChange={(e) => setSelectedGrade(e.target.value)}
+                    <div
+                      onClick={() => setShowGradeDropdown(!showGradeDropdown)}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
@@ -6869,90 +7094,252 @@ export default function App() {
                         borderRadius: '8px',
                         color: 'white',
                         fontSize: '14px',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        backgroundSize: '16px',
-                        paddingRight: '40px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        position: 'relative'
                       }}
                     >
-                      {selectedGradingService === 'PSA' && (
-                        <>
-                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Gem Mint</option>
-                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Mint</option>
-                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Near Mint-Mint</option>
-                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Near Mint</option>
-                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Excellent-Mint</option>
-                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Excellent</option>
-                          <option value="4" style={{ backgroundColor: '#444', color: 'white' }}>4 - Very Good-Excellent</option>
-                          <option value="3" style={{ backgroundColor: '#444', color: 'white' }}>3 - Very Good</option>
-                          <option value="2" style={{ backgroundColor: '#444', color: 'white' }}>2 - Good</option>
-                          <option value="1" style={{ backgroundColor: '#444', color: 'white' }}>1 - Poor</option>
-                        </>
-                      )}
-                      {selectedGradingService === 'BGS' && (
-                        <>
-                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Pristine</option>
-                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Black Label</option>
-                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Gold Label</option>
-                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Silver Label</option>
-                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Silver Label</option>
-                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Silver Label</option>
-                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Silver Label</option>
-                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Silver Label</option>
-                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Silver Label</option>
-                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Silver Label</option>
-                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Silver Label</option>
-                        </>
-                      )}
-                      {selectedGradingService === 'CGC' && (
-                        <>
-                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Pristine</option>
-                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Gem Mint</option>
-                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Mint</option>
-                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Near Mint+</option>
-                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Near Mint</option>
-                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Excellent+</option>
-                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Excellent</option>
-                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Very Good+</option>
-                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Very Good</option>
-                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Good+</option>
-                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Good</option>
-                        </>
-                      )}
-                      {selectedGradingService === 'TAG' && (
-                        <>
-                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Perfect</option>
-                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Near Perfect</option>
-                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Excellent</option>
-                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Very Good+</option>
-                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Very Good</option>
-                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Good+</option>
-                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Good</option>
-                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Fair+</option>
-                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Fair</option>
-                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Poor+</option>
-                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Poor</option>
-                        </>
-                      )}
-                      {selectedGradingService === 'ACE' && (
-                        <>
-                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Perfect</option>
-                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Near Perfect</option>
-                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Excellent</option>
-                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Very Good+</option>
-                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Very Good</option>
-                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Good+</option>
-                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Good</option>
-                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Fair+</option>
-                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Fair</option>
-                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Poor+</option>
-                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Poor</option>
-                        </>
-                      )}
-                    </select>
+                      <span>{selectedGrade}</span>
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="white" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        style={{ 
+                          transform: showGradeDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }}
+                      >
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                      </svg>
+                    </div>
+                    
+                    {showGradeDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}>
+                        {selectedGradingService === 'PSA' && [
+                          { value: '10', label: '10 - Gem Mint' },
+                          { value: '9', label: '9 - Mint' },
+                          { value: '8', label: '8 - Near Mint-Mint' },
+                          { value: '7', label: '7 - Near Mint' },
+                          { value: '6', label: '6 - Excellent-Mint' },
+                          { value: '5', label: '5 - Excellent' },
+                          { value: '4', label: '4 - Very Good-Excellent' },
+                          { value: '3', label: '3 - Very Good' },
+                          { value: '2', label: '2 - Good' },
+                          { value: '1', label: '1 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                        ))}
+                        {selectedGradingService === 'BGS' && [
+                          { value: '10', label: '10 - Pristine' },
+                          { value: '9.5', label: '9.5 - Black Label' },
+                          { value: '9', label: '9 - Gold Label' },
+                          { value: '8.5', label: '8.5 - Silver Label' },
+                          { value: '8', label: '8 - Silver Label' },
+                          { value: '7.5', label: '7.5 - Silver Label' },
+                          { value: '7', label: '7 - Silver Label' },
+                          { value: '6.5', label: '6.5 - Silver Label' },
+                          { value: '6', label: '6 - Silver Label' },
+                          { value: '5.5', label: '5.5 - Silver Label' },
+                          { value: '5', label: '5 - Silver Label' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                        ))}
+                        {selectedGradingService === 'CGC' && [
+                          { value: '10', label: '10 - Pristine' },
+                          { value: '9.5', label: '9.5 - Gem Mint' },
+                          { value: '9', label: '9 - Mint' },
+                          { value: '8.5', label: '8.5 - Near Mint+' },
+                          { value: '8', label: '8 - Near Mint' },
+                          { value: '7.5', label: '7.5 - Excellent+' },
+                          { value: '7', label: '7 - Excellent' },
+                          { value: '6.5', label: '6.5 - Very Good+' },
+                          { value: '6', label: '6 - Very Good' },
+                          { value: '5.5', label: '5.5 - Good+' },
+                          { value: '5', label: '5 - Good' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                        ))}
+                        {selectedGradingService === 'TAG' && [
+                          { value: '10', label: '10 - Perfect' },
+                          { value: '9.5', label: '9.5 - Near Perfect' },
+                          { value: '9', label: '9 - Excellent' },
+                          { value: '8.5', label: '8.5 - Very Good+' },
+                          { value: '8', label: '8 - Very Good' },
+                          { value: '7.5', label: '7.5 - Good+' },
+                          { value: '7', label: '7 - Good' },
+                          { value: '6.5', label: '6.5 - Fair+' },
+                          { value: '6', label: '6 - Fair' },
+                          { value: '5.5', label: '5.5 - Poor+' },
+                          { value: '5', label: '5 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                        ))}
+                        {selectedGradingService === 'ACE' && [
+                          { value: '10', label: '10 - Perfect' },
+                          { value: '9.5', label: '9.5 - Near Perfect' },
+                          { value: '9', label: '9 - Excellent' },
+                          { value: '8.5', label: '8.5 - Very Good+' },
+                          { value: '8', label: '8 - Very Good' },
+                          { value: '7.5', label: '7.5 - Good+' },
+                          { value: '7', label: '7 - Good' },
+                          { value: '6.5', label: '6.5 - Fair+' },
+                          { value: '6', label: '6 - Fair' },
+                          { value: '5.5', label: '5.5 - Poor+' },
+                          { value: '5', label: '5 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -7018,7 +7405,6 @@ export default function App() {
               </div>
             </div>
           </div>
-          </>
         )}
       </div>
     </div>
