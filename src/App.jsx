@@ -1674,13 +1674,8 @@ export default function App() {
 
   // Handle sort option selection
   const handleSortOption = (option) => {
-    console.log('Sort option selected:', option)
-    console.log('Current filteredSearchResults:', filteredSearchResults)
-    
     setSortOption(option)
     const sortedCards = sortCards(filteredSearchResults, option)
-    console.log('Sorted cards:', sortedCards)
-    
     setFilteredSearchResults(sortedCards)
     setShowSortModal(false)
   }
@@ -3044,62 +3039,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Sort Modal */}
-        {showSortModal && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" 
-            style={{ zIndex: 9999 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowSortModal(false)
-              }
-            }}
-          >
-            {console.log('Sort modal is rendering')}
-            <div className="bg-[#2b2b2b] rounded-2xl w-full max-w-sm border border-gray-700/50 shadow-2xl">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-                <h2 className="text-white text-lg font-bold">Sort Cards</h2>
-                <button
-                  onClick={() => setShowSortModal(false)}
-                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition-colors"
-                >
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Sort Options */}
-              <div className="p-4">
-                <div className="space-y-2">
-                  {[
-                    { value: 'trending', label: 'Trending' },
-                    { value: 'name-asc', label: 'Name A-Z' },
-                    { value: 'name-desc', label: 'Name Z-A' },
-                    { value: 'price-high', label: 'Price High to Low' },
-                    { value: 'price-low', label: 'Price Low to High' },
-                    { value: 'rarity-desc', label: 'Rarity High to Low' },
-                    { value: 'rarity-asc', label: 'Rarity Low to High' },
-                    { value: 'number', label: 'Card Number' }
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleSortOption(option.value)}
-                      className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                        sortOption === option.value
-                          ? 'bg-[#6865E7] text-white'
-                          : 'bg-gray-700 text-white/70 hover:bg-gray-600'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Edit Modal - Compact Design */}
         {showEditModal && (
@@ -5415,10 +5354,7 @@ export default function App() {
               </h2>
               {showSearchResults && (
                 <button
-                  onClick={() => {
-                    console.log('Sort button clicked, opening modal')
-                    setShowSortModal(true)
-                  }}
+                  onClick={() => setShowSortModal(true)}
                   className="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-lg text-white text-sm"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -6385,6 +6321,93 @@ export default function App() {
                 </div>
               </div>
           </>
+        )}
+
+        {/* Sort Modal - Test at End */}
+        {showSortModal && (
+          <div 
+            style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              backgroundColor: 'rgba(0,0,0,0.8)', 
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowSortModal(false)
+              }
+            }}
+          >
+            <div style={{
+              backgroundColor: '#2b2b2b',
+              borderRadius: '12px',
+              padding: '20px',
+              minWidth: '300px',
+              maxWidth: '400px',
+              border: '1px solid #444'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 }}>Sort Cards</h2>
+                <button
+                  onClick={() => setShowSortModal(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { value: 'trending', label: 'Trending' },
+                  { value: 'name-asc', label: 'Name A-Z' },
+                  { value: 'name-desc', label: 'Name Z-A' },
+                  { value: 'price-high', label: 'Price High to Low' },
+                  { value: 'price-low', label: 'Price Low to High' },
+                  { value: 'rarity-desc', label: 'Rarity High to Low' },
+                  { value: 'rarity-asc', label: 'Rarity Low to High' },
+                  { value: 'number', label: 'Card Number' }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleSortOption(option.value)}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      backgroundColor: sortOption === option.value ? '#6865E7' : '#444',
+                      color: 'white',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
