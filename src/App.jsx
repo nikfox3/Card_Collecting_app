@@ -250,8 +250,12 @@ export default function App() {
   const getUngradedValues = useMemo(() => {
     if (!selectedCard) return {}
     
-    // Get base market value
-    const baseValue = selectedCard?.currentValue || selectedCard?.current_value || selectedCard?.tcgplayer?.prices?.holofoil?.market || selectedCard?.tcgplayer?.prices?.normal?.market || 100
+    // Get base market value - handle different pricing structures
+    const baseValue = selectedCard?.currentValue || selectedCard?.current_value || selectedCard?.price || 
+                     selectedCard?.tcgplayer?.prices?.holofoil?.market || 
+                     selectedCard?.tcgplayer?.prices?.normal?.market || 
+                     selectedCard?.tcgplayer?.prices?.reverseHolofoil?.market ||
+                     selectedCard?.tcgplayer?.prices?.firstEditionHolofoil?.market || 100
     
     // Condition multipliers (relative to Near Mint)
     const conditionMultipliers = {
@@ -3088,7 +3092,7 @@ export default function App() {
                   {/* Card Image */}
                   <div className="w-[217px] h-[301px]">
                     <HolographicCard
-                      src={selectedCard.imageUrl || cardImages[selectedCard.id]}
+                      src={selectedCard.imageUrl || selectedCard.images?.large || selectedCard.images?.small || cardImages[selectedCard.id]}
                       alt={selectedCard.name}
                       className="w-full h-full bg-transparent rounded-xl overflow-hidden"
                       enableGyroscope={true}
@@ -3146,10 +3150,12 @@ export default function App() {
                       
                       {/* Set and Expansion Info */}
                       <div className="flex flex-col">
-                        <span className="text-white text-sm font-medium">{selectedCard.set_name || selectedCard.set || 'Set Name'}</span>
+                        <span className="text-white text-sm font-medium">
+                          {selectedCard.set_name || selectedCard.set?.name || selectedCard.set || 'Set Name'}
+                        </span>
                         <span className="text-gray-300 text-xs">
                           {(() => {
-                            const set = selectedCard.set_name || selectedCard.set || '';
+                            const set = selectedCard.set_name || selectedCard.set?.name || selectedCard.set || '';
                             // Map set names to their series
                             const seriesMap = {
                               'Base Set': 'Base Series',
@@ -3160,7 +3166,13 @@ export default function App() {
                               'Darkness Ablaze': 'Sword & Shield Series',
                               'Chilling Reign': 'Sword & Shield Series',
                               'Battle Styles': 'Sword & Shield Series',
-                              'Fusion Strike': 'Sword & Shield Series'
+                              'Fusion Strike': 'Sword & Shield Series',
+                              'Gym Challenge': 'Gym Series',
+                              'Team Rocket': 'Team Rocket Series',
+                              'Neo Genesis': 'Neo Series',
+                              'Neo Discovery': 'Neo Series',
+                              'Neo Revelation': 'Neo Series',
+                              'Neo Destiny': 'Neo Series'
                             };
                             return seriesMap[set] || selectedCard.set?.series || selectedCard.series || 'Pokemon TCG';
                           })()}
@@ -3213,7 +3225,16 @@ export default function App() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                           </svg>
                           <span className="text-white text-lg font-bold">
-                            ${selectedCard.current_value || selectedCard.price || selectedCard.tcgplayer?.prices?.holofoil?.market || selectedCard.tcgplayer?.prices?.normal?.market || 0}
+                            ${(() => {
+                              // Handle different pricing structures
+                              if (selectedCard.current_value) return selectedCard.current_value;
+                              if (selectedCard.price) return selectedCard.price;
+                              if (selectedCard.tcgplayer?.prices?.holofoil?.market) return selectedCard.tcgplayer.prices.holofoil.market;
+                              if (selectedCard.tcgplayer?.prices?.normal?.market) return selectedCard.tcgplayer.prices.normal.market;
+                              if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) return selectedCard.tcgplayer.prices.reverseHolofoil.market;
+                              if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) return selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
+                              return 0;
+                            })()}
                           </span>
                         </div>
                         <div className={`text-sm ${(selectedCard.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -3257,7 +3278,16 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-col">
                       <span className="text-white text-xl font-bold">
-                        ${selectedCard.current_value || selectedCard.tcgplayer?.prices?.holofoil?.market || selectedCard.tcgplayer?.prices?.normal?.market || 0}
+                        ${(() => {
+                          // Handle different pricing structures
+                          if (selectedCard.current_value) return selectedCard.current_value;
+                          if (selectedCard.price) return selectedCard.price;
+                          if (selectedCard.tcgplayer?.prices?.holofoil?.market) return selectedCard.tcgplayer.prices.holofoil.market;
+                          if (selectedCard.tcgplayer?.prices?.normal?.market) return selectedCard.tcgplayer.prices.normal.market;
+                          if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) return selectedCard.tcgplayer.prices.reverseHolofoil.market;
+                          if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) return selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
+                          return 0;
+                        })()}
                       </span>
                       <div className="flex items-center gap-1 text-green-400 text-sm">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
