@@ -120,6 +120,18 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [showSortModal, setShowSortModal] = useState(false)
   const [sortOption, setSortOption] = useState('trending')
+  
+  // Add to Collection Modal states
+  const [showAddToCollectionModal, setShowAddToCollectionModal] = useState(false)
+  const [cardToAdd, setCardToAdd] = useState(null)
+  const [selectedCollectionForAdd, setSelectedCollectionForAdd] = useState('pokemon-collection')
+  const [addQuantity, setAddQuantity] = useState(1)
+  const [selectedVariant, setSelectedVariant] = useState('normal')
+  const [addCardCondition, setAddCardCondition] = useState('Near Mint')
+  const [isGraded, setIsGraded] = useState(false)
+  const [selectedGradingService, setSelectedGradingService] = useState('PSA')
+  const [selectedGrade, setSelectedGrade] = useState('10')
+  const [addNote, setAddNote] = useState('')
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
   const [quickFilters, setQuickFilters] = useState({
     owned: false,
@@ -2595,12 +2607,41 @@ export default function App() {
     setSelectedFormats({});
   }
 
-  // Handle adding card to collection
+  // Handle opening Add to Collection modal
   const handleAddToCollection = (card) => {
-    console.log('Adding card to collection:', card.name);
+    console.log('Opening Add to Collection modal for:', card.name);
+    setCardToAdd(card);
+    setShowAddToCollectionModal(true);
     
-    // Find the main collection (Pokemon Collection)
-    const targetCollection = mockUserData.collections.find(c => c.id === 'pokemon-collection');
+    // Reset form to defaults
+    setSelectedCollectionForAdd('pokemon-collection');
+    setAddQuantity(1);
+    setSelectedVariant('normal');
+    setAddCardCondition('Near Mint');
+    setIsGraded(false);
+    setSelectedGradingService('PSA');
+    setSelectedGrade('10');
+    setAddNote('');
+  }
+
+  // Handle actually adding the card to collection with all options
+  const handleConfirmAddToCollection = () => {
+    if (!cardToAdd) return;
+    
+    console.log('Adding card to collection with options:', {
+      card: cardToAdd.name,
+      collection: selectedCollectionForAdd,
+      quantity: addQuantity,
+      variant: selectedVariant,
+      condition: addCardCondition,
+      isGraded,
+      gradingService: selectedGradingService,
+      grade: selectedGrade,
+      note: addNote
+    });
+    
+    // Find the target collection
+    const targetCollection = mockUserData.collections.find(c => c.id === selectedCollectionForAdd);
     if (!targetCollection) {
       console.error('Collection not found. Available collections:', mockUserData.collections.map(c => c.id));
       return;
@@ -2611,57 +2652,71 @@ export default function App() {
       targetCollection.cards = [];
     }
     
-    // Check if card already exists in collection
+    // Create the card entry with all selected options
+    const newCard = {
+      id: Date.now(), // Generate unique ID
+      name: cardToAdd.name,
+      set: cardToAdd.set?.name || cardToAdd.set || 'Unknown Set',
+      rarity: cardToAdd.rarity || 'Unknown',
+      number: cardToAdd.number || '001',
+      price: cardToAdd.price || cardToAdd.currentValue || cardToAdd.tcgplayer?.prices?.holofoil?.market || cardToAdd.tcgplayer?.prices?.normal?.market || 0,
+      imageUrl: cardToAdd.imageUrl || cardToAdd.images?.large || cardToAdd.images?.small,
+      artist: cardToAdd.artist || 'Unknown Artist',
+      variant: selectedVariant,
+      condition: isGraded ? null : addCardCondition, // No condition if graded
+      isGraded: isGraded,
+      gradingService: isGraded ? selectedGradingService : null,
+      grade: isGraded ? selectedGrade : null,
+      note: addNote || null,
+      folder: 'Collection',
+      dateAdded: new Date().toISOString(),
+      quantity: addQuantity,
+      collected: true
+    };
+    
+    // Check if similar card already exists (same name, set, variant, condition/grade)
     const existingCard = targetCollection.cards.find(c => 
-      c.name === card.name && c.set === (card.set?.name || card.set)
+      c.name === newCard.name && 
+      c.set === newCard.set && 
+      c.variant === newCard.variant &&
+      (isGraded ? (c.gradingService === newCard.gradingService && c.grade === newCard.grade) : c.condition === newCard.condition)
     );
     
     if (existingCard) {
-      // If card exists, increase quantity
-      existingCard.quantity = (existingCard.quantity || 1) + 1;
-      console.log(`Increased quantity of ${card.name} to ${existingCard.quantity}`);
+      // If similar card exists, increase quantity
+      existingCard.quantity = (existingCard.quantity || 1) + addQuantity;
+      console.log(`Increased quantity of ${newCard.name} to ${existingCard.quantity}`);
     } else {
-      // If card doesn't exist, add it to collection
-      const newCard = {
-        id: Date.now(), // Generate unique ID
-        name: card.name,
-        set: card.set?.name || card.set || 'Unknown Set',
-        rarity: card.rarity || 'Unknown',
-        number: card.number || '001',
-        price: card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0,
-        imageUrl: card.imageUrl || card.images?.large || card.images?.small,
-        artist: card.artist || 'Unknown Artist',
-        condition: 'Near Mint',
-        folder: 'Collection',
-        dateAdded: new Date().toISOString(),
-        quantity: 1,
-        collected: true
-      };
-      
+      // If no similar card exists, add new entry
       targetCollection.cards.push(newCard);
-      console.log(`Added new card ${card.name} to collection`);
+      console.log(`Added new card ${newCard.name} to collection`);
     }
     
     // Update collection stats
-    targetCollection.totalCards = (targetCollection.totalCards || 0) + 1;
-    targetCollection.totalValue = (targetCollection.totalValue || 0) + (card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0);
+    targetCollection.totalCards = (targetCollection.totalCards || 0) + addQuantity;
+    const cardValue = newCard.price * addQuantity;
+    targetCollection.totalValue = (targetCollection.totalValue || 0) + cardValue;
     
     // Add to recent activity
-    recentActivityData.unshift({
-      id: Date.now(),
-      cardName: card.name,
-      action: "Added",
-      type: "add",
-      time: "Just now"
-    });
+    for (let i = 0; i < addQuantity; i++) {
+      recentActivityData.unshift({
+        id: Date.now() + i,
+        cardName: cardToAdd.name,
+        action: "Added",
+        type: "add",
+        time: "Just now"
+      });
+    }
     
     // Show success feedback
-    console.log(`Successfully added ${card.name} to collection!`);
+    console.log(`Successfully added ${addQuantity} ${cardToAdd.name} to collection!`);
     console.log('Collection now has', targetCollection.cards.length, 'cards');
     console.log('Total collection value:', targetCollection.totalValue);
     
-    // Show a simple alert for now (you could replace this with a toast notification)
-    alert(`✅ Added ${card.name} to your collection!`);
+    // Close modal and show success
+    setShowAddToCollectionModal(false);
+    setCardToAdd(null);
+    alert(`✅ Added ${addQuantity} ${cardToAdd.name} to your collection!`);
   }
 
   const handleCloseCardProfile = () => {
@@ -6473,6 +6528,467 @@ export default function App() {
                     {option.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add to Collection Modal */}
+        {showAddToCollectionModal && cardToAdd && (
+          <div 
+            style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              backgroundColor: 'rgba(0,0,0,0.8)', 
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddToCollectionModal(false);
+                setCardToAdd(null);
+              }
+            }}
+          >
+            <div style={{
+              backgroundColor: '#2b2b2b',
+              borderRadius: '16px',
+              padding: '24px',
+              minWidth: '400px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid #444'
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Add to Collection</h2>
+                <button
+                  onClick={() => {
+                    setShowAddToCollectionModal(false);
+                    setCardToAdd(null);
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Card Preview */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '16px', 
+                marginBottom: '24px',
+                padding: '16px',
+                backgroundColor: '#333',
+                borderRadius: '12px'
+              }}>
+                <img 
+                  src={cardToAdd.imageUrl || cardToAdd.images?.large || cardToAdd.images?.small} 
+                  alt={cardToAdd.name}
+                  style={{ width: '80px', height: '112px', objectFit: 'cover', borderRadius: '8px' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div style={{ display: 'none', width: '80px', height: '112px', backgroundColor: '#444', borderRadius: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#888', fontSize: '12px' }}>No Image</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{cardToAdd.name}</h3>
+                  <p style={{ color: '#888', fontSize: '14px', margin: '0 0 4px 0' }}>{cardToAdd.set?.name || cardToAdd.set || 'Unknown Set'}</p>
+                  <p style={{ color: '#888', fontSize: '12px', margin: 0 }}>{cardToAdd.rarity || 'Unknown Rarity'}</p>
+                </div>
+              </div>
+
+              {/* Collection Selection */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Collection</label>
+                <select
+                  value={selectedCollectionForAdd}
+                  onChange={(e) => setSelectedCollectionForAdd(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    appearance: 'none',
+                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                    paddingRight: '40px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {mockUserData.collections.map(collection => (
+                    <option key={collection.id} value={collection.id} style={{ backgroundColor: '#444', color: 'white' }}>
+                      {collection.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quantity Stepper */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Quantity</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button
+                    onClick={() => setAddQuantity(Math.max(1, addQuantity - 1))}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px'
+                    }}
+                  >
+                    −
+                  </button>
+                  <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', minWidth: '40px', textAlign: 'center' }}>
+                    {addQuantity}
+                  </span>
+                  <button
+                    onClick={() => setAddQuantity(addQuantity + 1)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px'
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Variant Selection */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Variant</label>
+                <select
+                  value={selectedVariant}
+                  onChange={(e) => setSelectedVariant(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    appearance: 'none',
+                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                    paddingRight: '40px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="normal" style={{ backgroundColor: '#444', color: 'white' }}>Normal</option>
+                  <option value="holo" style={{ backgroundColor: '#444', color: 'white' }}>Holo</option>
+                  <option value="reverse-holo" style={{ backgroundColor: '#444', color: 'white' }}>Reverse Holo</option>
+                  <option value="first-edition" style={{ backgroundColor: '#444', color: 'white' }}>1st Edition</option>
+                  <option value="shadowless" style={{ backgroundColor: '#444', color: 'white' }}>Shadowless</option>
+                  <option value="unlimited" style={{ backgroundColor: '#444', color: 'white' }}>Unlimited</option>
+                </select>
+              </div>
+
+              {/* Graded Toggle */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Graded Card</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setIsGraded(false)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      backgroundColor: !isGraded ? '#6865E7' : '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Raw
+                  </button>
+                  <button
+                    onClick={() => setIsGraded(true)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      backgroundColor: isGraded ? '#6865E7' : '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Graded
+                  </button>
+                </div>
+              </div>
+
+              {/* Condition (only show if not graded) */}
+              {!isGraded && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Condition</label>
+                  <select
+                    value={addCardCondition}
+                    onChange={(e) => setAddCardCondition(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#444',
+                      border: '1px solid #666',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '14px',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px',
+                      paddingRight: '40px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="Near Mint" style={{ backgroundColor: '#444', color: 'white' }}>Near Mint (NM)</option>
+                    <option value="Lightly Played" style={{ backgroundColor: '#444', color: 'white' }}>Lightly Played (LP)</option>
+                    <option value="Moderately Played" style={{ backgroundColor: '#444', color: 'white' }}>Moderately Played (MP)</option>
+                    <option value="Heavily Played" style={{ backgroundColor: '#444', color: 'white' }}>Heavily Played (HP)</option>
+                    <option value="Damaged" style={{ backgroundColor: '#444', color: 'white' }}>Damaged (DM)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Grading Options (only show if graded) */}
+              {isGraded && (
+                <>
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grading Service</label>
+                    <select
+                      value={selectedGradingService}
+                      onChange={(e) => {
+                        setSelectedGradingService(e.target.value);
+                        setSelectedGrade('10'); // Reset grade when service changes
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        backgroundSize: '16px',
+                        paddingRight: '40px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="PSA" style={{ backgroundColor: '#444', color: 'white' }}>PSA</option>
+                      <option value="BGS" style={{ backgroundColor: '#444', color: 'white' }}>BGS</option>
+                      <option value="CGC" style={{ backgroundColor: '#444', color: 'white' }}>CGC</option>
+                      <option value="TAG" style={{ backgroundColor: '#444', color: 'white' }}>TAG</option>
+                      <option value="ACE" style={{ backgroundColor: '#444', color: 'white' }}>ACE</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grade</label>
+                    <select
+                      value={selectedGrade}
+                      onChange={(e) => setSelectedGrade(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px'
+                      }}
+                    >
+                      {selectedGradingService === 'PSA' && (
+                        <>
+                          <option value="10">10 - Gem Mint</option>
+                          <option value="9">9 - Mint</option>
+                          <option value="8">8 - Near Mint-Mint</option>
+                          <option value="7">7 - Near Mint</option>
+                          <option value="6">6 - Excellent-Mint</option>
+                          <option value="5">5 - Excellent</option>
+                          <option value="4">4 - Very Good-Excellent</option>
+                          <option value="3">3 - Very Good</option>
+                          <option value="2">2 - Good</option>
+                          <option value="1">1 - Poor</option>
+                        </>
+                      )}
+                      {selectedGradingService === 'BGS' && (
+                        <>
+                          <option value="10">10 - Pristine</option>
+                          <option value="9.5">9.5 - Black Label</option>
+                          <option value="9">9 - Gold Label</option>
+                          <option value="8.5">8.5 - Silver Label</option>
+                          <option value="8">8 - Silver Label</option>
+                          <option value="7.5">7.5 - Silver Label</option>
+                          <option value="7">7 - Silver Label</option>
+                          <option value="6.5">6.5 - Silver Label</option>
+                          <option value="6">6 - Silver Label</option>
+                          <option value="5.5">5.5 - Silver Label</option>
+                          <option value="5">5 - Silver Label</option>
+                        </>
+                      )}
+                      {selectedGradingService === 'CGC' && (
+                        <>
+                          <option value="10">10 - Pristine</option>
+                          <option value="9.5">9.5 - Gem Mint</option>
+                          <option value="9">9 - Mint</option>
+                          <option value="8.5">8.5 - Near Mint+</option>
+                          <option value="8">8 - Near Mint</option>
+                          <option value="7.5">7.5 - Excellent+</option>
+                          <option value="7">7 - Excellent</option>
+                          <option value="6.5">6.5 - Very Good+</option>
+                          <option value="6">6 - Very Good</option>
+                          <option value="5.5">5.5 - Good+</option>
+                          <option value="5">5 - Good</option>
+                        </>
+                      )}
+                      {selectedGradingService === 'TAG' && (
+                        <>
+                          <option value="10">10 - Perfect</option>
+                          <option value="9.5">9.5 - Near Perfect</option>
+                          <option value="9">9 - Excellent</option>
+                          <option value="8.5">8.5 - Very Good+</option>
+                          <option value="8">8 - Very Good</option>
+                          <option value="7.5">7.5 - Good+</option>
+                          <option value="7">7 - Good</option>
+                          <option value="6.5">6.5 - Fair+</option>
+                          <option value="6">6 - Fair</option>
+                          <option value="5.5">5.5 - Poor+</option>
+                          <option value="5">5 - Poor</option>
+                        </>
+                      )}
+                      {selectedGradingService === 'ACE' && (
+                        <>
+                          <option value="10">10 - Perfect</option>
+                          <option value="9.5">9.5 - Near Perfect</option>
+                          <option value="9">9 - Excellent</option>
+                          <option value="8.5">8.5 - Very Good+</option>
+                          <option value="8">8 - Very Good</option>
+                          <option value="7.5">7.5 - Good+</option>
+                          <option value="7">7 - Good</option>
+                          <option value="6.5">6.5 - Fair+</option>
+                          <option value="6">6 - Fair</option>
+                          <option value="5.5">5.5 - Poor+</option>
+                          <option value="5">5 - Poor</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Notes */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Notes (Optional)</label>
+                <textarea
+                  value={addNote}
+                  onChange={(e) => setAddNote(e.target.value)}
+                  placeholder="Add any notes about this card..."
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    minHeight: '80px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => {
+                    setShowAddToCollectionModal(false);
+                    setCardToAdd(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmAddToCollection}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#6865E7',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Add to Collection
+                </button>
               </div>
             </div>
           </div>
