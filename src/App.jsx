@@ -3484,7 +3484,13 @@ export default function App() {
                       </div>
                       
                       {/* Set and Expansion Info */}
-                      <div className="flex flex-col">
+                      <div 
+                        className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          const setName = selectedCard.set_name || selectedCard.set?.name || selectedCard.set || 'Set Name';
+                          handleSetClick(setName);
+                        }}
+                      >
                         <span className="text-white text-sm font-medium">
                           {selectedCard.set_name || selectedCard.set?.name || selectedCard.set || 'Set Name'}
                         </span>
