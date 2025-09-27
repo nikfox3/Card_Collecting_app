@@ -1632,29 +1632,39 @@ export default function App() {
   // Sort cards based on selected option
   const sortCards = (cards, sortType) => {
     const sortedCards = [...cards].sort((a, b) => {
+      // Helper function to get card price from any data structure
+      const getCardPrice = (card) => {
+        if (card.currentValue) return card.currentValue;
+        if (card.current_value) return card.current_value;
+        if (card.price) return card.price;
+        if (card.tcgplayer?.prices?.holofoil?.market) return card.tcgplayer.prices.holofoil.market;
+        if (card.tcgplayer?.prices?.normal?.market) return card.tcgplayer.prices.normal.market;
+        if (card.tcgplayer?.prices?.reverseHolofoil?.market) return card.tcgplayer.prices.reverseHolofoil.market;
+        if (card.tcgplayer?.prices?.firstEditionHolofoil?.market) return card.tcgplayer.prices.firstEditionHolofoil.market;
+        return 0;
+      };
+
       switch (sortType) {
         case 'name-asc':
           return a.name.localeCompare(b.name)
         case 'name-desc':
           return b.name.localeCompare(a.name)
         case 'price-low':
-          return (a.tcgplayer?.prices?.holofoil?.market || a.tcgplayer?.prices?.normal?.market || a.current_value || 0) - 
-                 (b.tcgplayer?.prices?.holofoil?.market || b.tcgplayer?.prices?.normal?.market || b.current_value || 0)
+          return getCardPrice(a) - getCardPrice(b)
         case 'price-high':
-          return (b.tcgplayer?.prices?.holofoil?.market || b.tcgplayer?.prices?.normal?.market || b.current_value || 0) - 
-                 (a.tcgplayer?.prices?.holofoil?.market || a.tcgplayer?.prices?.normal?.market || a.current_value || 0)
+          return getCardPrice(b) - getCardPrice(a)
         case 'rarity-desc':
-          const rarityOrderDesc = ['Common', 'Uncommon', 'Rare', 'Rare Holo', 'Rare Ultra', 'Rare Secret', 'Rare Rainbow']
+          const rarityOrderDesc = ['Common', 'Uncommon', 'Rare', 'Rare Holo', 'Rare Ultra', 'Rare Secret', 'Rare Rainbow', 'VMAX', 'Ultra Rare']
           return rarityOrderDesc.indexOf(b.rarity || '') - rarityOrderDesc.indexOf(a.rarity || '')
         case 'rarity-asc':
-          const rarityOrderAsc = ['Common', 'Uncommon', 'Rare', 'Rare Holo', 'Rare Ultra', 'Rare Secret', 'Rare Rainbow']
+          const rarityOrderAsc = ['Common', 'Uncommon', 'Rare', 'Rare Holo', 'Rare Ultra', 'Rare Secret', 'Rare Rainbow', 'VMAX', 'Ultra Rare']
           return rarityOrderAsc.indexOf(a.rarity || '') - rarityOrderAsc.indexOf(b.rarity || '')
         case 'number':
-          return parseInt(a.number || '0') - parseInt(b.number || '0')
+          return parseInt(a.number?.replace('#', '') || '0') - parseInt(b.number?.replace('#', '') || '0')
         case 'pokemon-number':
           return (a.nationalPokedexNumbers?.[0] || 0) - (b.nationalPokedexNumbers?.[0] || 0)
         case 'trending':
-          return (b.current_value || 0) - (a.current_value || 0)
+          return getCardPrice(b) - getCardPrice(a)
         default:
           return 0
       }
@@ -2541,6 +2551,50 @@ export default function App() {
     }
   }
 
+  // Handle clear search functionality
+  const handleClearSearch = () => {
+    // Clear search query
+    setSearchQuery('');
+    
+    // Reset search results to show trending cards
+    setShowSearchResults(false);
+    setFilteredSearchResults([]);
+    setOriginalSearchResults([]);
+    
+    // Reset sort option to default
+    setSortOption('trending');
+    
+    // Clear any active filters
+    setQuickFilters({
+      owned: false,
+      missing: false,
+      duplicates: false,
+      wishlist: false
+    });
+    
+    // Reset language selection
+    setSelectedLanguages({
+      english: true,
+      japanese: false,
+      chinese: false,
+      korean: false,
+      german: false,
+      spanish: false,
+      french: false,
+      italian: false
+    });
+    
+    // Reset other filter states
+    setSelectedConditions({});
+    setSelectedProducts({});
+    setSelectedEnergies({});
+    setSelectedTypes({});
+    setSelectedRarities({});
+    setSelectedVariants({});
+    setSelectedRegulations({});
+    setSelectedFormats({});
+  }
+
   const handleCloseCardProfile = () => {
     setShowCardProfile(false)
     setSelectedCard(null)
@@ -2984,6 +3038,54 @@ export default function App() {
             <img src="/Assets/gallery-circle-bold.svg" alt="Gallery" className="w-8 h-8" />
           </button>
         </div>
+
+        {/* Sort Modal */}
+        {showSortModal && (
+          <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
+            <div className="bg-[#2b2b2b] rounded-2xl w-full max-w-sm border border-gray-700/50 shadow-2xl">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+                <h2 className="text-white text-lg font-bold">Sort Cards</h2>
+                <button
+                  onClick={() => setShowSortModal(false)}
+                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition-colors"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Sort Options */}
+              <div className="p-4">
+                <div className="space-y-2">
+                  {[
+                    { value: 'trending', label: 'Trending' },
+                    { value: 'name-asc', label: 'Name A-Z' },
+                    { value: 'name-desc', label: 'Name Z-A' },
+                    { value: 'price-high', label: 'Price High to Low' },
+                    { value: 'price-low', label: 'Price Low to High' },
+                    { value: 'rarity-desc', label: 'Rarity High to Low' },
+                    { value: 'rarity-asc', label: 'Rarity Low to High' },
+                    { value: 'number', label: 'Card Number' }
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleSortOption(option.value)}
+                      className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        sortOption === option.value
+                          ? 'bg-[#6865E7] text-white'
+                          : 'bg-gray-700 text-white/70 hover:bg-gray-600'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit Modal - Compact Design */}
         {showEditModal && (
@@ -4687,6 +4789,7 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             onSearch={handleSearch}
             onSearchInputClick={handleSearchTabClick}
+            onClearSearch={handleClearSearch}
             onScanClick={() => {
               setShowScanner(true);
             }}
@@ -5325,9 +5428,9 @@ export default function App() {
                           setShowCardProfile(true);
                         }}
                       >
-                        {card.images?.small ? (
+                        {(card.images?.small || card.imageUrl) ? (
                           <img 
-                            src={card.images.small} 
+                            src={card.images?.small || card.imageUrl} 
                             alt={card.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -5336,14 +5439,20 @@ export default function App() {
                             }}
                           />
                         ) : null}
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: card.images?.small ? 'none' : 'flex' }}>
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
                           <span className="text-gray-400 text-sm">Card Image</span>
-                      </div>
+                        </div>
                   </div>
                       <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
-                      <p className="text-gray-400 text-xs mb-2">{card.set?.name || 'Unknown Set'}</p>
+                      <p className="text-gray-400 text-xs mb-2">{card.set?.name || card.set || 'Unknown Set'}</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-primary font-bold text-sm">${card.currentValue?.toFixed(2) || 'N/A'}</p>
+                        <p className="text-primary font-bold text-sm">${(() => {
+                          if (card.currentValue) return card.currentValue.toFixed(2);
+                          if (card.price) return card.price.toFixed(2);
+                          if (card.tcgplayer?.prices?.holofoil?.market) return card.tcgplayer.prices.holofoil.market.toFixed(2);
+                          if (card.tcgplayer?.prices?.normal?.market) return card.tcgplayer.prices.normal.market.toFixed(2);
+                          return 'N/A';
+                        })()}</p>
                 <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -5389,20 +5498,20 @@ export default function App() {
                         setShowCardProfile(true);
                       }}
                     >
-                      {card.images?.small ? (
-                        <img 
-                          src={card.images.small} 
-                          alt={card.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 flex items-center justify-center" style={{ display: card.images?.small ? 'none' : 'flex' }}>
-                        <span className="text-gray-400 text-sm">Card Image</span>
-                      </div>
+                        {(card.images?.small || card.imageUrl) ? (
+                          <img 
+                            src={card.images?.small || card.imageUrl} 
+                            alt={card.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
+                          <span className="text-gray-400 text-sm">Card Image</span>
+                        </div>
                   </div>
                     <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
                     <p className="text-gray-400 text-xs mb-2">{card.set?.name || 'Unknown Set'}</p>

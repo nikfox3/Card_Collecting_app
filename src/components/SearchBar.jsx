@@ -6,6 +6,7 @@ const SearchBar = ({
   onSearch, 
   onScanClick, 
   onSearchInputClick,
+  onClearSearch,
   placeholder = "Search cards, sets, attacks, abilities...",
   className = "",
   isMenuOpen = false
@@ -65,7 +66,12 @@ const SearchBar = ({
           {/* Close Icon */}
           {searchQuery && (
             <button 
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                if (onClearSearch) {
+                  onClearSearch();
+                }
+              }}
               className="relative shrink-0 size-[24px] hover:opacity-70 transition-opacity p-1"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
