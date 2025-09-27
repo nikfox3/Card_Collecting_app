@@ -6705,7 +6705,7 @@ export default function App() {
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
-                    gap: '8px',
+                    justifyContent: 'space-between',
                     padding: '8px 12px',
                     backgroundColor: '#444',
                     borderRadius: '6px',
@@ -6719,55 +6719,6 @@ export default function App() {
                     }}>
                       ${calculateDynamicPrice(cardToAdd).toFixed(2)}
                     </span>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '4px',
-                      marginLeft: 'auto'
-                    }}>
-                      <span style={{ 
-                        color: '#888', 
-                        fontSize: '10px',
-                        backgroundColor: '#555',
-                        padding: '2px 6px',
-                        borderRadius: '4px'
-                      }}>
-                        {selectedVariant.charAt(0).toUpperCase() + selectedVariant.slice(1).replace('-', ' ')}
-                      </span>
-                      {!isGraded && (
-                        <span style={{ 
-                          color: '#888', 
-                          fontSize: '10px',
-                          backgroundColor: '#555',
-                          padding: '2px 6px',
-                          borderRadius: '4px'
-                        }}>
-                          {addCardCondition}
-                        </span>
-                      )}
-                      {isGraded && (
-                        <>
-                          <span style={{ 
-                            color: '#888', 
-                            fontSize: '10px',
-                            backgroundColor: '#555',
-                            padding: '2px 6px',
-                            borderRadius: '4px'
-                          }}>
-                            {selectedGradingService}
-                          </span>
-                          <span style={{ 
-                            color: '#888', 
-                            fontSize: '10px',
-                            backgroundColor: '#555',
-                            padding: '2px 6px',
-                            borderRadius: '4px'
-                          }}>
-                            {selectedGrade}
-                          </span>
-                        </>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
