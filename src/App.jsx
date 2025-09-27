@@ -1377,7 +1377,7 @@ export default function App() {
         ...baseCard,
         id: `${baseCard.id}-${i + 100}`,
         name: baseCard.name,
-        currentValue: baseCard.currentValue + (Math.random() - 0.5) * 50,
+        currentValue: Math.max(0.01, baseCard.currentValue + (Math.random() - 0.5) * 50),
         changePercent: (Math.random() - 0.5) * 100
       }
       moreCards.push(newCard)
@@ -2674,7 +2674,7 @@ export default function App() {
       adjustedPrice *= (conditionMultipliers[addCardCondition] || 1.0);
     }
     
-    return Math.round(adjustedPrice * 100) / 100; // Round to 2 decimal places
+    return Math.max(0.01, Math.round(adjustedPrice * 100) / 100); // Round to 2 decimal places, ensure positive
   }
 
   // Handle actually adding the card to collection with all options
