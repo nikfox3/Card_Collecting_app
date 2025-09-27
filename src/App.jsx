@@ -6535,27 +6535,41 @@ export default function App() {
 
         {/* Add to Collection Modal */}
         {showAddToCollectionModal && cardToAdd && (
-          <div 
-            style={{ 
-              position: 'fixed', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              backgroundColor: 'rgba(0,0,0,0.8)', 
-              zIndex: 99999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowAddToCollectionModal(false);
-                setCardToAdd(null);
-              }
-            }}
-          >
+          <>
+            <style>
+              {`
+                .add-to-collection-modal select {
+                  position: relative !important;
+                  z-index: 10 !important;
+                }
+                .add-to-collection-modal select option {
+                  position: relative !important;
+                  z-index: 11 !important;
+                }
+              `}
+            </style>
+            <div 
+              className="add-to-collection-modal"
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                backgroundColor: 'rgba(0,0,0,0.8)', 
+                zIndex: 99999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowAddToCollectionModal(false);
+                  setCardToAdd(null);
+                }
+              }}
+            >
             <div style={{
               backgroundColor: '#2b2b2b',
               borderRadius: '16px',
@@ -6565,7 +6579,9 @@ export default function App() {
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              border: '1px solid #444'
+              border: '1px solid #444',
+              position: 'relative',
+              zIndex: 1
             }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -6640,7 +6656,10 @@ export default function App() {
                     backgroundPosition: 'right 12px center',
                     backgroundSize: '16px',
                     paddingRight: '40px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    position: 'relative',
+                    zIndex: 2,
+                    boxSizing: 'border-box'
                   }}
                 >
                   {mockUserData.collections.map(collection => (
@@ -6844,86 +6863,93 @@ export default function App() {
                       onChange={(e) => setSelectedGrade(e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '12px',
+                        padding: '12px 16px',
                         backgroundColor: '#444',
                         border: '1px solid #666',
                         borderRadius: '8px',
                         color: 'white',
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        appearance: 'none',
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        backgroundSize: '16px',
+                        paddingRight: '40px',
+                        cursor: 'pointer'
                       }}
                     >
                       {selectedGradingService === 'PSA' && (
                         <>
-                          <option value="10">10 - Gem Mint</option>
-                          <option value="9">9 - Mint</option>
-                          <option value="8">8 - Near Mint-Mint</option>
-                          <option value="7">7 - Near Mint</option>
-                          <option value="6">6 - Excellent-Mint</option>
-                          <option value="5">5 - Excellent</option>
-                          <option value="4">4 - Very Good-Excellent</option>
-                          <option value="3">3 - Very Good</option>
-                          <option value="2">2 - Good</option>
-                          <option value="1">1 - Poor</option>
+                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Gem Mint</option>
+                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Mint</option>
+                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Near Mint-Mint</option>
+                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Near Mint</option>
+                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Excellent-Mint</option>
+                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Excellent</option>
+                          <option value="4" style={{ backgroundColor: '#444', color: 'white' }}>4 - Very Good-Excellent</option>
+                          <option value="3" style={{ backgroundColor: '#444', color: 'white' }}>3 - Very Good</option>
+                          <option value="2" style={{ backgroundColor: '#444', color: 'white' }}>2 - Good</option>
+                          <option value="1" style={{ backgroundColor: '#444', color: 'white' }}>1 - Poor</option>
                         </>
                       )}
                       {selectedGradingService === 'BGS' && (
                         <>
-                          <option value="10">10 - Pristine</option>
-                          <option value="9.5">9.5 - Black Label</option>
-                          <option value="9">9 - Gold Label</option>
-                          <option value="8.5">8.5 - Silver Label</option>
-                          <option value="8">8 - Silver Label</option>
-                          <option value="7.5">7.5 - Silver Label</option>
-                          <option value="7">7 - Silver Label</option>
-                          <option value="6.5">6.5 - Silver Label</option>
-                          <option value="6">6 - Silver Label</option>
-                          <option value="5.5">5.5 - Silver Label</option>
-                          <option value="5">5 - Silver Label</option>
+                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Pristine</option>
+                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Black Label</option>
+                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Gold Label</option>
+                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Silver Label</option>
+                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Silver Label</option>
+                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Silver Label</option>
+                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Silver Label</option>
+                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Silver Label</option>
+                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Silver Label</option>
+                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Silver Label</option>
+                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Silver Label</option>
                         </>
                       )}
                       {selectedGradingService === 'CGC' && (
                         <>
-                          <option value="10">10 - Pristine</option>
-                          <option value="9.5">9.5 - Gem Mint</option>
-                          <option value="9">9 - Mint</option>
-                          <option value="8.5">8.5 - Near Mint+</option>
-                          <option value="8">8 - Near Mint</option>
-                          <option value="7.5">7.5 - Excellent+</option>
-                          <option value="7">7 - Excellent</option>
-                          <option value="6.5">6.5 - Very Good+</option>
-                          <option value="6">6 - Very Good</option>
-                          <option value="5.5">5.5 - Good+</option>
-                          <option value="5">5 - Good</option>
+                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Pristine</option>
+                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Gem Mint</option>
+                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Mint</option>
+                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Near Mint+</option>
+                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Near Mint</option>
+                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Excellent+</option>
+                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Excellent</option>
+                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Very Good+</option>
+                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Very Good</option>
+                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Good+</option>
+                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Good</option>
                         </>
                       )}
                       {selectedGradingService === 'TAG' && (
                         <>
-                          <option value="10">10 - Perfect</option>
-                          <option value="9.5">9.5 - Near Perfect</option>
-                          <option value="9">9 - Excellent</option>
-                          <option value="8.5">8.5 - Very Good+</option>
-                          <option value="8">8 - Very Good</option>
-                          <option value="7.5">7.5 - Good+</option>
-                          <option value="7">7 - Good</option>
-                          <option value="6.5">6.5 - Fair+</option>
-                          <option value="6">6 - Fair</option>
-                          <option value="5.5">5.5 - Poor+</option>
-                          <option value="5">5 - Poor</option>
+                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Perfect</option>
+                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Near Perfect</option>
+                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Excellent</option>
+                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Very Good+</option>
+                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Very Good</option>
+                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Good+</option>
+                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Good</option>
+                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Fair+</option>
+                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Fair</option>
+                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Poor+</option>
+                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Poor</option>
                         </>
                       )}
                       {selectedGradingService === 'ACE' && (
                         <>
-                          <option value="10">10 - Perfect</option>
-                          <option value="9.5">9.5 - Near Perfect</option>
-                          <option value="9">9 - Excellent</option>
-                          <option value="8.5">8.5 - Very Good+</option>
-                          <option value="8">8 - Very Good</option>
-                          <option value="7.5">7.5 - Good+</option>
-                          <option value="7">7 - Good</option>
-                          <option value="6.5">6.5 - Fair+</option>
-                          <option value="6">6 - Fair</option>
-                          <option value="5.5">5.5 - Poor+</option>
-                          <option value="5">5 - Poor</option>
+                          <option value="10" style={{ backgroundColor: '#444', color: 'white' }}>10 - Perfect</option>
+                          <option value="9.5" style={{ backgroundColor: '#444', color: 'white' }}>9.5 - Near Perfect</option>
+                          <option value="9" style={{ backgroundColor: '#444', color: 'white' }}>9 - Excellent</option>
+                          <option value="8.5" style={{ backgroundColor: '#444', color: 'white' }}>8.5 - Very Good+</option>
+                          <option value="8" style={{ backgroundColor: '#444', color: 'white' }}>8 - Very Good</option>
+                          <option value="7.5" style={{ backgroundColor: '#444', color: 'white' }}>7.5 - Good+</option>
+                          <option value="7" style={{ backgroundColor: '#444', color: 'white' }}>7 - Good</option>
+                          <option value="6.5" style={{ backgroundColor: '#444', color: 'white' }}>6.5 - Fair+</option>
+                          <option value="6" style={{ backgroundColor: '#444', color: 'white' }}>6 - Fair</option>
+                          <option value="5.5" style={{ backgroundColor: '#444', color: 'white' }}>5.5 - Poor+</option>
+                          <option value="5" style={{ backgroundColor: '#444', color: 'white' }}>5 - Poor</option>
                         </>
                       )}
                     </select>
@@ -6992,6 +7018,7 @@ export default function App() {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>
