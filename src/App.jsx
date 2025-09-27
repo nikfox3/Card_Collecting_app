@@ -86,26 +86,26 @@ export default function App() {
 
   // Mock top movers data with real Pokemon card IDs
   const topMoversData = [
-    { id: 1, name: "Charizard ex", set: "Base Set", rarity: "Ultra Rare", number: "#004/102", price: 1250, change: 24.5, dailyChange: 245, quantity: 2, rank: 1, type: "gain", emoji: "🔥", cardId: "base1-4", imageUrl: "https://images.pokemontcg.io/base1/4_hires.png" },
-    { id: 2, name: "Blastoise ex", set: "Base Set", rarity: "Ultra Rare", number: "#009/102", price: 890, change: 18.2, dailyChange: 137, quantity: 1, rank: 2, type: "gain", emoji: "⚡", cardId: "base1-2", imageUrl: "https://images.pokemontcg.io/base1/2_hires.png" },
-    { id: 3, name: "Venusaur ex", set: "Base Set", rarity: "Ultra Rare", number: "#015/102", price: 650, change: -12.8, dailyChange: -95, quantity: 3, rank: 3, type: "loss", emoji: "🌿", cardId: "base1-15", imageUrl: "https://images.pokemontcg.io/base1/15_hires.png" },
-    { id: 4, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, dailyChange: 12, quantity: 1, rank: 4, type: "gain", emoji: "⚡", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png" },
-    { id: 5, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, dailyChange: 29, quantity: 2, rank: 5, type: "gain", emoji: "🌊", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png" },
-    { id: 6, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, dailyChange: 18, quantity: 1, rank: 6, type: "gain", emoji: "🌿", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png" },
-    { id: 7, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, dailyChange: 7, quantity: 3, rank: 7, type: "gain", emoji: "✨", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png" },
-    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: -8.3, dailyChange: -4, quantity: 2, rank: 8, type: "loss", emoji: "👻", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png" }
+    { id: 1, name: "Charizard ex", set: "Base Set", rarity: "Ultra Rare", number: "#004/102", price: 1250, change: 24.5, dailyChange: 245, quantity: 2, rank: 1, type: "gain", emoji: "🔥", cardId: "base1-4", imageUrl: "https://images.pokemontcg.io/base1/4_hires.png", artist: "Mitsuhiro Arita" },
+    { id: 2, name: "Blastoise ex", set: "Base Set", rarity: "Ultra Rare", number: "#009/102", price: 890, change: 18.2, dailyChange: 137, quantity: 1, rank: 2, type: "gain", emoji: "⚡", cardId: "base1-2", imageUrl: "https://images.pokemontcg.io/base1/2_hires.png", artist: "Atsuko Nishida" },
+    { id: 3, name: "Venusaur ex", set: "Base Set", rarity: "Ultra Rare", number: "#015/102", price: 650, change: -12.8, dailyChange: -95, quantity: 3, rank: 3, type: "loss", emoji: "🌿", cardId: "base1-15", imageUrl: "https://images.pokemontcg.io/base1/15_hires.png", artist: "Atsuko Nishida" },
+    { id: 4, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, dailyChange: 12, quantity: 1, rank: 4, type: "gain", emoji: "⚡", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", artist: "Atsuko Nishida" },
+    { id: 5, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, dailyChange: 29, quantity: 2, rank: 5, type: "gain", emoji: "🌊", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", artist: "Hitoshi Ariga" },
+    { id: 6, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, dailyChange: 18, quantity: 1, rank: 6, type: "gain", emoji: "🌿", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", artist: "Ryuta Fuse" },
+    { id: 7, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, dailyChange: 7, quantity: 3, rank: 7, type: "gain", emoji: "✨", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", artist: "Mitsuhiro Arita" },
+    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: -8.3, dailyChange: -4, quantity: 2, rank: 8, type: "loss", emoji: "👻", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", artist: "Ryuta Fuse" }
   ]
 
   // Mock trending cards data with real Pokemon card IDs
   const trendingCardsData = [
-    { id: 1, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, rank: 1, emoji: "🔥", color: "orange", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png" },
-    { id: 2, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, rank: 2, emoji: "⚡", color: "blue", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png" },
-    { id: 3, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, rank: 3, emoji: "🌿", color: "green", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png" },
-    { id: 4, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, rank: 4, emoji: "✨", color: "purple", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png" },
-    { id: 5, name: "Charizard VMAX", set: "Darkness Ablaze", rarity: "VMAX", number: "#020/189", price: 198, change: 19.7, rank: 5, emoji: "🔥", color: "red", cardId: "swsh3-20", imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png" },
-    { id: 6, name: "Blastoise VMAX", set: "Chilling Reign", rarity: "VMAX", number: "#018/198", price: 134, change: 14.3, rank: 6, emoji: "🌊", color: "cyan", cardId: "swsh6-18", imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png" },
-    { id: 7, name: "Venusaur VMAX", set: "Battle Styles", rarity: "VMAX", number: "#015/163", price: 112, change: 11.8, rank: 7, emoji: "🌿", color: "emerald", cardId: "swsh5-15", imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png" },
-    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: 9.2, rank: 8, emoji: "👻", color: "purple", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png" }
+    { id: 1, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, rank: 1, emoji: "🔥", color: "orange", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", artist: "Atsuko Nishida" },
+    { id: 2, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, rank: 2, emoji: "⚡", color: "blue", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", artist: "Hitoshi Ariga" },
+    { id: 3, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, rank: 3, emoji: "🌿", color: "green", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", artist: "Ryuta Fuse" },
+    { id: 4, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, rank: 4, emoji: "✨", color: "purple", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", artist: "Mitsuhiro Arita" },
+    { id: 5, name: "Charizard VMAX", set: "Darkness Ablaze", rarity: "VMAX", number: "#020/189", price: 198, change: 19.7, rank: 5, emoji: "🔥", color: "red", cardId: "swsh3-20", imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png", artist: "Mitsuhiro Arita" },
+    { id: 6, name: "Blastoise VMAX", set: "Chilling Reign", rarity: "VMAX", number: "#018/198", price: 134, change: 14.3, rank: 6, emoji: "🌊", color: "cyan", cardId: "swsh6-18", imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png", artist: "Atsuko Nishida" },
+    { id: 7, name: "Venusaur VMAX", set: "Battle Styles", rarity: "VMAX", number: "#015/163", price: 112, change: 11.8, rank: 7, emoji: "🌿", color: "emerald", cardId: "swsh5-15", imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png", artist: "Atsuko Nishida" },
+    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: 9.2, rank: 8, emoji: "👻", color: "purple", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", artist: "Ryuta Fuse" }
   ]
   const [activeTab, setActiveTab] = useState('home')
   const [navigationMode, setNavigationMode] = useState('home') // 'home', 'collection', 'marketplace', 'profile', 'none'
@@ -2495,19 +2495,31 @@ export default function App() {
     try {
       setLoading(true);
       
+      // Combine all available card data sources
+      const allCards = [
+        ...mockUserData.searchResults,
+        ...topMoversData,
+        ...trendingCardsData
+      ];
+      
       // Filter cards by artist name
-      const artistCards = mockUserData.searchResults.filter(card => 
+      const artistCards = allCards.filter(card => 
         card.artist && card.artist.toLowerCase().includes(artistName.toLowerCase())
       );
       
+      // Remove duplicates based on card name and set
+      const uniqueArtistCards = artistCards.filter((card, index, self) => 
+        index === self.findIndex(c => c.name === card.name && c.set === card.set)
+      );
+      
       // Set search results
-      setOriginalSearchResults(artistCards);
-      setFilteredSearchResults(artistCards);
+      setOriginalSearchResults(uniqueArtistCards);
+      setFilteredSearchResults(uniqueArtistCards);
       setShowSearchResults(true);
       setSearchQuery(artistName); // Set the search query to show what we're searching for
       
       // Load images for the results
-      loadSearchResultImages(artistCards);
+      loadSearchResultImages(uniqueArtistCards);
       
       // Close card profile and switch to search tab
       setShowCardProfile(false);
@@ -3195,7 +3207,13 @@ export default function App() {
                     <p className="text-sm text-white text-center">{selectedCard.rarity}</p>
 
                     {/* Illustrator */}
-                    <p className="text-sm text-[#605dec] text-center">{selectedCard.artist || 'Unknown Artist'}</p>
+                    <button 
+                      onClick={() => handleArtistSearch(selectedCard.artist)}
+                      className="text-sm text-[#605dec] text-center hover:text-[#7c7aff] hover:underline transition-colors cursor-pointer"
+                      disabled={!selectedCard.artist}
+                    >
+                      {selectedCard.artist || 'Unknown Artist'}
+                    </button>
                   </div>
                 </div>
 
