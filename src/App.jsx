@@ -4953,6 +4953,7 @@ export default function App() {
             }}
             placeholder="Search cards, sets, attacks, abilities..."
             isMenuOpen={showSlidingMenu}
+            isModalOpen={showAddToCollectionModal}
           />
           </div>
 
@@ -5628,9 +5629,9 @@ export default function App() {
                 {filteredSearchResults.length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-gray-400 text-sm">No cards found matching your search.</p>
+          </div>
+        )}
               </div>
-                    )}
-                  </div>
             )}
 
             {/* Trending Cards Section - Only show when no search results */}
@@ -5642,7 +5643,7 @@ export default function App() {
                         </svg>
                 <h3 className="text-white font-medium">Trending Now</h3>
                 <span className="text-gray-400 text-sm ml-2">({visibleCardsCount} of {allTrendingCards.length})</span>
-                      </div>
+                    </div>
               <div className="grid grid-cols-2 gap-4">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
                   <div
@@ -5734,10 +5735,10 @@ export default function App() {
               <div className="space-y-4">
                 <div className="text-gray-400 text-center py-8">
                   Collection view coming soon...
-              </div>
-              </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                      </div>
+                  </div>
         )}
 
         {activeTab === 'marketplace' && (
@@ -5747,7 +5748,7 @@ export default function App() {
               <div className="space-y-4">
                 <div className="text-gray-400 text-center py-8">
                   Marketplace view coming soon...
-              </div>
+                    </div>
                   </div>
                       </div>
                   </div>
@@ -5776,8 +5777,8 @@ export default function App() {
                 </button>
                   </div>
                 </div>
+                    </div>
                   </div>
-                      </div>
         )}
 
         {/* Create Collection Modal */}
@@ -5836,7 +5837,7 @@ export default function App() {
                   Create Collection
                 </button>
               </div>
-              </div>
+                  </div>
                       </div>
         )}
 
@@ -5852,9 +5853,9 @@ export default function App() {
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                        </svg>
                 </button>
-                    </div>
+                </div>
 
               <div className="space-y-3">
                 {mockUserData.collections.map((collection) => (
@@ -5876,16 +5877,16 @@ export default function App() {
                         <p className="text-gray-400 text-sm">
                           {collection.cardCount} cards • {formatCurrency(collection.totalValue)}
                         </p>
-                      </div>
+                  </div>
                       <div className="flex items-center gap-2">
                         {collection.monthlyChange >= 0 ? (
                           <div className="flex items-center gap-1 text-green-400 text-sm">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                            </svg>
+                        </svg>
                             <span>+{collection.monthlyChange.toFixed(1)}%</span>
-                          </div>
-                        ) : (
+                      </div>
+                    ) : (
                           <div className="flex items-center gap-1 text-red-400 text-sm">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
@@ -5895,10 +5896,10 @@ export default function App() {
                         )}
                         {selectedCollection === collection.id && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
-                      </div>
-                    </div>
-                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
                 ))}
 
                 <button 
@@ -5913,9 +5914,9 @@ export default function App() {
                             </svg>
                   Create New Collection
                 </button>
-                          </div>
-                      </div>
-                    </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Recent Activity Modal */}
@@ -5932,7 +5933,7 @@ export default function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                 </button>
-                    </div>
+              </div>
 
               <div className="space-y-3">
                 {recentActivityData.map((activity) => (
@@ -5941,7 +5942,7 @@ export default function App() {
                       <div className="flex-1">
                         <h4 className="text-white font-medium text-sm">{activity.cardName}</h4>
                         <p className="text-gray-400 text-xs mt-1">{activity.time}</p>
-                      </div>
+              </div>
                       <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                         activity.type === 'add' 
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
@@ -5970,9 +5971,9 @@ export default function App() {
                     <h4 className="text-white font-medium mb-2">No Recent Activity</h4>
                     <p className="text-gray-400 text-sm">Start adding cards to your collection to see activity here.</p>
                       </div>
-                    )}
+                        )}
                       </div>
-                          </div>
+                    </div>
                       </div>
         )}
 
@@ -5993,7 +5994,7 @@ export default function App() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20.04 6.82006L14.28 2.79006C12.71 1.69006 10.3 1.75006 8.78999 2.92006L3.77999 6.83006C2.77999 7.61006 1.98999 9.21006 1.98999 10.4701V17.3701C1.98999 19.9201 4.05999 22.0001 6.60999 22.0001H17.39C19.94 22.0001 22.01 19.9301 22.01 17.3801V10.6001C22.01 9.25006 21.14 7.59006 20.04 6.82006ZM12.75 18.0001C12.75 18.4101 12.41 18.7501 12 18.7501C11.59 18.7501 11.25 18.4101 11.25 18.0001V15.0001C11.25 14.5901 11.59 14.2501 12 14.2501C12.41 14.2501 12.75 14.5901 12.75 15.0001V18.0001Z" fill="#6865E7"/>
                             </svg>
-                  ) : (
+                        ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9.02 2.84004L3.63 7.04004C2.73 7.74004 2 9.23004 2 10.36V17.77C2 20.09 3.89 21.99 6.21 21.99H17.79C20.11 21.99 22 20.09 22 17.78V10.5C22 9.29004 21.19 7.74004 20.2 7.05004L14.02 2.72004C12.62 1.74004 10.37 1.79004 9.02 2.84004Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M12 17.99V14.99" stroke="#8F8F94" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -6122,7 +6123,7 @@ export default function App() {
                     Profile
                     </div>
                 )}
-              </div>
+                      </div>
                 </button>
 
             {/* Active Indicator */}
@@ -6143,37 +6144,37 @@ export default function App() {
                 {/* Main Indicator */}
                 <svg width="64" height="8" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
                   <path d="M59.9277 3.92798C62.1768 3.92798 64 5.75121 64 8.00024H0C0 5.75121 1.82324 3.92798 4.07227 3.92798H25L31.1387 0.802979C31.9937 0.367721 33.0063 0.367721 33.8613 0.802979L40 3.92798H59.9277Z" fill="#6865E7"/>
-                        </svg>
+                            </svg>
                 
                 {/* Subtle Glass Diffusion Effect */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
+                          </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
         {/* Top Movers Modal */}
         {showTopMoversModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                      </div>
+                            </svg>
+                          </div>
                   <h3 className="text-white text-xl font-bold">All Top Movers</h3>
-                  </div>
+                      </div>
                 <button 
                   onClick={() => setShowTopMoversModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                            </svg>
                 </button>
-              </div>
-              
+                    </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {topMoversData.map((mover) => (
                   <div 
@@ -6207,8 +6208,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#{mover.rank}</span>
-                    </div>
-                  </div>
+                      </div>
+                          </div>
                         <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
                           mover.type === 'gain' ? 'bg-green-500' : 'bg-red-500'
                         }`}>
@@ -6218,9 +6219,9 @@ export default function App() {
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                             )}
-                        </svg>
+                            </svg>
+                          </div>
                       </div>
-                  </div>
                       <div className="flex-1">
                         <h4 className={`font-bold text-sm transition-colors ${
                           mover.type === 'gain' ? 'text-white group-hover:text-green-400' : 'text-white group-hover:text-red-400'
@@ -6232,14 +6233,14 @@ export default function App() {
                           <span className="text-white text-xs font-medium">{mover.number}</span>
                           <span className="text-gray-500 text-xs">•</span>
                           <span className="text-gray-400 text-xs">Qty: {mover.quantity}</span>
-                </div>
                     </div>
+                      </div>
                       <div className="text-right">
                         <div className={`font-bold text-lg ${
                           mover.type === 'gain' ? 'text-green-400' : 'text-red-400'
                         }`}>
                           ${mover.price.toLocaleString()}
-                  </div>
+                          </div>
                         <div className={`flex items-center gap-1 text-sm ${
                           mover.type === 'gain' ? 'text-green-400' : 'text-red-400'
                         }`}>
@@ -6254,14 +6255,14 @@ export default function App() {
                       </div>
                         <div className="text-gray-400 text-xs">
                           {mover.dailyChange >= 0 ? '+' : ''}${mover.dailyChange} today
-                  </div>
-                </div>
                     </div>
-                  </div>
-                ))}
                       </div>
-                  </div>
-                </div>
+                          </div>
+                      </div>
+                ))}
+                    </div>
+                      </div>
+                          </div>
         )}
 
         {/* Trending Cards Modal */}
@@ -6269,24 +6270,24 @@ export default function App() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-                        </svg>
-                      </div>
+                            </svg>
+                          </div>
                   <h3 className="text-white text-xl font-bold">All Trending Cards</h3>
-                  </div>
+                      </div>
                 <button
                   onClick={() => setShowTrendingModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                            </svg>
                 </button>
-                </div>
+                    </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {trendingCardsData.map((card) => (
@@ -6330,8 +6331,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">{card.emoji}</span>
-                    </div>
-                  </div>
+                      </div>
+                          </div>
                         <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
                           card.color === 'orange' ? 'bg-orange-500' :
                           card.color === 'blue' ? 'bg-blue-500' :
@@ -6344,7 +6345,7 @@ export default function App() {
                         }`}>
                           <span className="text-white text-xs font-bold">{card.rank}</span>
                       </div>
-                  </div>
+                    </div>
                       <h4 className={`font-bold text-sm transition-colors mb-1 ${
                         card.color === 'orange' ? 'text-white group-hover:text-orange-400' :
                         card.color === 'blue' ? 'text-white group-hover:text-blue-400' :
@@ -6369,7 +6370,7 @@ export default function App() {
                         'text-gray-400'
                       }`}>
                         ${card.price}
-                </div>
+                      </div>
                       <div className={`flex items-center gap-1 text-xs ${
                         card.color === 'orange' ? 'text-orange-400' :
                         card.color === 'blue' ? 'text-blue-400' :
@@ -6382,11 +6383,11 @@ export default function App() {
                       }`}>
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
+                            </svg>
                         <span className="font-semibold">+{card.change.toFixed(1)}%</span>
+                          </div>
                       </div>
-                  </div>
-                </div>
+                    </div>
                 ))}
               </div>
             </div>
@@ -6427,13 +6428,13 @@ export default function App() {
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-[#6865E7] to-[#5A57D1] rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">JD</span>
-              </div>
+                    </div>
                       <div>
                         <h3 className="text-white font-semibold">John Doe</h3>
                         <p className="text-gray-400 text-sm">john.doe@example.com</p>
-            </div>
-          </div>
-            </div>
+                  </div>
+                  </div>
+                </div>
 
             {/* Navigation Items */}
                   <div className="space-y-2">
@@ -6447,7 +6448,7 @@ export default function App() {
                     >
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
+                        </svg>
                       <span className="text-white">Dashboard</span>
                 </button>
 
@@ -6461,7 +6462,7 @@ export default function App() {
                     >
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+                        </svg>
                       <span className="text-white">My Collection</span>
             </button>
 
@@ -6475,11 +6476,11 @@ export default function App() {
                     >
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-            </svg>
+                        </svg>
                       <span className="text-white">Marketplace</span>
           </button>
 
-            <button
+                <button 
                       onClick={() => {
                         setActiveTab('profile')
                         setNavigationMode('profile')
@@ -6491,9 +6492,9 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span className="text-white">Profile</span>
-            </button>
-          </div>
-
+                </button>
+              </div>
+              
                   {/* Settings Section */}
                   <div className="pt-4 border-t border-gray-700">
                     <h4 className="text-gray-400 text-sm font-medium mb-3">Settings</h4>
@@ -6519,10 +6520,10 @@ export default function App() {
                     </svg>
                         <span className="text-white">Sign Out</span>
                   </button>
-                </div>
               </div>
+            </div>
                 </nav>
-                </div>
+          </div>
               </div>
           </>
         )}
@@ -6537,7 +6538,7 @@ export default function App() {
               right: 0, 
               bottom: 0, 
               backgroundColor: 'rgba(0,0,0,0.8)', 
-              zIndex: 99999,
+              zIndex: 999999,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -6577,7 +6578,7 @@ export default function App() {
                   ✕
                 </button>
               </div>
-
+              
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { value: 'trending', label: 'Trending' },
@@ -6609,9 +6610,9 @@ export default function App() {
                     {option.label}
                   </button>
                 ))}
-              </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                      </div>
         )}
 
         {/* Add to Collection Modal */}
@@ -6624,7 +6625,7 @@ export default function App() {
                 right: 0, 
                 bottom: 0, 
                 backgroundColor: 'rgba(0,0,0,0.8)', 
-                zIndex: 99999,
+                zIndex: 999999,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -6648,7 +6649,7 @@ export default function App() {
               overflowY: 'auto',
               border: '1px solid #444',
               position: 'relative',
-              zIndex: 1
+              zIndex: 1000000
             }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -6673,7 +6674,7 @@ export default function App() {
                 >
                   ✕
                 </button>
-              </div>
+                </div>
 
               {/* Card Preview */}
               <div style={{ 
@@ -6695,7 +6696,7 @@ export default function App() {
                 />
                 <div style={{ display: 'none', width: '80px', height: '112px', backgroundColor: '#444', borderRadius: '8px', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ color: '#888', fontSize: '12px' }}>No Image</span>
-                </div>
+                    </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{cardToAdd.name}</h3>
                   <p style={{ color: '#888', fontSize: '14px', margin: '0 0 4px 0' }}>{cardToAdd.set?.name || cardToAdd.set || 'Unknown Set'}</p>
@@ -6719,9 +6720,9 @@ export default function App() {
                     }}>
                       ${calculateDynamicPrice(cardToAdd).toFixed(2)}
                     </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
               {/* Collection Selection */}
               <div style={{ marginBottom: '20px', position: 'relative' }}>
@@ -6759,9 +6760,9 @@ export default function App() {
                     }}
                   >
                     <polyline points="6,9 12,15 18,9"></polyline>
-                  </svg>
+                        </svg>
                 </div>
-                
+
                 {showCollectionDropdown && (
                   <div style={{
                     position: 'absolute',
@@ -6803,11 +6804,11 @@ export default function App() {
                         }}
                       >
                         {collection.name}
-                      </div>
+                    </div>
                     ))}
                   </div>
                 )}
-              </div>
+                </div>
 
               {/* Quantity Stepper */}
               <div style={{ marginBottom: '20px' }}>
@@ -6852,8 +6853,8 @@ export default function App() {
                   >
                     +
                   </button>
+                  </div>
                 </div>
-              </div>
 
               {/* Variant Selection */}
               <div style={{ marginBottom: '20px', position: 'relative' }}>
@@ -6891,9 +6892,9 @@ export default function App() {
                     }}
                   >
                     <polyline points="6,9 12,15 18,9"></polyline>
-                  </svg>
+                        </svg>
                 </div>
-                
+
                 {showVariantDropdown && (
                   <div style={{
                     position: 'absolute',
@@ -6942,7 +6943,7 @@ export default function App() {
                         }}
                       >
                         {variant.label}
-                      </div>
+                    </div>
                     ))}
                   </div>
                 )}
@@ -6952,7 +6953,7 @@ export default function App() {
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Graded Card</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
+                <button 
                     onClick={() => setIsGraded(false)}
                     style={{
                       flex: 1,
@@ -6983,8 +6984,8 @@ export default function App() {
                     }}
                   >
                     Graded
-                  </button>
-                </div>
+                </button>
+              </div>
               </div>
 
               {/* Condition (only show if not graded) */}
@@ -7025,8 +7026,8 @@ export default function App() {
                     >
                       <polyline points="6,9 12,15 18,9"></polyline>
                     </svg>
-                  </div>
-                  
+              </div>
+              
                   {showConditionDropdown && (
                     <div style={{
                       position: 'absolute',
@@ -7074,11 +7075,11 @@ export default function App() {
                           }}
                         >
                           {condition.label}
-                        </div>
-                      ))}
                     </div>
-                  )}
-                </div>
+                      ))}
+                  </div>
+                    )}
+                  </div>
               )}
 
               {/* Grading Options (only show if graded) */}
@@ -7119,9 +7120,9 @@ export default function App() {
                         }}
                       >
                         <polyline points="6,9 12,15 18,9"></polyline>
-                      </svg>
-                    </div>
-                    
+                        </svg>
+                </div>
+
                     {showGradingServiceDropdown && (
                       <div style={{
                         position: 'absolute',
@@ -7164,11 +7165,11 @@ export default function App() {
                             }}
                           >
                             {service}
-                          </div>
+                    </div>
                         ))}
-                      </div>
-                    )}
                   </div>
+                    )}
+              </div>
 
                   <div style={{ marginBottom: '20px', position: 'relative' }}>
                     <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grade</label>
@@ -7206,8 +7207,8 @@ export default function App() {
                       >
                         <polyline points="6,9 12,15 18,9"></polyline>
                       </svg>
-                    </div>
-                    
+              </div>
+              
                     {showGradeDropdown && (
                       <div style={{
                         position: 'absolute',
@@ -7236,7 +7237,7 @@ export default function App() {
                         ].map(grade => (
                           <div
                             key={grade.value}
-                            onClick={() => {
+                  onClick={() => {
                               setSelectedGrade(grade.value);
                               setShowGradeDropdown(false);
                             }}
@@ -7260,7 +7261,7 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-                          </div>
+                  </div>
                         ))}
                         {selectedGradingService === 'BGS' && [
                           { value: '10', label: '10 - Pristine' },
@@ -7281,7 +7282,7 @@ export default function App() {
                               setSelectedGrade(grade.value);
                               setShowGradeDropdown(false);
                             }}
-                            style={{
+                     style={{
                               padding: '12px 16px',
                               color: 'white',
                               fontSize: '14px',
@@ -7301,7 +7302,7 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-                          </div>
+          </div>
                         ))}
                         {selectedGradingService === 'CGC' && [
                           { value: '10', label: '10 - Pristine' },
@@ -7342,7 +7343,7 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-                          </div>
+          </div>
                         ))}
                         {selectedGradingService === 'TAG' && [
                           { value: '10', label: '10 - Perfect' },
@@ -7359,7 +7360,7 @@ export default function App() {
                         ].map(grade => (
                           <div
                             key={grade.value}
-                            onClick={() => {
+              onClick={() => {
                               setSelectedGrade(grade.value);
                               setShowGradeDropdown(false);
                             }}
@@ -7383,7 +7384,7 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-                          </div>
+          </div>
                         ))}
                         {selectedGradingService === 'ACE' && [
                           { value: '10', label: '10 - Perfect' },
@@ -7424,9 +7425,9 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-                          </div>
+          </div>
                         ))}
-                      </div>
+                </div>
                     )}
                   </div>
                 </>
@@ -7451,11 +7452,11 @@ export default function App() {
                     resize: 'vertical'
                   }}
                 />
-              </div>
+                </div>
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button
+                  <button 
                   onClick={() => {
                     setShowAddToCollectionModal(false);
                     setCardToAdd(null);
@@ -7473,8 +7474,8 @@ export default function App() {
                   }}
                 >
                   Cancel
-                </button>
-                <button
+                  </button>
+                  <button 
                   onClick={handleConfirmAddToCollection}
                   style={{
                     flex: 1,
@@ -7489,11 +7490,11 @@ export default function App() {
                   }}
                 >
                   Add to Collection
-                </button>
+                  </button>
+                </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
       </div>
     </div>
   )

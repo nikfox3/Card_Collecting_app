@@ -9,7 +9,8 @@ const SearchBar = ({
   onClearSearch,
   placeholder = "Search cards, sets, attacks, abilities...",
   className = "",
-  isMenuOpen = false
+  isMenuOpen = false,
+  isModalOpen = false
 }) => {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -25,12 +26,12 @@ const SearchBar = ({
   };
 
   return (
-    <div className={`flex items-center gap-2 mb-3 px-4 py-0 relative shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${isMenuOpen ? 'z-0' : 'z-auto'} ${className}`}>
+    <div className={`flex items-center gap-2 mb-3 px-4 py-0 relative shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${isModalOpen ? 'z-0' : (isMenuOpen ? 'z-0' : 'z-auto')} ${className}`}>
       <div className="flex items-center min-h-0 min-w-0 pl-0 pr-7 py-0 relative shrink-0 w-full">
         {/* Scan Button - Overlapping with Gradient */}
         <button 
           onClick={onScanClick}
-          className={`flex items-center justify-center mr-[-28px] relative rounded-[100px] shrink-0 size-[64px] ${isMenuOpen ? 'z-[1]' : 'z-[2]'} border border-[#605dec] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:opacity-90 transition-opacity`}
+          className={`flex items-center justify-center mr-[-28px] relative rounded-[100px] shrink-0 size-[64px] ${isModalOpen ? 'z-0' : (isMenuOpen ? 'z-[1]' : 'z-[2]')} border border-[#605dec] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] hover:opacity-90 transition-opacity`}
           style={{
             background: 'linear-gradient(180deg, rgba(255, 251, 251, 0.20) 0%, rgba(96, 93, 236, 0.20) 83.66%), #2B2B2B'
           }}
@@ -41,7 +42,7 @@ const SearchBar = ({
         </button>
         
         {/* Search Bar - Expanded Width */}
-        <div className={`bg-[#2b2b2b] flex gap-2.5 grow h-[48px] items-center min-h-0 min-w-0 mr-[-28px] pl-10 pr-3 py-4 relative rounded rounded-[4px] shrink-0 ${isMenuOpen ? 'z-0' : 'z-[1]'} border border-[#383838]`}>
+        <div className={`bg-[#2b2b2b] flex gap-2.5 grow h-[48px] items-center min-h-0 min-w-0 mr-[-28px] pl-10 pr-3 py-4 relative rounded rounded-[4px] shrink-0 ${isModalOpen ? 'z-0' : (isMenuOpen ? 'z-0' : 'z-[1]')} border border-[#383838]`}>
           {/* Search Icon */}
           <div className="overflow-clip relative shrink-0 size-[24px]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
