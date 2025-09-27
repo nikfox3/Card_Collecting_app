@@ -1,0 +1,20 @@
+{
+  "name": "pokemon-card-database",
+  "version": "1.0.0",
+  "description": "Database sync and search for Pokémon Card Collecting App",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "search": "node search.js",
+    "setup": "node setup.js",
+    "update-variants": "node update_variants.js"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
+
+

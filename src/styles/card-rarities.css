@@ -1,0 +1,267 @@
+/* Card Rarity Effects - Realistic Pokémon Card Holographic Patterns */
+
+/* Common Cards - No holographic effects */
+.holographic-card[data-rarity="common"] .holo-image-overlay,
+.holographic-card[data-rarity="common"] .holo-border-overlay,
+.holographic-card[data-rarity="common"] .holo-full-overlay,
+.holographic-card[data-rarity="common"] .holo-rainbow-overlay,
+.holographic-card[data-rarity="common"] .holographic-shine {
+  display: none !important;
+}
+
+/* Uncommon Cards - Subtle border holo effect */
+.holographic-card[data-rarity="uncommon"] .holo-image-overlay,
+.holographic-card[data-rarity="uncommon"] .holo-full-overlay,
+.holographic-card[data-rarity="uncommon"] .holo-rainbow-overlay {
+  display: none !important;
+}
+
+.holographic-card[data-rarity="uncommon"] .holo-border-overlay {
+  opacity: calc(0.1 + 0.2 * var(--light-intensity));
+  background: 
+    radial-gradient(circle at var(--light-x) var(--light-y), 
+      rgba(200, 200, 200, calc(0.3 * var(--light-intensity))) 0%, 
+      transparent 60%);
+}
+
+.holographic-card[data-rarity="uncommon"] .holographic-shine {
+  opacity: calc(0.05 + 0.1 * var(--light-intensity));
+}
+
+/* Reverse Holo - Everything except image is holographic */
+.holographic-card[data-rarity="reverse holo"] .holo-image-overlay,
+.holographic-card[data-rarity="reverse holo"] .holo-full-overlay,
+.holographic-card[data-rarity="reverse holo"] .holo-rainbow-overlay {
+  display: none !important;
+}
+
+.holographic-card[data-rarity="reverse holo"] .holo-border-overlay {
+  opacity: calc(0.4 + 0.4 * var(--light-intensity));
+  background: 
+    radial-gradient(circle at var(--light-x) var(--light-y), 
+      rgba(255, 255, 255, calc(0.6 * var(--light-intensity))) 0%, 
+      rgba(200, 200, 255, calc(0.3 * var(--light-intensity))) 30%,
+      transparent 70%);
+}
+
+/* Regular Holo - Only image area is holographic */
+.holographic-card[data-rarity="holo rare"] .holo-border-overlay,
+.holographic-card[data-rarity="holo rare"] .holo-full-overlay,
+.holographic-card[data-rarity="holo rare"] .holo-rainbow-overlay {
+  display: none !important;
+}
+
+.holographic-card[data-rarity="holo rare"] .holo-image-overlay {
+  opacity: calc(0.5 + 0.5 * var(--light-intensity));
+}
+
+/* Full Art Holo - Entire card is holographic */
+.holographic-card[data-rarity="full art"] .holo-image-overlay,
+.holographic-card[data-rarity="full art"] .holo-border-overlay,
+.holographic-card[data-rarity="full art"] .holo-rainbow-overlay {
+  display: none !important;
+}
+
+.holographic-card[data-rarity="full art"] .holo-full-overlay {
+  opacity: calc(0.7 + 0.3 * var(--light-intensity));
+}
+
+/* Rainbow Holo - Special rainbow effect */
+.holographic-card[data-rarity="rainbow rare"] .holo-image-overlay,
+.holographic-card[data-rarity="rainbow rare"] .holo-border-overlay,
+.holographic-card[data-rarity="rainbow rare"] .holo-full-overlay {
+  display: none !important;
+}
+
+.holographic-card[data-rarity="rainbow rare"] .holo-rainbow-overlay {
+  opacity: calc(0.8 + 0.2 * var(--light-intensity));
+}
+
+/* Galaxy/Cosmos Holo */
+.holographic-card[data-rarity="galaxy holo"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(150, 50, 255, 0.5) 0%, transparent 40%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 100, 200, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at var(--pointer-x) calc(100% - var(--pointer-y)), rgba(100, 200, 255, 0.3) 0%, transparent 60%);
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.4);
+}
+
+.holographic-card[data-rarity="galaxy holo"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.3 + 0.1);
+  transform: rotate(calc((var(--pointer-x) - 50) * 4deg)) scale(1.1);
+}
+
+/* Amazing Rare */
+.holographic-card[data-rarity="amazing rare"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 215, 0, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 100, 0, 0.5) 0%, transparent 50%);
+  opacity: calc(var(--pointer-from-center) * 0.9 + 0.5);
+}
+
+.holographic-card[data-rarity="amazing rare"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.4 + 0.2);
+  transform: rotate(calc((var(--pointer-x) - 50) * 3deg)) scale(1.2);
+}
+
+/* Radiant Holo */
+.holographic-card[data-rarity="radiant holo"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.7) 0%, transparent 30%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(200, 255, 255, 0.5) 0%, transparent 40%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.6);
+}
+
+.holographic-card[data-rarity="radiant holo"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.5 + 0.3);
+  transform: rotate(calc((var(--pointer-x) - 50) * 5deg)) scale(1.3);
+}
+
+/* Trainer Gallery Holo */
+.holographic-card[data-rarity="trainer gallery holo"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 200, 100, 0.5) 0%, transparent 50%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(100, 200, 255, 0.4) 0%, transparent 60%);
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.4);
+}
+
+/* Pokemon V */
+.holographic-card[data-rarity="pokemon v"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(100, 150, 255, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 150, 100, 0.5) 0%, transparent 50%);
+  opacity: calc(var(--pointer-from-center) * 0.9 + 0.5);
+}
+
+.holographic-card[data-rarity="pokemon v"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.4 + 0.2);
+  transform: rotate(calc((var(--pointer-x) - 50) * 3deg)) scale(1.1);
+}
+
+/* Full Art */
+.holographic-card[data-rarity="full art"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.8) 0%, transparent 30%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(200, 255, 255, 0.6) 0%, transparent 40%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.7);
+}
+
+/* Art Rare */
+.holographic-card[data-rarity="art rare"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 200, 100, 0.7) 0%, transparent 35%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 100, 200, 0.6) 0%, transparent 45%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.8);
+}
+
+.holographic-card[data-rarity="art rare"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.6 + 0.4);
+  transform: rotate(calc((var(--pointer-x) - 50) * 4deg)) scale(1.2);
+}
+
+/* VMAX */
+.holographic-card[data-rarity="vmax"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 100, 100, 0.7) 0%, transparent 35%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(100, 100, 255, 0.6) 0%, transparent 45%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.8);
+}
+
+.holographic-card[data-rarity="vmax"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.7 + 0.5);
+  transform: rotate(calc((var(--pointer-x) - 50) * 5deg)) scale(1.3);
+}
+
+/* VMAX Alternate */
+.holographic-card[data-rarity="vmax alternate"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 150, 0, 0.8) 0%, transparent 30%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 0, 150, 0.7) 0%, transparent 40%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.9);
+}
+
+.holographic-card[data-rarity="vmax alternate"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.6);
+  transform: rotate(calc((var(--pointer-x) - 50) * 6deg)) scale(1.4);
+}
+
+/* VSTAR */
+.holographic-card[data-rarity="vstar"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 0, 0.8) 0%, transparent 30%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(0, 255, 255, 0.7) 0%, transparent 40%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.9);
+}
+
+.holographic-card[data-rarity="vstar"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.6);
+  transform: rotate(calc((var(--pointer-x) - 50) * 6deg)) scale(1.4);
+}
+
+/* Trainer Holo */
+.holographic-card[data-rarity="trainer holo"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(200, 200, 200, 0.6) 0%, transparent 50%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 255, 255, 0.4) 0%, transparent 60%);
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.4);
+}
+
+/* Rainbow Rare */
+.holographic-card[data-rarity="rainbow rare"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 0, 0, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(0, 255, 0, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at var(--pointer-x) calc(100% - var(--pointer-y)), rgba(0, 0, 255, 0.6) 0%, transparent 40%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.8);
+}
+
+.holographic-card[data-rarity="rainbow rare"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.9 + 0.7);
+  transform: rotate(calc((var(--pointer-x) - 50) * 7deg)) scale(1.5);
+  animation: rainbow-rotate 3s linear infinite !important;
+}
+
+/* Secret Rare */
+.holographic-card[data-rarity="secret rare"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.9) 0%, transparent 25%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(255, 215, 0, 0.8) 0%, transparent 35%),
+    radial-gradient(circle at var(--pointer-x) calc(100% - var(--pointer-y)), rgba(255, 0, 255, 0.7) 0%, transparent 45%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.9);
+}
+
+.holographic-card[data-rarity="secret rare"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.8);
+  transform: rotate(calc((var(--pointer-x) - 50) * 8deg)) scale(1.6);
+  animation: rainbow-rotate 2s linear infinite !important;
+}
+
+/* Shiny Vault */
+.holographic-card[data-rarity="shiny vault"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.9) 0%, transparent 20%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(200, 255, 255, 0.8) 0%, transparent 30%);
+  opacity: calc(var(--pointer-from-center) * 1.0 + 0.9);
+}
+
+.holographic-card[data-rarity="shiny vault"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.8 + 0.6);
+  transform: rotate(calc((var(--pointer-x) - 50) * 5deg)) scale(1.3);
+  animation: rainbow-rotate 4s linear infinite !important;
+}
+
+/* Trainer Gallery V/VMAX */
+.holographic-card[data-rarity="trainer gallery v"] .holofoil-bg,
+.holographic-card[data-rarity="trainer gallery vmax"] .holofoil-bg {
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(255, 200, 100, 0.7) 0%, transparent 40%),
+    radial-gradient(circle at calc(100% - var(--pointer-x)) calc(100% - var(--pointer-y)), rgba(100, 200, 255, 0.6) 0%, transparent 50%);
+  opacity: calc(var(--pointer-from-center) * 0.9 + 0.6);
+}
+
+.holographic-card[data-rarity="trainer gallery v"] .rainbow-shimmer,
+.holographic-card[data-rarity="trainer gallery vmax"] .rainbow-shimmer {
+  opacity: calc(var(--pointer-from-center) * 0.6 + 0.4);
+  transform: rotate(calc((var(--pointer-x) - 50) * 4deg)) scale(1.2);
+}
+

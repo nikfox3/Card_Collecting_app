@@ -1,0 +1,299 @@
+/* Enhanced Holographic Card Effects - Inspired by TiltHologramCard */
+
+.holographic-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: pointer;
+  animation: none;
+  overflow: hidden;
+  border-radius: 12px;
+  
+  /* CSS Custom Properties for dynamic effects */
+  --light-x: 50%;
+  --light-y: 50%;
+  --light-intensity: 0;
+  --tilt-x: 0;
+  --tilt-y: 0;
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --pointer-from-center: 0;
+}
+
+/* Base card image container */
+.card-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  transform-style: preserve-3d;
+}
+
+.card-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-style: preserve-3d;
+}
+
+/* Enhanced Holofoil Background */
+.holofoil-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at var(--light-x) var(--light-y), 
+      rgba(255, 255, 255, calc(0.8 * var(--light-intensity))) 0%, 
+      rgba(200, 255, 255, calc(0.4 * var(--light-intensity))) 20%,
+      transparent 60%),
+    radial-gradient(circle at calc(100% - var(--light-x)) calc(100% - var(--light-y)), 
+      rgba(255, 200, 255, calc(0.6 * var(--light-intensity))) 0%, 
+      rgba(255, 100, 200, calc(0.3 * var(--light-intensity))) 30%,
+      transparent 70%),
+    linear-gradient(135deg, 
+      rgba(255, 255, 255, calc(0.1 * var(--light-intensity))) 0%,
+      transparent 50%,
+      rgba(200, 200, 255, calc(0.1 * var(--light-intensity))) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease, background 0.2s ease;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Dynamic Rainbow Shimmer */
+.rainbow-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    conic-gradient(from calc(var(--tilt-x) * 1deg + 45deg) at var(--light-x) var(--light-y),
+      #ff0000 0deg,
+      #ff7f00 60deg,
+      #ffff00 120deg,
+      #00ff00 180deg,
+      #0000ff 240deg,
+      #4b0082 300deg,
+      #9400d3 360deg);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: screen;
+  filter: blur(1px);
+}
+
+/* Realistic Light Reflection */
+.holographic-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, calc(0.9 * var(--light-intensity))),
+    transparent
+  );
+  transition: left 0.6s ease-out, opacity 0.3s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transform: skewX(-15deg);
+}
+
+/* Gyroscope Active States */
+.holographic-card.gyro-active .holofoil-bg {
+  opacity: calc(0.7 + 0.3 * var(--light-intensity));
+  animation: holofoil-shift 3s ease-in-out infinite;
+}
+
+.holographic-card.gyro-active .rainbow-shimmer {
+  opacity: calc(0.4 + 0.2 * var(--light-intensity));
+  animation: rainbow-rotate 4s linear infinite;
+}
+
+.holographic-card.gyro-active .holographic-shine {
+  opacity: calc(0.8 + 0.2 * var(--light-intensity));
+  left: 100%;
+  animation: holographic-shimmer 2s ease-in-out infinite;
+}
+
+/* Mouse Interaction States */
+.holographic-card.mouse-active {
+  transform: perspective(1200px) 
+    rotateX(calc((var(--pointer-y) - 50) * -1.5deg)) 
+    rotateY(calc((var(--pointer-x) - 50) * 1.5deg))
+    scale(calc(1 + var(--pointer-from-center) * 0.05));
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(255, 255, 255, 0.1),
+    calc((var(--pointer-x) - 50) * 3px) calc((var(--pointer-y) - 50) * 3px) 20px rgba(0, 0, 0, 0.3);
+}
+
+.holographic-card.mouse-active .holofoil-bg {
+  opacity: calc(0.6 + 0.4 * var(--pointer-from-center));
+  background: 
+    radial-gradient(circle at var(--pointer-x) var(--pointer-y), 
+      rgba(255, 255, 255, 0.8) 0%, 
+      rgba(200, 255, 255, 0.4) 30%,
+      transparent 60%);
+}
+
+.holographic-card.mouse-active .rainbow-shimmer {
+  opacity: calc(0.3 + 0.3 * var(--pointer-from-center));
+  transform: 
+    rotate(calc((var(--pointer-x) - 50) * 2deg))
+    scale(calc(1 + var(--pointer-from-center) * 0.1));
+}
+
+.holographic-card.mouse-active .holographic-shine {
+  opacity: calc(0.7 + 0.3 * var(--pointer-from-center));
+  left: 100%;
+  transform: 
+    skewX(-15deg)
+    translateX(calc((var(--pointer-x) - 50) * 2px))
+    translateY(calc((var(--pointer-y) - 50) * 2px));
+}
+
+/* Enhanced Card Image Tilt */
+.holographic-card.gyro-active .card-image-container img,
+.holographic-card.mouse-active .card-image-container img {
+  transform: 
+    rotateX(calc((var(--pointer-y) - 50) * -0.2deg)) 
+    rotateY(calc((var(--pointer-x) - 50) * 0.2deg))
+    translateZ(15px);
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Animations */
+@keyframes holofoil-shift {
+  0%, 100% {
+    background: 
+      radial-gradient(circle at var(--light-x) var(--light-y), 
+        rgba(255, 255, 255, 0.8) 0%, 
+        rgba(200, 255, 255, 0.4) 20%,
+        transparent 60%);
+  }
+  50% {
+    background: 
+      radial-gradient(circle at calc(100% - var(--light-x)) calc(100% - var(--light-y)), 
+        rgba(255, 200, 255, 0.8) 0%, 
+        rgba(255, 100, 200, 0.4) 20%,
+        transparent 60%);
+  }
+}
+
+@keyframes rainbow-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1.1);
+  }
+}
+
+@keyframes holographic-shimmer {
+  0%, 100% {
+    left: -100%;
+    opacity: 0.4;
+  }
+  50% {
+    left: 100%;
+    opacity: 0.9;
+  }
+}
+
+/* Spinning animation on click */
+.holographic-card.spinning {
+  animation: card-spin 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes card-spin {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  50% {
+    transform: rotateY(180deg) scale(1.05);
+  }
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+/* Card Rarity Glow Effects */
+.card-glow {
+  box-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.4),
+    0 0 40px rgba(255, 255, 255, 0.2) inset,
+    0 0 60px rgba(255, 215, 0, 0.3);
+}
+
+.card-glow.gyro-active {
+  box-shadow: 
+    0 0 40px rgba(255, 255, 255, 0.6),
+    0 0 50px rgba(255, 255, 255, 0.3) inset,
+    0 0 80px rgba(255, 215, 0, 0.5),
+    calc((var(--light-x) - 50) * 5px) calc((var(--light-y) - 50) * 5px) 25px rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .holographic-card {
+    transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .holographic-card .card-image-container img {
+    transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  /* Much more subtle effects on mobile - only with movement */
+  .holographic-card.gyro-active .holofoil-bg {
+    opacity: calc(0.3 + 0.15 * var(--light-intensity));
+    animation-duration: 4s; /* Slower animation */
+  }
+  
+  .holographic-card.gyro-active .rainbow-shimmer {
+    opacity: calc(0.2 + 0.1 * var(--light-intensity));
+    animation-duration: 6s; /* Slower animation */
+  }
+  
+  .holographic-card.gyro-active .holographic-shine {
+    opacity: calc(0.4 + 0.15 * var(--light-intensity));
+    animation-duration: 3s; /* Slower animation */
+  }
+  
+  /* Disable mouse effects on mobile */
+  .holographic-card.mouse-active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  .holographic-card.mouse-active .holofoil-bg,
+  .holographic-card.mouse-active .rainbow-shimmer,
+  .holographic-card.mouse-active .holographic-shine {
+    opacity: 0 !important;
+  }
+}
+
+/* Performance optimizations */
+.holographic-card * {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Disable effects when not interacting */
+.holographic-card:not(.mouse-active):not(.gyro-active) .holofoil-bg,
+.holographic-card:not(.mouse-active):not(.gyro-active) .rainbow-shimmer,
+.holographic-card:not(.mouse-active):not(.gyro-active) .holographic-shine {
+  opacity: 0 !important;
+  animation: none !important;
+}
