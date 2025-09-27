@@ -1674,8 +1674,13 @@ export default function App() {
 
   // Handle sort option selection
   const handleSortOption = (option) => {
+    console.log('Sort option selected:', option)
+    console.log('Current filteredSearchResults:', filteredSearchResults)
+    
     setSortOption(option)
     const sortedCards = sortCards(filteredSearchResults, option)
+    console.log('Sorted cards:', sortedCards)
+    
     setFilteredSearchResults(sortedCards)
     setShowSortModal(false)
   }
@@ -3041,7 +3046,16 @@ export default function App() {
 
         {/* Sort Modal */}
         {showSortModal && (
-          <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" 
+            style={{ zIndex: 9999 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowSortModal(false)
+              }
+            }}
+          >
+            {console.log('Sort modal is rendering')}
             <div className="bg-[#2b2b2b] rounded-2xl w-full max-w-sm border border-gray-700/50 shadow-2xl">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
@@ -5401,7 +5415,10 @@ export default function App() {
               </h2>
               {showSearchResults && (
                 <button
-                  onClick={() => setShowSortModal(true)}
+                  onClick={() => {
+                    console.log('Sort button clicked, opening modal')
+                    setShowSortModal(true)
+                  }}
                   className="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-lg text-white text-sm"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5441,7 +5458,7 @@ export default function App() {
                         ) : null}
                         <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
                           <span className="text-gray-400 text-sm">Card Image</span>
-                        </div>
+                      </div>
                   </div>
                       <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
                       <p className="text-gray-400 text-xs mb-2">{card.set?.name || card.set || 'Unknown Set'}</p>
@@ -5511,7 +5528,7 @@ export default function App() {
                         ) : null}
                         <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
                           <span className="text-gray-400 text-sm">Card Image</span>
-                        </div>
+                      </div>
                   </div>
                     <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
                     <p className="text-gray-400 text-xs mb-2">{card.set?.name || 'Unknown Set'}</p>

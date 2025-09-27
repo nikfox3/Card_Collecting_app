@@ -72,9 +72,9 @@ const SearchBar = ({
                   onClearSearch();
                 }
               }}
-              className="relative shrink-0 size-[24px] hover:opacity-70 transition-opacity p-1"
+              className="relative shrink-0 size-[24px] hover:opacity-70 transition-opacity flex items-center justify-center"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
