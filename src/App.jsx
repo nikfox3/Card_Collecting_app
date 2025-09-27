@@ -2679,6 +2679,13 @@ export default function App() {
     return Math.max(0.01, Math.round(adjustedPrice * 100) / 100); // Round to 2 decimal places, ensure positive
   }
 
+  // Handle clicking on set information to navigate to set page
+  const handleSetClick = (setName) => {
+    console.log('Navigating to set page for:', setName);
+    setSelectedSet(setName);
+    setShowSetPage(true);
+  }
+
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
     if (!cardToAdd) return;
