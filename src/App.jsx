@@ -2595,6 +2595,68 @@ export default function App() {
     setSelectedFormats({});
   }
 
+  // Handle adding card to collection
+  const handleAddToCollection = (card) => {
+    console.log('Adding card to collection:', card.name);
+    
+    // Find the main collection (Pokemon Collection)
+    const targetCollection = mockUserData.collections.find(c => c.id === 1);
+    if (!targetCollection) {
+      console.error('Collection not found');
+      return;
+    }
+    
+    // Check if card already exists in collection
+    const existingCard = targetCollection.cards?.find(c => 
+      c.name === card.name && c.set === (card.set?.name || card.set)
+    );
+    
+    if (existingCard) {
+      // If card exists, increase quantity
+      existingCard.quantity = (existingCard.quantity || 1) + 1;
+      console.log(`Increased quantity of ${card.name} to ${existingCard.quantity}`);
+    } else {
+      // If card doesn't exist, add it to collection
+      const newCard = {
+        id: Date.now(), // Generate unique ID
+        name: card.name,
+        set: card.set?.name || card.set || 'Unknown Set',
+        rarity: card.rarity || 'Unknown',
+        number: card.number || '001',
+        price: card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0,
+        imageUrl: card.imageUrl || card.images?.large || card.images?.small,
+        artist: card.artist || 'Unknown Artist',
+        condition: 'Near Mint',
+        folder: 'Collection',
+        dateAdded: new Date().toISOString(),
+        quantity: 1,
+        collected: true
+      };
+      
+      if (!targetCollection.cards) {
+        targetCollection.cards = [];
+      }
+      targetCollection.cards.push(newCard);
+      console.log(`Added new card ${card.name} to collection`);
+    }
+    
+    // Update collection stats
+    targetCollection.totalCards = (targetCollection.totalCards || 0) + 1;
+    targetCollection.totalValue = (targetCollection.totalValue || 0) + (card.price || card.currentValue || 0);
+    
+    // Add to recent activity
+    recentActivityData.unshift({
+      id: Date.now(),
+      cardName: card.name,
+      action: "Added",
+      type: "add",
+      time: "Just now"
+    });
+    
+    // Show success feedback (you could add a toast notification here)
+    console.log(`Successfully added ${card.name} to collection!`);
+  }
+
   const handleCloseCardProfile = () => {
     setShowCardProfile(false)
     setSelectedCard(null)
@@ -5409,7 +5471,7 @@ export default function App() {
                 <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('Adding card to collection:', card.name);
+                            handleAddToCollection(card);
                           }}
                           className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
                         >
@@ -5473,8 +5535,7 @@ export default function App() {
                 <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Add card to collection logic here
-                          console.log('Adding card to collection:', card.name);
+                          handleAddToCollection(card);
                         }}
                         className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
                       >
