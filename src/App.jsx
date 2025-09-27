@@ -2456,6 +2456,79 @@ export default function App() {
     setShowCardProfile(true)
   }
 
+  // Handle native share functionality
+  const handleShare = async () => {
+    if (!selectedCard) return;
+
+    const shareData = {
+      title: `${selectedCard.name} - Pokemon Card`,
+      text: `Check out this ${selectedCard.name} card from ${selectedCard.set_name || selectedCard.set?.name || selectedCard.set || 'Pokemon TCG'}!`,
+      url: window.location.href
+    };
+
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareData.url);
+        // You could add a toast notification here to inform the user
+        console.log('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        console.log('Link copied to clipboard!');
+      } catch (clipboardError) {
+        console.error('Failed to copy to clipboard:', clipboardError);
+      }
+    }
+  }
+
+  // Handle artist search functionality
+  const handleArtistSearch = async (artistName) => {
+    if (!artistName) return;
+
+    try {
+      setLoading(true);
+      
+      // Filter cards by artist name
+      const artistCards = mockUserData.searchResults.filter(card => 
+        card.artist && card.artist.toLowerCase().includes(artistName.toLowerCase())
+      );
+      
+      // Set search results
+      setOriginalSearchResults(artistCards);
+      setFilteredSearchResults(artistCards);
+      setShowSearchResults(true);
+      setSearchQuery(artistName); // Set the search query to show what we're searching for
+      
+      // Load images for the results
+      loadSearchResultImages(artistCards);
+      
+      // Close card profile and switch to search tab
+      setShowCardProfile(false);
+      setActiveTab('search');
+      setNavigationMode('search');
+      
+      // Scroll to search section
+      setTimeout(() => {
+        const searchSection = document.querySelector('[data-section="search"]');
+        if (searchSection) {
+          searchSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error searching for artist:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const handleCloseCardProfile = () => {
     setShowCardProfile(false)
     setSelectedCard(null)
@@ -3080,7 +3153,10 @@ export default function App() {
                   >
                     <img src="/Assets/Back_arrow.svg" alt="Back" className="w-6 h-6" />
                   </button>
-                  <button className="w-6 h-6 text-white">
+                  <button 
+                    onClick={handleShare}
+                    className="w-6 h-6 text-white hover:opacity-80 transition-opacity"
+                  >
                     <img src="/Assets/share_card.svg" alt="Share" className="w-6 h-6" />
                   </button>
                 </div>
