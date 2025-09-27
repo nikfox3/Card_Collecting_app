@@ -139,6 +139,8 @@ export default function App() {
   const [showGradingServiceDropdown, setShowGradingServiceDropdown] = useState(false)
   const [showGradeDropdown, setShowGradeDropdown] = useState(false)
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
+  const [showSetPage, setShowSetPage] = useState(false)
+  const [selectedSet, setSelectedSet] = useState(null)
   const [quickFilters, setQuickFilters] = useState({
     owned: false,
     missing: false,
