@@ -253,6 +253,81 @@ export default function App() {
   const [isScanConfirmFading, setIsScanConfirmFading] = useState(false)
   const [showCardProfile, setShowCardProfile] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
+  const [wishlist, setWishlist] = useState(new Set())
+  const [showWishlistNotification, setShowWishlistNotification] = useState(false)
+  const [wishlistNotificationMessage, setWishlistNotificationMessage] = useState('')
+  const [showCardMenu, setShowCardMenu] = useState(false)
+  const [showAddToFolderModal, setShowAddToFolderModal] = useState(false)
+  const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
+  const [showAddToBinderModal, setShowAddToBinderModal] = useState(false)
+  const [showSetCustomTagModal, setShowSetCustomTagModal] = useState(false)
+  const [showSendFeedbackModal, setShowSendFeedbackModal] = useState(false)
+  
+  // Dropdown states for modals
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false)
+  const [showDeckDropdown, setShowDeckDropdown] = useState(false)
+  const [showBinderDropdown, setShowBinderDropdown] = useState(false)
+  const [showIssueDropdown, setShowIssueDropdown] = useState(false)
+  
+  // Selected values for modal dropdowns
+  const [selectedDeck, setSelectedDeck] = useState('Standard Deck')
+  const [selectedBinder, setSelectedBinder] = useState('Main Binder')
+  const [selectedIssue, setSelectedIssue] = useState('Incorrect Image')
+  
+  // New deck name state
+  const [newDeckName, setNewDeckName] = useState('')
+  
+  // Deck quantity state
+  const [deckQuantity, setDeckQuantity] = useState(1)
+  
+  // New binder name state
+  const [newBinderName, setNewBinderName] = useState('')
+  
+  // Custom tag states
+  const [tagName, setTagName] = useState('')
+  const [selectedTagColor, setSelectedTagColor] = useState('red')
+  const [cardCustomTags, setCardCustomTags] = useState([]) // Array of tags for the card
+  const [editingTagIndex, setEditingTagIndex] = useState(null) // Index of tag being edited
+  
+  // Color mapping for consistent styling
+  const colorMap = {
+    red: {
+      bg: 'bg-red-500/20',
+      border: 'border-red-400/30',
+      dot: 'bg-red-500',
+      text: 'text-white'
+    },
+    blue: {
+      bg: 'bg-blue-500/20',
+      border: 'border-blue-400/30',
+      dot: 'bg-blue-500',
+      text: 'text-white'
+    },
+    green: {
+      bg: 'bg-green-500/20',
+      border: 'border-green-400/30',
+      dot: 'bg-green-500',
+      text: 'text-white'
+    },
+    yellow: {
+      bg: 'bg-yellow-500/20',
+      border: 'border-yellow-400/30',
+      dot: 'bg-yellow-500',
+      text: 'text-white'
+    },
+    purple: {
+      bg: 'bg-purple-500/20',
+      border: 'border-purple-400/30',
+      dot: 'bg-purple-500',
+      text: 'text-white'
+    },
+    pink: {
+      bg: 'bg-pink-500/20',
+      border: 'border-pink-400/30',
+      dot: 'bg-pink-500',
+      text: 'text-white'
+    }
+  }
   
   // Chart and pricing state
   const [selectedPriceType, setSelectedPriceType] = useState('Raw')
@@ -329,7 +404,7 @@ export default function App() {
     }
   }
   const [flashEnabled, setFlashEnabled] = useState(false)
-  const [selectedFolder, setSelectedFolder] = useState('Collection')
+  const [selectedFolder, setSelectedFolder] = useState('My Collection')
   const [selectedCondition, setSelectedCondition] = useState('Near Mint')
 
   // Data structures for the app
@@ -2722,6 +2797,84 @@ export default function App() {
     }
   }
 
+  // Handle wishlist toggle
+  const handleWishlistToggle = (cardId) => {
+    setWishlist(prev => {
+      const newWishlist = new Set(prev)
+      const isCurrentlyWishlisted = newWishlist.has(cardId)
+      
+      if (isCurrentlyWishlisted) {
+        newWishlist.delete(cardId)
+        setWishlistNotificationMessage('Removed from wishlist')
+      } else {
+        newWishlist.add(cardId)
+        setWishlistNotificationMessage('Added to wishlist')
+      }
+      
+      // Show notification
+      setShowWishlistNotification(true)
+      
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => {
+        setShowWishlistNotification(false)
+      }, 3000)
+      
+      return newWishlist
+    })
+  }
+
+  // Handle card menu toggle
+  const handleCardMenuToggle = () => {
+    setShowCardMenu(!showCardMenu)
+  }
+
+  // Handle menu item clicks
+  const handleAddToFolder = () => {
+    setShowCardMenu(false)
+    setShowAddToFolderModal(true)
+  }
+
+  const handleAddToDeck = () => {
+    setShowCardMenu(false)
+    setShowAddToDeckModal(true)
+  }
+
+  const handleAddToBinder = () => {
+    setShowCardMenu(false)
+    setShowAddToBinderModal(true)
+  }
+
+  const handleSetCustomTag = () => {
+    setShowCardMenu(false)
+    setShowSetCustomTagModal(true)
+  }
+
+  const handleSendFeedback = () => {
+    setShowCardMenu(false)
+    setShowSendFeedbackModal(true)
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCardMenu && !event.target.closest('.card-menu-container')) {
+        setShowCardMenu(false)
+      }
+      // Close dropdowns when clicking outside
+      if (!event.target.closest('.dropdown-container')) {
+        setShowFolderDropdown(false)
+        setShowDeckDropdown(false)
+        setShowBinderDropdown(false)
+        setShowIssueDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCardMenu])
+
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
     if (!cardToAdd) return;
@@ -3676,12 +3829,15 @@ export default function App() {
                         onClick={handleNoteClick}
                       >
                         {selectedCard?.note ? (
-                          <img 
-                            src="/Assets/Notes Icon_has.svg" 
-                            alt="Has Note" 
-                            className="w-6 h-6"
-                            style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%)' }}
-                          />
+                          <svg 
+                            className="w-6 h-6" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path d="M2.75499 14.7161L3.27199 16.6481C3.87599 18.9031 4.17899 20.0311 4.86399 20.7621C5.40464 21.3389 6.10408 21.7425 6.87399 21.9221C7.84999 22.1501 8.97799 21.8481 11.234 21.2441C13.488 20.6401 14.616 20.3381 15.347 19.6531C15.4077 19.5958 15.4663 19.5371 15.523 19.4771C15.1824 19.4464 14.8439 19.3963 14.509 19.3271C13.813 19.1891 12.986 18.9671 12.008 18.7051L11.901 18.6761L11.876 18.6701C10.812 18.3841 9.92299 18.1461 9.21299 17.8901C8.46599 17.6201 7.78799 17.2871 7.21099 16.7471C6.41731 16.0035 5.86191 15.0413 5.61499 13.9821C5.43499 13.2131 5.48699 12.4591 5.62699 11.6781C5.76099 10.9291 6.00099 10.0311 6.28899 8.95609L6.82399 6.96209L6.84199 6.89209C4.92199 7.40909 3.91099 7.71509 3.23699 8.34609C2.65949 8.88714 2.25545 9.58734 2.07599 10.3581C1.84799 11.3331 2.14999 12.4611 2.75499 14.7161Z" fill="#605DEC"/>
+                            <path fillRule="evenodd" clipRule="evenodd" d="M20.83 10.715L20.312 12.647C19.707 14.902 19.405 16.03 18.72 16.761C18.1795 17.3382 17.48 17.7422 16.71 17.922C16.6133 17.9447 16.515 17.962 16.415 17.974C15.5 18.087 14.383 17.788 12.351 17.244C10.096 16.639 8.96799 16.337 8.23699 15.652C7.65966 15.1112 7.25563 14.4114 7.07599 13.641C6.84799 12.665 7.14999 11.538 7.75499 9.28299L8.27199 7.35099L8.51599 6.44599C8.97099 4.77999 9.27699 3.86299 9.86399 3.23599C10.4046 2.65919 11.1041 2.25553 11.874 2.07599C12.85 1.84799 13.978 2.14999 16.234 2.75499C18.488 3.35899 19.616 3.66099 20.347 4.34499C20.9245 4.88605 21.3285 5.58625 21.508 6.35699C21.736 7.33299 21.434 8.45999 20.83 10.715ZM11.051 9.80499C11.0765 9.70984 11.1205 9.62065 11.1805 9.54251C11.2405 9.46437 11.3154 9.39883 11.4007 9.34961C11.486 9.30039 11.5802 9.26847 11.6779 9.25566C11.7756 9.24286 11.8749 9.24943 11.97 9.27499L16.8 10.57C16.8976 10.5931 16.9897 10.6357 17.0706 10.695C17.1515 10.7544 17.2197 10.8294 17.2711 10.9156C17.3225 11.0018 17.3561 11.0974 17.3699 11.1968C17.3836 11.2963 17.3773 11.3974 17.3513 11.4943C17.3252 11.5913 17.28 11.682 17.2183 11.7611C17.1565 11.8402 17.0795 11.9062 16.9919 11.955C16.9042 12.0038 16.8076 12.0346 16.7078 12.0454C16.608 12.0562 16.5071 12.0469 16.411 12.018L11.581 10.724C11.389 10.6724 11.2254 10.5468 11.126 10.3747C11.0267 10.2025 10.9997 9.99701 11.051 9.80499ZM10.275 12.704C10.3266 12.512 10.4522 12.3484 10.6243 12.249C10.7964 12.1497 11.001 12.1227 11.193 12.174L14.091 12.951C14.1891 12.9736 14.2817 13.0158 14.3631 13.075C14.4446 13.1342 14.5133 13.2092 14.5652 13.2955C14.6171 13.3818 14.651 13.4777 14.665 13.5774C14.679 13.6771 14.6728 13.7786 14.6468 13.8759C14.6207 13.9732 14.5753 14.0642 14.5133 14.1435C14.4513 14.2229 14.374 14.2889 14.2859 14.3378C14.1978 14.3866 14.1008 14.4172 14.0007 14.4277C13.9005 14.4382 13.7993 14.4284 13.703 14.399L10.805 13.623C10.7098 13.5975 10.6206 13.5534 10.5425 13.4934C10.4644 13.4334 10.3988 13.3586 10.3496 13.2733C10.3004 13.1879 10.2685 13.0937 10.2557 12.9961C10.2429 12.8984 10.2494 12.7991 10.275 12.704Z" fill="#605DEC"/>
+                          </svg>
                         ) : (
                           <img 
                             src="/Assets/Notes Icon_None.svg" 
@@ -3691,19 +3847,83 @@ export default function App() {
                           />
                         )}
                       </button>
-                      <button className="w-6 h-6 text-white">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
+                      <button 
+                        className="w-6 h-6 text-white hover:opacity-80 transition-opacity"
+                        onClick={() => handleWishlistToggle(selectedCard.id)}
+                      >
+                        {wishlist.has(selectedCard.id) ? (
+                          <img 
+                            src="/Assets/Wishlisted_card.svg" 
+                            alt="Remove from Wishlist" 
+                            className="w-6 h-6"
+                          />
+                        ) : (
+                          <img 
+                            src="/Assets/Wishlist_white.svg" 
+                            alt="Add to Wishlist" 
+                            className="w-6 h-6"
+                          />
+                        )}
                       </button>
                     </div>
-                    <span className="text-white text-sm">Qty: {selectedCard.quantity || 1}</span>
-                    <button className="w-6 h-6 text-white">
+                    
+                    {/* Centered Quantity Text */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2">
+                      <span className="text-white text-sm">Qty: {selectedCard.quantity || 1}</span>
+                    </div>
+                    
+                    <button 
+                      className="w-6 h-6 text-white hover:opacity-80 transition-opacity relative card-menu-container"
+                      onClick={handleCardMenuToggle}
+                    >
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
                   </div>
+
+                  {/* Card Menu */}
+                  {showCardMenu && (
+                    <div className="absolute top-16 right-0 z-[80] bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-lg shadow-2xl min-w-[160px] card-menu-container">
+                      <div className="py-2">
+                        <button 
+                          onClick={handleAddToFolder}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <img src="/Assets/Addtofolder.svg" alt="Add to Folder" className="w-5 h-5" />
+                          <span className="text-gray-300 text-sm font-medium">Add to Folder</span>
+                        </button>
+                        <button 
+                          onClick={handleAddToDeck}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <img src="/Assets/Addtodeck.svg" alt="Add to Deck" className="w-5 h-5" />
+                          <span className="text-gray-300 text-sm font-medium">Add to Deck</span>
+                        </button>
+                        <button 
+                          onClick={handleAddToBinder}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <img src="/Assets/Addtobinder.svg" alt="Add to Binder" className="w-5 h-5" />
+                          <span className="text-gray-300 text-sm font-medium">Add to Binder</span>
+                        </button>
+                        <button 
+                          onClick={handleSetCustomTag}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <img src="/Assets/SetTag.svg" alt="Set Custom Tag" className="w-5 h-5" />
+                          <span className="text-gray-300 text-sm font-medium">Set Custom Tag</span>
+                        </button>
+                        <button 
+                          onClick={handleSendFeedback}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <img src="/Assets/Sendfeedback.svg" alt="Send Feedback" className="w-5 h-5" />
+                          <span className="text-gray-300 text-sm font-medium">Send Feedback</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="border-t border-gray-700 pt-4">
                     <div className="flex justify-between items-center">
@@ -3974,6 +4194,475 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Add to Folder Modal */}
+              {showAddToFolderModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
+                    <div className="flex items-center gap-3 mb-6">
+                      <img src="/Assets/Addtofolder.svg" alt="Add to Folder" className="w-6 h-6" />
+                      <h2 className="text-white text-xl font-semibold">Add to Folder</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Select Folder</label>
+                        <div className="relative dropdown-container">
+                          <button
+                            type="button"
+                            onClick={() => setShowFolderDropdown(!showFolderDropdown)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          >
+                            <span>{selectedFolder}</span>
+                            <svg className={`w-4 h-4 transition-transform ${showFolderDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {showFolderDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+                              <div className="py-1">
+                                {['My Collection', 'Favorites', 'Trade Binder', 'Investment Cards', '+ Create New Folder'].map((option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedFolder(option)
+                                      setShowFolderDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {selectedFolder === '+ Create New Folder' && (
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">New Folder Name</label>
+                          <input 
+                            type="text" 
+                            placeholder="Enter new folder name..."
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={() => setShowAddToFolderModal(false)}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => setShowAddToFolderModal(false)}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/80 transition-colors"
+                      >
+                        Add to Folder
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Deck Modal */}
+              {showAddToDeckModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
+                    <div className="flex items-center gap-3 mb-6">
+                      <img src="/Assets/Addtodeck.svg" alt="Add to Deck" className="w-6 h-6" />
+                      <h2 className="text-white text-xl font-semibold">Add to Deck</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Select Deck</label>
+                        <div className="relative dropdown-container">
+                          <button
+                            type="button"
+                            onClick={() => setShowDeckDropdown(!showDeckDropdown)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          >
+                            <span>{selectedDeck}</span>
+                            <svg className={`w-4 h-4 transition-transform ${showDeckDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {showDeckDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+                              <div className="py-1">
+                                {['Standard Deck', 'Expanded Deck', 'Legacy Deck', 'Casual Deck', '+ Create New Deck'].map((option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedDeck(option)
+                                      setShowDeckDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {selectedDeck === '+ Create New Deck' && (
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">New Deck Name</label>
+                          <input 
+                            type="text" 
+                            placeholder="Enter new deck name..."
+                            value={newDeckName}
+                            onChange={(e) => setNewDeckName(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Quantity</label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setDeckQuantity(Math.max(1, deckQuantity - 1))}
+                            className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={deckQuantity <= 1}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <div className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-center">
+                            <span className="text-white text-lg font-medium">{deckQuantity}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeckQuantity(deckQuantity + 1)}
+                            className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={() => setShowAddToDeckModal(false)}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => setShowAddToDeckModal(false)}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/80 transition-colors"
+                      >
+                        Add to Deck
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Binder Modal */}
+              {showAddToBinderModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
+                    <div className="flex items-center gap-3 mb-6">
+                      <img src="/Assets/Addtobinder.svg" alt="Add to Binder" className="w-6 h-6" />
+                      <h2 className="text-white text-xl font-semibold">Add to Binder</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Select Binder</label>
+                        <div className="relative dropdown-container">
+                          <button
+                            type="button"
+                            onClick={() => setShowBinderDropdown(!showBinderDropdown)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          >
+                            <span>{selectedBinder}</span>
+                            <svg className={`w-4 h-4 transition-transform ${showBinderDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {showBinderDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+                              <div className="py-1">
+                                {['Main Binder', 'Trade Binder', 'Rare Cards Binder', 'Complete Sets Binder', '+ Create New Binder'].map((option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBinder(option)
+                                      setShowBinderDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {selectedBinder === '+ Create New Binder' && (
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">New Binder Name</label>
+                          <input 
+                            type="text" 
+                            placeholder="Enter new binder name..."
+                            value={newBinderName}
+                            onChange={(e) => setNewBinderName(e.target.value)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          />
+                        </div>
+                      )}
+                      <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-gray-300 text-sm">Card will be added to the next available slot in the selected binder</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={() => setShowAddToBinderModal(false)}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => setShowAddToBinderModal(false)}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/80 transition-colors"
+                      >
+                        Add to Binder
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Set Custom Tag Modal */}
+              {showSetCustomTagModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
+                    <div className="flex items-center gap-3 mb-6">
+                      <img src="/Assets/SetTag.svg" alt="Set Custom Tag" className="w-6 h-6" />
+                      <h2 className="text-white text-xl font-semibold">Set Custom Tag</h2>
+                    </div>
+                    <div className="space-y-4">
+                      {/* Create/Edit Tag Form */}
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">
+                          {editingTagIndex !== null ? 'Edit Tag Name' : 'Tag Name'}
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="Enter tag name..."
+                          value={tagName}
+                          onChange={(e) => setTagName(e.target.value)}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Tag Color</label>
+                        <div className="flex gap-2">
+                          {['red', 'blue', 'green', 'yellow', 'purple', 'pink'].map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => setSelectedTagColor(color)}
+                              className={`w-8 h-8 bg-${color}-500 rounded-full border-2 ${
+                                selectedTagColor === color ? 'border-white' : 'border-transparent'
+                              } hover:scale-110 transition-transform`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Current Tags Display */}
+                      {cardCustomTags.length > 0 && (
+                        <div>
+                          <label className="block text-gray-300 text-sm font-medium mb-2">Current Tags</label>
+                          <div className="flex flex-wrap gap-2">
+                            {cardCustomTags.map((tag, index) => (
+                              <div 
+                                key={index}
+                                className={`group relative cursor-pointer ${editingTagIndex === index ? 'ring-2 ring-blue-400 ring-opacity-50 rounded-full' : ''}`}
+                                onClick={() => {
+                                  setTagName(tag.name)
+                                  setSelectedTagColor(tag.color)
+                                  setEditingTagIndex(index)
+                                }}
+                              >
+                                <div className={`px-3 py-1 rounded-full text-sm font-medium ${colorMap[tag.color].text} ${colorMap[tag.color].bg} border ${colorMap[tag.color].border} flex items-center gap-2`}>
+                                  <div className={`w-2 h-2 rounded-full ${colorMap[tag.color].dot}`}></div>
+                                  <span>{tag.name}</span>
+                                </div>
+                                {editingTagIndex === index && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={() => {
+                          setShowSetCustomTagModal(false)
+                          setTagName('')
+                          setSelectedTagColor('red')
+                          setEditingTagIndex(null)
+                        }}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      {editingTagIndex !== null && (
+                        <button 
+                          onClick={() => {
+                            const newTags = cardCustomTags.filter((_, index) => index !== editingTagIndex)
+                            setCardCustomTags(newTags)
+                            setTagName('')
+                            setSelectedTagColor('red')
+                            setEditingTagIndex(null)
+                          }}
+                          className="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-500 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => {
+                          if (tagName.trim()) {
+                            const newTag = {
+                              name: tagName.trim(),
+                              color: selectedTagColor
+                            }
+                            
+                            if (editingTagIndex !== null) {
+                              // Update existing tag
+                              const newTags = [...cardCustomTags]
+                              newTags[editingTagIndex] = newTag
+                              setCardCustomTags(newTags)
+                            } else {
+                              // Add new tag
+                              setCardCustomTags([...cardCustomTags, newTag])
+                            }
+                            
+                            setTagName('')
+                            setSelectedTagColor('red')
+                            setEditingTagIndex(null)
+                          }
+                        }}
+                        disabled={!tagName.trim()}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {editingTagIndex !== null ? 'Update Tag' : 'Create Tag'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Send Feedback Modal */}
+              {showSendFeedbackModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
+                    <div className="flex items-center gap-3 mb-6">
+                      <img src="/Assets/Sendfeedback.svg" alt="Send Feedback" className="w-6 h-6" />
+                      <h2 className="text-white text-xl font-semibold">Send Feedback</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Issue Type</label>
+                        <div className="relative dropdown-container">
+                          <button
+                            type="button"
+                            onClick={() => setShowIssueDropdown(!showIssueDropdown)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          >
+                            <span>{selectedIssue}</span>
+                            <svg className={`w-4 h-4 transition-transform ${showIssueDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {showIssueDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+                              <div className="py-1">
+                                {['Incorrect Image', 'Incorrect Price', 'Missing Information', 'Card Not Found', 'App Bug', 'Feature Request', 'Other'].map((option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedIssue(option)
+                                      setShowIssueDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Description</label>
+                        <textarea 
+                          placeholder="Please describe the issue or feedback..."
+                          rows="4"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        ></textarea>
+                      </div>
+                      <div>
+                        <label className="block text-gray-300 text-sm font-medium mb-2">Your Email (Optional)</label>
+                        <input 
+                          type="email" 
+                          placeholder="your@email.com"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-6">
+                      <button 
+                        onClick={() => setShowSendFeedbackModal(false)}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => setShowSendFeedbackModal(false)}
+                        className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/80 transition-colors"
+                      >
+                        Send Feedback
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Wishlist Notification */}
+              {showWishlistNotification && (
+                <div className="fixed bottom-24 left-0 right-0 z-[70] animate-slide-up-notification">
+                  <div className="bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-xl px-4 py-3 shadow-2xl mx-auto w-fit">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span className="text-white text-sm font-medium">{wishlistNotificationMessage}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Bottom Spacing */}
               <div className="h-20"></div>

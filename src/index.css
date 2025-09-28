@@ -43,6 +43,32 @@ body {
   animation: slide-up 0.3s ease-out;
 }
 
+/* Notification slide-up animation */
+@keyframes slide-up-notification {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up-notification {
+  animation: slide-up-notification 0.4s ease-out;
+}
+
+/* Modal dropdown containment */
+.modal-container {
+  overflow: visible;
+}
+
+.modal-container select {
+  position: relative;
+  z-index: 1;
+}
+
 /* Search bar drop shadow */
 .search-bar-shadow {
   filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
