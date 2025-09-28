@@ -141,6 +141,8 @@ export default function App() {
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
   const [showSetPage, setShowSetPage] = useState(false)
   const [selectedSet, setSelectedSet] = useState(null)
+  const [showNoteModal, setShowNoteModal] = useState(false)
+  const [cardNote, setCardNote] = useState('')
   const [quickFilters, setQuickFilters] = useState({
     owned: false,
     missing: false,
@@ -2686,6 +2688,33 @@ export default function App() {
     setShowSetPage(true);
   }
 
+  // Handle note functionality
+  const handleNoteClick = () => {
+    if (selectedCard) {
+      // Load existing note if available
+      setCardNote(selectedCard.note || '');
+      setShowNoteModal(true);
+    }
+  }
+
+  const handleSaveNote = () => {
+    if (selectedCard) {
+      // Update the card with the new note
+      selectedCard.note = cardNote;
+      console.log('Note saved for card:', selectedCard.name, 'Note:', cardNote);
+      setShowNoteModal(false);
+    }
+  }
+
+  const handleDeleteNote = () => {
+    if (selectedCard) {
+      selectedCard.note = '';
+      setCardNote('');
+      console.log('Note deleted for card:', selectedCard.name);
+      setShowNoteModal(false);
+    }
+  }
+
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
     if (!cardToAdd) return;
@@ -3460,9 +3489,9 @@ export default function App() {
                   </div>
                 )}
               </div>
-            </div>
-          )
-        }
+      </div>
+    )
+  }
 
         // Card Profile Screen
         if (showCardProfile && selectedCard) {
@@ -3635,10 +3664,23 @@ export default function App() {
                   {/* Action Icons */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
-                      <button className="w-6 h-6 text-white">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                      <button 
+                        className="w-6 h-6 text-white hover:opacity-80 transition-opacity"
+                        onClick={handleNoteClick}
+                      >
+                        {selectedCard?.note ? (
+                          <img 
+                            src="/Assets/Notes Icon_has.svg" 
+                            alt="Has Note" 
+                            className="w-6 h-6"
+                          />
+                        ) : (
+                          <img 
+                            src="/Assets/Notes Icon_None.svg" 
+                            alt="No Note" 
+                            className="w-6 h-6"
+                          />
+                        )}
                       </button>
                       <button className="w-6 h-6 text-white">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
