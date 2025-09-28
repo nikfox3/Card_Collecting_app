@@ -7632,10 +7632,40 @@ export default function App() {
             )}
 
 
+        {/* Debug: Show modal state */}
+        {showNoteModal && (
+          <div style={{
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            backgroundColor: 'red',
+            color: 'white',
+            padding: '10px',
+            zIndex: 99999999,
+            borderRadius: '5px'
+          }}>
+            Modal State: {showNoteModal ? 'TRUE' : 'FALSE'}
+          </div>
+        )}
+
+        {/* Test Modal - Should always appear */}
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'blue',
+          color: 'white',
+          padding: '20px',
+          zIndex: 99999999,
+          borderRadius: '10px'
+        }}>
+          TEST MODAL - This should always be visible
+        </div>
+
         {/* Note Modal */}
         {console.log('Rendering note modal check:', showNoteModal, selectedCard)}
-        {/* Temporary: Force modal to always show for testing */}
-        {true && (
+        {showNoteModal && selectedCard && (
           <div 
             style={{ 
               position: 'fixed', 
@@ -7668,7 +7698,7 @@ export default function App() {
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '600', margin: 0 }}>
-                  {selectedCard.note ? 'Edit Note' : 'Add Note'}
+                  {selectedCard?.note ? 'Edit Note' : 'Add Note'}
                 </h2>
                 <button
                   onClick={() => setShowNoteModal(false)}
@@ -7694,8 +7724,8 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '60px', height: '80px', backgroundColor: '#555', borderRadius: '8px', flexShrink: 0 }}>
                     <img
-                      src={selectedCard.images?.small || selectedCard.imageUrl}
-                      alt={selectedCard.name}
+                      src={selectedCard?.images?.small || selectedCard?.imageUrl}
+                      alt={selectedCard?.name || 'Card'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -7704,10 +7734,10 @@ export default function App() {
                   </div>
                   <div>
                     <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '500', margin: '0 0 4px 0' }}>
-                      {selectedCard.name}
+                      {selectedCard?.name || 'Unknown Card'}
                     </h3>
                     <p style={{ color: '#999', fontSize: '14px', margin: 0 }}>
-                      {selectedCard.number}
+                      {selectedCard?.number || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -7740,7 +7770,7 @@ export default function App() {
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '12px' }}>
-                {selectedCard.note && (
+                {selectedCard?.note && (
                   <button 
                     onClick={handleDeleteNote}
                     style={{
@@ -7788,7 +7818,7 @@ export default function App() {
                     fontWeight: '500'
                   }}
                 >
-                  {selectedCard.note ? 'Update Note' : 'Save Note'}
+                  {selectedCard?.note ? 'Update Note' : 'Save Note'}
                 </button>
               </div>
             </div>
