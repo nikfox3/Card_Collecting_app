@@ -3680,12 +3680,14 @@ export default function App() {
                             src="/Assets/Notes Icon_has.svg" 
                             alt="Has Note" 
                             className="w-6 h-6"
+                            style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%)' }}
                           />
                         ) : (
                           <img 
                             src="/Assets/Notes Icon_None.svg" 
                             alt="No Note" 
                             className="w-6 h-6"
+                            style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
                           />
                         )}
                       </button>
@@ -7721,11 +7723,11 @@ export default function App() {
                             }}
                           >
                             {grade.label}
-          </div>
+        </div>
                         ))}
-                </div>
+      </div>
                     )}
-                  </div>
+          </div>
                 </>
               )}
 
@@ -7747,12 +7749,12 @@ export default function App() {
                     minHeight: '80px',
                     resize: 'vertical'
                   }}
-                />
+                  />
                 </div>
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '12px' }}>
-                  <button 
+                    <button 
                   onClick={() => {
                     setShowAddToCollectionModal(false);
                     setCardToAdd(null);
@@ -7770,8 +7772,8 @@ export default function App() {
                   }}
                 >
                   Cancel
-                  </button>
-                  <button 
+                    </button>
+                    <button 
                   onClick={handleConfirmAddToCollection}
                   style={{
                     flex: 1,
@@ -7786,10 +7788,10 @@ export default function App() {
                   }}
                 >
                   Add to Collection
-                  </button>
+                    </button>
+                  </div>
                 </div>
-                </div>
-              </div>
+                  </div>
             )}
 
 
