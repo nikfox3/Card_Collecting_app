@@ -2690,10 +2690,18 @@ export default function App() {
 
   // Handle note functionality
   const handleNoteClick = () => {
+    console.log('Note button clicked!');
+    console.log('selectedCard:', selectedCard);
+    console.log('showNoteModal before:', showNoteModal);
+    alert('Note button clicked!'); // Temporary debug alert
     if (selectedCard) {
       // Load existing note if available
       setCardNote(selectedCard.note || '');
       setShowNoteModal(true);
+      console.log('Note modal should be opening...');
+      console.log('showNoteModal after setShowNoteModal(true):', showNoteModal);
+    } else {
+      console.log('No selectedCard found');
     }
   }
 
@@ -7622,6 +7630,171 @@ export default function App() {
                 </div>
               </div>
             )}
+
+
+        {/* Note Modal */}
+        {console.log('Rendering note modal check:', showNoteModal, selectedCard)}
+        {/* Temporary: Force modal to always show for testing */}
+        {true && (
+          <div 
+            style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              backgroundColor: 'rgba(0,0,0,0.8)', 
+              zIndex: 9999999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}
+            onClick={() => setShowNoteModal(false)}
+          >
+            <div 
+              style={{
+                backgroundColor: '#2b2b2b',
+                borderRadius: '16px',
+                padding: '24px',
+                width: '100%',
+                maxWidth: '400px',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                border: '1px solid #444'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '600', margin: 0 }}>
+                  {selectedCard.note ? 'Edit Note' : 'Add Note'}
+                </h2>
+                <button
+                  onClick={() => setShowNoteModal(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Card Info */}
+              <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#333', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '60px', height: '80px', backgroundColor: '#555', borderRadius: '8px', flexShrink: 0 }}>
+                    <img
+                      src={selectedCard.images?.small || selectedCard.imageUrl}
+                      alt={selectedCard.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '500', margin: '0 0 4px 0' }}>
+                      {selectedCard.name}
+                    </h3>
+                    <p style={{ color: '#999', fontSize: '14px', margin: 0 }}>
+                      {selectedCard.number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Note Input */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                  Note
+                </label>
+                <textarea
+                  value={cardNote}
+                  onChange={(e) => setCardNote(e.target.value)}
+                  placeholder="Add a note about this card..."
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    padding: '12px',
+                    backgroundColor: '#333',
+                    border: '1px solid #555',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {selectedCard.note && (
+                  <button 
+                    onClick={handleDeleteNote}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      backgroundColor: '#dc2626',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Delete Note
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowNoteModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveNote}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#6865E7',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  {selectedCard.note ? 'Update Note' : 'Save Note'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
