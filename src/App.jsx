@@ -3367,6 +3367,103 @@ export default function App() {
     )
   }
 
+        // Set Page Component (takes priority over card profile)
+        if (showSetPage && selectedSet) {
+          // Get all cards from the selected set
+          const setCards = mockUserData.searchResults.filter(card => 
+            card.set_name === selectedSet || card.set?.name === selectedSet || card.set === selectedSet
+          );
+
+          return (
+            <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
+              {/* Header */}
+              <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-gray-800 z-10">
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowSetPage(false)}
+                      className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <div>
+                      <h1 className="text-white text-xl font-bold">{selectedSet}</h1>
+                      <p className="text-gray-400 text-sm">{setCards.length} cards</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSetPage(false)}
+                    className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Set Cards Grid */}
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {setCards.map((card, index) => (
+                    <div
+                      key={`set-${card.id}-${index}`}
+                      className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedCard(card);
+                        setShowCardProfile(true);
+                        setShowSetPage(false);
+                      }}
+                    >
+                      <div className="aspect-[3/4] bg-gray-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
+                        <img
+                          src={card.images?.small || card.imageUrl}
+                          alt={card.name}
+                          className="w-full h-full object-cover rounded-lg"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
+                          <span className="text-gray-400 text-sm">Card Image</span>
+                        </div>
+                      </div>
+                      <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
+                      <p className="text-gray-400 text-xs mb-2">{card.number}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-primary font-bold text-sm">${(() => {
+                          if (card.currentValue) return card.currentValue.toFixed(2);
+                          if (card.tcgplayer?.prices?.holofoil?.market) return card.tcgplayer.prices.holofoil.market.toFixed(2);
+                          if (card.tcgplayer?.prices?.normal?.market) return card.tcgplayer.prices.normal.market.toFixed(2);
+                          return '0.00';
+                        })()}</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCollection(card);
+                          }}
+                          className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {setCards.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 text-sm">No cards found in this set.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        }
+
         // Card Profile Screen
         if (showCardProfile && selectedCard) {
           return (
@@ -3963,102 +4060,6 @@ export default function App() {
           )
         }
 
-        // Set Page Component
-        if (showSetPage && selectedSet) {
-          // Get all cards from the selected set
-          const setCards = mockUserData.searchResults.filter(card => 
-            card.set_name === selectedSet || card.set?.name === selectedSet || card.set === selectedSet
-          );
-
-          return (
-            <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
-              {/* Header */}
-              <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-gray-800 z-10">
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setShowSetPage(false)}
-                      className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-                    >
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <div>
-                      <h1 className="text-white text-xl font-bold">{selectedSet}</h1>
-                      <p className="text-gray-400 text-sm">{setCards.length} cards</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowSetPage(false)}
-                    className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-                  >
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Set Cards Grid */}
-              <div className="p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {setCards.map((card, index) => (
-                    <div
-                      key={`set-${card.id}-${index}`}
-                      className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedCard(card);
-                        setShowCardProfile(true);
-                        setShowSetPage(false);
-                      }}
-                    >
-                      <div className="aspect-[3/4] bg-gray-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
-                        <img
-                          src={card.images?.small || card.imageUrl}
-                          alt={card.name}
-                          className="w-full h-full object-cover rounded-lg"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: 'none' }}>
-                          <span className="text-gray-400 text-sm">Card Image</span>
-                        </div>
-                      </div>
-                      <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
-                      <p className="text-gray-400 text-xs mb-2">{card.number}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-primary font-bold text-sm">${(() => {
-                          if (card.currentValue) return card.currentValue.toFixed(2);
-                          if (card.tcgplayer?.prices?.holofoil?.market) return card.tcgplayer.prices.holofoil.market.toFixed(2);
-                          if (card.tcgplayer?.prices?.normal?.market) return card.tcgplayer.prices.normal.market.toFixed(2);
-                          return '0.00';
-                        })()}</p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCollection(card);
-                          }}
-                          className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {setCards.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 text-sm">No cards found in this set.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        }
 
 
   // Login Screen
