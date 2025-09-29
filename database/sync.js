@@ -12,8 +12,8 @@ const path = require('path');
 // Configuration
 const DB_PATH = path.join(__dirname, 'cards.db');
 const API_BASE_URL = 'https://api.pokemontcg.io/v2';
-const BATCH_SIZE = 100; // Cards per API request
-const DELAY_MS = 100; // Delay between requests to respect rate limits
+const BATCH_SIZE = 50; // Cards per API request (reduced for stability)
+const DELAY_MS = 500; // Delay between requests to respect rate limits (increased)
 
 class PokemonTCGSync {
     constructor() {
@@ -60,18 +60,32 @@ class PokemonTCGSync {
         });
     }
 
-    async fetchFromAPI(endpoint, page = 1, pageSize = BATCH_SIZE) {
+    async fetchFromAPI(endpoint, page = 1, pageSize = BATCH_SIZE, retries = 3) {
         const url = `${API_BASE_URL}${endpoint}?page=${page}&pageSize=${pageSize}`;
         
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    if (response.status === 429 || response.status === 504) {
+                        // Rate limit or timeout - wait longer and retry
+                        const waitTime = attempt * 2000; // 2s, 4s, 6s
+                        console.log(`⏳ Rate limit hit, waiting ${waitTime}ms before retry ${attempt}/${retries}...`);
+                        await this.delay(waitTime);
+                        continue;
+                    }
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                if (attempt === retries) {
+                    console.error(`❌ API Error for ${endpoint} after ${retries} attempts:`, error.message);
+                    throw error;
+                } else {
+                    console.log(`⚠️  Attempt ${attempt} failed, retrying...`);
+                    await this.delay(1000 * attempt); // Progressive backoff
+                }
             }
-            return await response.json();
-        } catch (error) {
-            console.error(`❌ API Error for ${endpoint}:`, error.message);
-            throw error;
         }
     }
 
@@ -144,6 +158,11 @@ class PokemonTCGSync {
     async syncCards() {
         console.log('🔄 Syncing cards...');
         
+        // Check how many cards we already have
+        const existingCount = await this.runQueryWithResult('SELECT COUNT(*) as count FROM cards');
+        const existingCards = existingCount[0].count;
+        console.log(`📊 Cards already in database: ${existingCards}`);
+        
         // First, get total count
         try {
             const countData = await this.fetchFromAPI('/cards', 1, 1);
@@ -154,7 +173,11 @@ class PokemonTCGSync {
             return;
         }
         
-        let page = 1;
+        // Calculate starting page based on existing cards
+        const startPage = Math.floor(existingCards / BATCH_SIZE) + 1;
+        console.log(`🔄 Starting from page ${startPage} (${existingCards} cards already synced)`);
+        
+        let page = startPage;
         let hasMore = true;
         
         while (hasMore) {
