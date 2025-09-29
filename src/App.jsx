@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+import cardService from './services/cardService'
+import priceService from './services/priceService'
 import './styles/holographic.css'
 import './styles/card-rarities.css'
 import HolographicCard from './components/HolographicCard'
@@ -84,28 +86,597 @@ export default function App() {
 
   const displayedActivity = recentActivityData.slice(0, 3)
 
-  // Mock top movers data with real Pokemon card IDs
-  const topMoversData = [
-    { id: 1, name: "Charizard ex", set: "Base Set", rarity: "Ultra Rare", number: "#004/102", price: 1250, change: 24.5, dailyChange: 245, quantity: 2, rank: 1, type: "gain", emoji: "🔥", cardId: "base1-4", imageUrl: "https://images.pokemontcg.io/base1/4_hires.png", artist: "Mitsuhiro Arita" },
-    { id: 2, name: "Blastoise ex", set: "Base Set", rarity: "Ultra Rare", number: "#009/102", price: 890, change: 18.2, dailyChange: 137, quantity: 1, rank: 2, type: "gain", emoji: "⚡", cardId: "base1-2", imageUrl: "https://images.pokemontcg.io/base1/2_hires.png", artist: "Atsuko Nishida" },
-    { id: 3, name: "Venusaur ex", set: "Base Set", rarity: "Ultra Rare", number: "#015/102", price: 650, change: -12.8, dailyChange: -95, quantity: 3, rank: 3, type: "loss", emoji: "🌿", cardId: "base1-15", imageUrl: "https://images.pokemontcg.io/base1/15_hires.png", artist: "Atsuko Nishida" },
-    { id: 4, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, dailyChange: 12, quantity: 1, rank: 4, type: "gain", emoji: "⚡", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", artist: "Atsuko Nishida" },
-    { id: 5, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, dailyChange: 29, quantity: 2, rank: 5, type: "gain", emoji: "🌊", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", artist: "Hitoshi Ariga" },
-    { id: 6, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, dailyChange: 18, quantity: 1, rank: 6, type: "gain", emoji: "🌿", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", artist: "Ryuta Fuse" },
-    { id: 7, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, dailyChange: 7, quantity: 3, rank: 7, type: "gain", emoji: "✨", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", artist: "Mitsuhiro Arita" },
-    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: -8.3, dailyChange: -4, quantity: 2, rank: 8, type: "loss", emoji: "👻", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", artist: "Ryuta Fuse" }
+  // State for real data
+  const [topMoversData, setTopMoversData] = useState([])
+  const [trendingCardsData, setTrendingCardsData] = useState([])
+  const [isLoadingData, setIsLoadingData] = useState(true)
+
+  // Load real data from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoadingData(true)
+        
+        // Load real data from database
+        const [topMovers, trending] = await Promise.all([
+          cardService.getTopMovers(),
+          cardService.getTrendingCards()
+        ])
+        
+        // Transform the data and add mock properties for compatibility
+        const transformedTopMovers = topMovers.map((card, index) => {
+          const transformed = cardService.transformCard(card)
+          return {
+            ...transformed,
+            id: transformed.id || index + 1,
+            change: Math.random() * 50 - 25, // Mock change percentage
+            dailyChange: Math.random() * 200 - 100, // Mock daily change
+            quantity: Math.floor(Math.random() * 5) + 1, // Mock quantity
+            rank: index + 1, // Mock rank
+            type: transformed.price > 200 ? 'gain' : 'loss' // Mock type based on price
+          }
+        })
+        
+        const transformedTrending = trending.map((card, index) => {
+          const transformed = cardService.transformCard(card)
+          return {
+            ...transformed,
+            id: transformed.id || index + 1,
+            change: Math.random() * 30 - 15, // Mock change percentage
+            rank: index + 1 // Mock rank
+          }
+        })
+        
+        setTopMoversData(transformedTopMovers)
+        setTrendingCardsData(transformedTrending)
+        
+      } catch (error) {
+        console.error('Error loading card data:', error)
+        // Fall back to mock data if API fails
+        setTopMoversData(mockTopMoversData)
+        setTrendingCardsData(mockTrendingCardsData)
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+    
+    loadData()
+  }, [])
+
+  // Mock top movers data with real Pokemon card IDs (fallback)
+  const mockTopMoversData = [
+    { 
+      id: 1, 
+      name: "Charizard ex", 
+      set: "Base Set", 
+      rarity: "Ultra Rare", 
+      number: "#004/102", 
+      price: 1250, 
+      change: 24.5, 
+      dailyChange: 245, 
+      quantity: 2, 
+      rank: 1, 
+      type: "gain", 
+      emoji: "🔥", 
+      cardId: "base1-4", 
+      imageUrl: "https://images.pokemontcg.io/base1/4_hires.png", 
+      artist: "Mitsuhiro Arita",
+      hp: 120,
+      type: "Fire",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Energy Burn",
+          description: "As often as you like during your turn (before your attack), you may turn all Energy attached to Charizard into Fire Energy for the rest of the turn. This power can't be used if Charizard is Asleep, Confused, or Paralyzed."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Fire", "Fire", "Fire", "Fire"],
+          name: "Fire Spin",
+          damage: "100",
+          description: "Discard 2 Energy cards attached to Charizard in order to use this attack."
+        }
+      ]
+    },
+    { 
+      id: 2, 
+      name: "Blastoise ex", 
+      set: "Base Set", 
+      rarity: "Ultra Rare", 
+      number: "#009/102", 
+      price: 890, 
+      change: 18.2, 
+      dailyChange: 137, 
+      quantity: 1, 
+      rank: 2, 
+      type: "gain", 
+      emoji: "⚡", 
+      cardId: "base1-2", 
+      imageUrl: "https://images.pokemontcg.io/base1/2_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 100,
+      type: "Water",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Rain Dance",
+          description: "As often as you like during your turn (before your attack), you may attach a Water Energy card from your hand to 1 of your Water Pokémon. (This doesn't use up your 1 Energy card attachment for the turn.)"
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Water", "Water", "Water"],
+          name: "Hydro Pump",
+          damage: "40+",
+          description: "This attack does 10 more damage for each Water Energy attached to this Pokémon."
+        }
+      ]
+    },
+    { 
+      id: 3, 
+      name: "Venusaur ex", 
+      set: "Base Set", 
+      rarity: "Ultra Rare", 
+      number: "#015/102", 
+      price: 650, 
+      change: -12.8, 
+      dailyChange: -95, 
+      quantity: 3, 
+      rank: 3, 
+      type: "loss", 
+      emoji: "🌿", 
+      cardId: "base1-15", 
+      imageUrl: "https://images.pokemontcg.io/base1/15_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 100,
+      type: "Grass",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Energy Trans",
+          description: "As often as you like during your turn (before your attack), you may take 1 Grass Energy card attached to 1 of your Pokémon and attach it to a different one."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Grass", "Grass", "Grass", "Grass"],
+          name: "Solar Beam",
+          damage: "60",
+          description: "This attack does 20 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 4, 
+      name: "Pikachu VMAX", 
+      set: "Vivid Voltage", 
+      rarity: "VMAX", 
+      number: "#044/185", 
+      price: 89, 
+      change: 15.2, 
+      dailyChange: 12, 
+      quantity: 1, 
+      rank: 4, 
+      type: "gain", 
+      emoji: "⚡", 
+      cardId: "swsh4-44", 
+      imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 320,
+      type: "Lightning",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Max Spark",
+          description: "Once during your turn (before your attack), you may search your deck for up to 2 Lightning Energy cards and attach them to this Pokémon. Then, shuffle your deck."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Lightning", "Lightning", "Colorless"],
+          name: "G-Max Volt Crash",
+          damage: "180",
+          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 5, 
+      name: "Lugia V", 
+      set: "Silver Tempest", 
+      rarity: "Ultra Rare", 
+      number: "#186/195", 
+      price: 156, 
+      change: 22.8, 
+      dailyChange: 29, 
+      quantity: 2, 
+      rank: 5, 
+      type: "gain", 
+      emoji: "🌊", 
+      cardId: "swsh12-186", 
+      imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
+      artist: "Hitoshi Ariga",
+      hp: 220,
+      type: "Colorless",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Aero Dive",
+          description: "Once during your turn (before your attack), you may discard 2 cards from your hand. If you do, draw 2 cards."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Colorless", "Colorless", "Colorless"],
+          name: "Aeroblast",
+          damage: "120",
+          description: "You may discard a Stadium card in play."
+        }
+      ]
+    },
+    { 
+      id: 6, 
+      name: "Rayquaza VMAX", 
+      set: "Evolving Skies", 
+      rarity: "VMAX", 
+      number: "#217/203", 
+      price: 234, 
+      change: 8.4, 
+      dailyChange: 18, 
+      quantity: 1, 
+      rank: 6, 
+      type: "gain", 
+      emoji: "🌿", 
+      cardId: "swsh7-217", 
+      imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
+      artist: "Ryuta Fuse",
+      hp: 320,
+      type: "Dragon",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Azure Pulse",
+          description: "Once during your turn, you may discard your hand and draw 3 cards."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Fire", "Lightning"],
+          name: "Max Burst",
+          damage: "20+",
+          description: "You may discard any number of Fire or Lightning Energy from this Pokémon; this attack does 80 more damage for each Energy card discarded in this way."
+        }
+      ]
+    },
+    { 
+      id: 7, 
+      name: "Mewtwo V", 
+      set: "Pokemon GO", 
+      rarity: "Ultra Rare", 
+      number: "#030/071", 
+      price: 67, 
+      change: 12.1, 
+      dailyChange: 7, 
+      quantity: 3, 
+      rank: 7, 
+      type: "gain", 
+      emoji: "✨", 
+      cardId: "pgo-30", 
+      imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
+      artist: "Mitsuhiro Arita",
+      hp: 220,
+      type: "Psychic",
+      abilities: [],
+      attacks: [
+        {
+          cost: ["Psychic"],
+          name: "Super Psy Bolt",
+          damage: "50",
+          description: ""
+        },
+        {
+          cost: ["Psychic", "Psychic", "Colorless"],
+          name: "Transfer Break",
+          damage: "160",
+          description: "Move an Energy from this Pokémon to 1 of your Benched Pokémon."
+        }
+      ]
+    },
+    { 
+      id: 8, 
+      name: "Gengar VMAX", 
+      set: "Fusion Strike", 
+      rarity: "VMAX", 
+      number: "#271/264", 
+      price: 45, 
+      change: -8.3, 
+      dailyChange: -4, 
+      quantity: 2, 
+      rank: 8, 
+      type: "loss", 
+      emoji: "👻", 
+      cardId: "swsh9-271", 
+      imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
+      artist: "Ryuta Fuse",
+      hp: 320,
+      type: "Psychic",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Shadow Tag",
+          description: "Once during your turn (before your attack), you may switch 1 of your opponent's Benched Pokémon with their Active Pokémon."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Psychic", "Psychic", "Colorless"],
+          name: "G-Max Terror",
+          damage: "180",
+          description: "The Defending Pokémon can't retreat during your opponent's next turn."
+        }
+      ]
+    }
   ]
 
-  // Mock trending cards data with real Pokemon card IDs
-  const trendingCardsData = [
-    { id: 1, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, change: 15.2, rank: 1, emoji: "🔥", color: "orange", cardId: "swsh4-44", imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", artist: "Atsuko Nishida" },
-    { id: 2, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, change: 22.8, rank: 2, emoji: "⚡", color: "blue", cardId: "swsh12-186", imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", artist: "Hitoshi Ariga" },
-    { id: 3, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, change: 8.4, rank: 3, emoji: "🌿", color: "green", cardId: "swsh7-217", imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", artist: "Ryuta Fuse" },
-    { id: 4, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, change: 12.1, rank: 4, emoji: "✨", color: "purple", cardId: "pgo-30", imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", artist: "Mitsuhiro Arita" },
-    { id: 5, name: "Charizard VMAX", set: "Darkness Ablaze", rarity: "VMAX", number: "#020/189", price: 198, change: 19.7, rank: 5, emoji: "🔥", color: "red", cardId: "swsh3-20", imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png", artist: "Mitsuhiro Arita" },
-    { id: 6, name: "Blastoise VMAX", set: "Chilling Reign", rarity: "VMAX", number: "#018/198", price: 134, change: 14.3, rank: 6, emoji: "🌊", color: "cyan", cardId: "swsh6-18", imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png", artist: "Atsuko Nishida" },
-    { id: 7, name: "Venusaur VMAX", set: "Battle Styles", rarity: "VMAX", number: "#015/163", price: 112, change: 11.8, rank: 7, emoji: "🌿", color: "emerald", cardId: "swsh5-15", imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png", artist: "Atsuko Nishida" },
-    { id: 8, name: "Gengar VMAX", set: "Fusion Strike", rarity: "VMAX", number: "#271/264", price: 45, change: 9.2, rank: 8, emoji: "👻", color: "purple", cardId: "swsh9-271", imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", artist: "Ryuta Fuse" }
+  // Mock trending cards data with real Pokemon card IDs (fallback)
+  const mockTrendingCardsData = [
+    { 
+      id: 1, 
+      name: "Pikachu VMAX", 
+      set: "Vivid Voltage", 
+      rarity: "VMAX", 
+      number: "#044/185", 
+      price: 89, 
+      change: 15.2, 
+      rank: 1, 
+      emoji: "🔥", 
+      color: "orange", 
+      cardId: "swsh4-44", 
+      imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 320,
+      type: "Lightning",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Volt Tackle",
+          description: "Once during your turn (before your attack), you may search your deck for a Lightning Energy card and attach it to this Pokémon. Then, shuffle your deck."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Lightning", "Lightning", "Colorless"],
+          name: "G-Max Volt Crash",
+          damage: "180",
+          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 2, 
+      name: "Lugia V", 
+      set: "Silver Tempest", 
+      rarity: "Ultra Rare", 
+      number: "#186/195", 
+      price: 156, 
+      change: 22.8, 
+      rank: 2, 
+      emoji: "⚡", 
+      color: "blue", 
+      cardId: "swsh12-186", 
+      imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
+      artist: "Hitoshi Ariga",
+      hp: 220,
+      type: "Colorless",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Aeroblast",
+          description: "Once during your turn (before your attack), you may discard 2 cards from your hand. If you do, draw 2 cards."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Colorless", "Colorless", "Colorless"],
+          name: "Wind Storm",
+          damage: "120",
+          description: "You may discard a Stadium card in play."
+        }
+      ]
+    },
+    { 
+      id: 3, 
+      name: "Rayquaza VMAX", 
+      set: "Evolving Skies", 
+      rarity: "VMAX", 
+      number: "#217/203", 
+      price: 234, 
+      change: 8.4, 
+      rank: 3, 
+      emoji: "🌿", 
+      color: "green", 
+      cardId: "swsh7-217", 
+      imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
+      artist: "Ryuta Fuse",
+      hp: 320,
+      type: "Dragon",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Azure Pulse",
+          description: "Once during your turn, you may discard your hand and draw 3 cards."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Fire", "Lightning"],
+          name: "Max Burst",
+          damage: "20+",
+          description: "You may discard any number of Fire or Lightning Energy from this Pokémon; this attack does 80 more damage for each Energy card discarded in this way."
+        }
+      ]
+    },
+    { 
+      id: 4, 
+      name: "Mewtwo V", 
+      set: "Pokemon GO", 
+      rarity: "Ultra Rare", 
+      number: "#030/071", 
+      price: 67, 
+      change: 12.1, 
+      rank: 4, 
+      emoji: "✨", 
+      color: "purple", 
+      cardId: "pgo-30", 
+      imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
+      artist: "Mitsuhiro Arita",
+      hp: 220,
+      type: "Psychic",
+      abilities: [],
+      attacks: [
+        {
+          cost: ["Psychic"],
+          name: "Super Psy Bolt",
+          damage: "50",
+          description: ""
+        },
+        {
+          cost: ["Psychic", "Psychic", "Colorless"],
+          name: "Transfer Break",
+          damage: "160",
+          description: "Move an Energy from this Pokémon to 1 of your Benched Pokémon."
+        }
+      ]
+    },
+    { 
+      id: 5, 
+      name: "Charizard VMAX", 
+      set: "Darkness Ablaze", 
+      rarity: "VMAX", 
+      number: "#020/189", 
+      price: 198, 
+      change: 19.7, 
+      rank: 5, 
+      emoji: "🔥", 
+      color: "red", 
+      cardId: "swsh3-20", 
+      imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png", 
+      artist: "Mitsuhiro Arita",
+      hp: 330,
+      type: "Fire",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Blaze",
+          description: "Once during your turn (before your attack), you may attach a Fire Energy card from your hand to this Pokémon."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Fire", "Fire", "Colorless", "Colorless"],
+          name: "G-Max Wildfire",
+          damage: "200",
+          description: "This attack does 50 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 6, 
+      name: "Blastoise VMAX", 
+      set: "Chilling Reign", 
+      rarity: "VMAX", 
+      number: "#018/198", 
+      price: 134, 
+      change: 14.3, 
+      rank: 6, 
+      emoji: "🌊", 
+      color: "cyan", 
+      cardId: "swsh6-18", 
+      imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 330,
+      type: "Water",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Torrent",
+          description: "Once during your turn (before your attack), you may attach a Water Energy card from your hand to this Pokémon."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Water", "Water", "Colorless", "Colorless"],
+          name: "G-Max Hydro Cannon",
+          damage: "200",
+          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 7, 
+      name: "Venusaur VMAX", 
+      set: "Battle Styles", 
+      rarity: "VMAX", 
+      number: "#015/163", 
+      price: 112, 
+      change: 11.8, 
+      rank: 7, 
+      emoji: "🌿", 
+      color: "emerald", 
+      cardId: "swsh5-15", 
+      imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png", 
+      artist: "Atsuko Nishida",
+      hp: 330,
+      type: "Grass",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Overgrow",
+          description: "Once during your turn (before your attack), you may attach a Grass Energy card from your hand to this Pokémon."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Grass", "Grass", "Colorless", "Colorless"],
+          name: "G-Max Vine Lash",
+          damage: "200",
+          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
+        }
+      ]
+    },
+    { 
+      id: 8, 
+      name: "Gengar VMAX", 
+      set: "Fusion Strike", 
+      rarity: "VMAX", 
+      number: "#271/264", 
+      price: 45, 
+      change: 9.2, 
+      rank: 8, 
+      emoji: "👻", 
+      color: "purple", 
+      cardId: "swsh9-271", 
+      imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
+      artist: "Ryuta Fuse",
+      hp: 320,
+      type: "Psychic",
+      abilities: [
+        {
+          type: "Pokémon Power",
+          name: "Shadow Tag",
+          description: "Once during your turn (before your attack), you may switch 1 of your opponent's Benched Pokémon with their Active Pokémon."
+        }
+      ],
+      attacks: [
+        {
+          cost: ["Psychic", "Psychic", "Colorless"],
+          name: "G-Max Terror",
+          damage: "180",
+          description: "The Defending Pokémon can't retreat during your opponent's next turn."
+        }
+      ]
+    }
   ]
   const [activeTab, setActiveTab] = useState('home')
   const [navigationMode, setNavigationMode] = useState('home') // 'home', 'collection', 'marketplace', 'profile', 'none'
@@ -342,6 +913,45 @@ export default function App() {
       dot: 'bg-pink-500',
       text: 'text-white'
     }
+  }
+
+  // Energy type mapping for dynamic energy icons
+  const energyTypeMap = {
+    'Fire': 'Fire',
+    'Water': 'Water', 
+    'Grass': 'Grass',
+    'Lightning': 'Electric',
+    'Psychic': 'Psychic',
+    'Fighting': 'Fighting',
+    'Darkness': 'Darkness',
+    'Metal': 'Metal',
+    'Fairy': 'Fairy',
+    'Dragon': 'Dragon',
+    'Colorless': 'Colorless'
+  }
+
+  // Helper function to get energy icon path
+  const getEnergyIconPath = (energyType) => {
+    const mappedType = energyTypeMap[energyType] || 'Colorless'
+    return `/Assets/Energies/${mappedType}.svg`
+  }
+
+  // Helper function to render energy cost
+  const renderEnergyCost = (cost) => {
+    if (!cost || !Array.isArray(cost)) return null
+    
+    return (
+      <div className="flex items-center gap-1">
+        {cost.map((energy, index) => (
+          <img 
+            key={index}
+            src={getEnergyIconPath(energy)} 
+            alt={`${energy} Energy`} 
+            className="w-5 h-5" 
+          />
+        ))}
+      </div>
+    )
   }
   
   // Chart and pricing state
@@ -1570,7 +2180,11 @@ export default function App() {
     try {
       setLoading(true);
         
-        // Skip API call and use mock data directly
+        // Use real API search
+        const searchResults = await cardService.searchCards(searchQuery, 50);
+        const transformedResults = searchResults.map(card => cardService.transformCard(card));
+        
+        // Apply filters to the API results
         
         // Get active languages for filtering
         const activeLanguages = Object.entries(selectedLanguages)
@@ -1643,19 +2257,60 @@ export default function App() {
             return formatMap[format];
           });
 
-        // Use mock data directly
-        const filtered = mockUserData.searchResults.filter(card => 
-          !searchQuery.trim() || 
-          card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          card.set?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        // Apply filters to the API results
+        let filtered = transformedResults;
         
+        // Apply language filter
+        if (activeLanguages.length > 0) {
+          filtered = filtered.filter(card => 
+            activeLanguages.includes(card.language)
+          );
+        }
+        
+        // Apply energy type filter
+        if (activeEnergies.length > 0) {
+          filtered = filtered.filter(card => 
+            activeEnergies.includes(card.type)
+          );
+        }
+        
+        // Apply variant filter
+        if (activeVariants.length > 0) {
+          filtered = filtered.filter(card => 
+            activeVariants.includes(card.variant)
+          );
+        }
+        
+        // Apply regulation filter
+        if (activeRegulations.length > 0) {
+          filtered = filtered.filter(card => 
+            activeRegulations.includes(card.regulation)
+          );
+        }
+        
+        // Apply format filter
+        if (activeFormats.length > 0) {
+          filtered = filtered.filter(card => 
+            activeFormats.includes(card.format)
+          );
+        }
         
         setOriginalSearchResults(filtered);
         setFilteredSearchResults(filtered);
         setShowSearchResults(true);
         loadSearchResultImages(filtered);
         
+      } catch (error) {
+        console.error('Search error:', error);
+        // Fall back to mock data if API fails
+        const filtered = mockUserData.searchResults.filter(card => 
+          !searchQuery.trim() || 
+          card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          card.set?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setOriginalSearchResults(filtered);
+        setFilteredSearchResults(filtered);
+        setShowSearchResults(true);
       } finally {
         setLoading(false);
       }
@@ -2514,6 +3169,7 @@ export default function App() {
 
   // Card profile handlers
   const handleCardClick = (card) => {
+    console.log('Card clicked:', card.name, 'Attacks:', card.attacks)
     setSelectedCard(card)
     setShowCardProfile(true)
   }
@@ -3185,63 +3841,9 @@ export default function App() {
       }
     }
 
-        // Generate mock price history for the selected card, variant, and grading service
-        const generateCardPriceHistory = (card, timeRange) => {
-          const currentPrice = getCurrentPrice
-      const history = []
-      const now = new Date()
-      
-      let dataPoints = 30 // Default for 6M
-      let timeInterval = 24 * 60 * 60 * 1000 // 1 day in milliseconds
-      
-      switch (timeRange) {
-        case '1D':
-          dataPoints = 12 // 2-hour intervals
-          timeInterval = 2 * 60 * 60 * 1000 // 2 hours
-          break
-        case '7D':
-          dataPoints = 7 // Daily points
-          timeInterval = 24 * 60 * 60 * 1000 // 1 day
-          break
-        case '1M':
-          dataPoints = 15 // Every 2 days
-          timeInterval = 2 * 24 * 60 * 60 * 1000 // 2 days
-          break
-        case '3M':
-          dataPoints = 20 // Every 4-5 days
-          timeInterval = 4 * 24 * 60 * 60 * 1000 // 4 days
-          break
-        case '6M':
-          dataPoints = 24 // Every week
-          timeInterval = 7 * 24 * 60 * 60 * 1000 // 1 week
-          break
-        case '1Y':
-          dataPoints = 26 // Every 2 weeks
-          timeInterval = 14 * 24 * 60 * 60 * 1000 // 2 weeks
-          break
-        case 'Max':
-          dataPoints = 30 // Every month
-          timeInterval = 30 * 24 * 60 * 60 * 1000 // 1 month
-          break
-      }
-      
-      // Generate price data with some realistic variation
-      for (let i = dataPoints - 1; i >= 0; i--) {
-        const date = new Date(now.getTime() - (i * timeInterval))
-        const variation = (Math.random() - 0.5) * 0.2 // ±10% variation
-        const trend = Math.sin(i / dataPoints * Math.PI) * 0.1 // Slight trend
-        const price = currentPrice * (1 + variation + trend)
-        
-        history.push({
-          date: date.toISOString(),
-          value: Math.max(0.01, price) // Ensure positive price
-        })
-      }
-      
-      return history
-    }
-
-    const history = generateCardPriceHistory(selectedCard, cardChartTimeRange)
+    // Use the new price service for more realistic historical data
+    const dataPoints = priceService.getDataPointsForRange(cardChartTimeRange)
+    const history = priceService.generateHistoricalData(selectedCard, cardChartTimeRange, dataPoints)
     
     if (!history || history.length === 0) {
       return {
@@ -4236,23 +4838,52 @@ export default function App() {
                           </svg>
                           <span className="text-white text-lg font-bold">
                             ${(() => {
-                              // Handle different pricing structures
-                              let price = 0;
-                              if (selectedCard.current_value) price = selectedCard.current_value;
-                              else if (selectedCard.price) price = selectedCard.price;
-                              else if (selectedCard.tcgplayer?.prices?.holofoil?.market) price = selectedCard.tcgplayer.prices.holofoil.market;
-                              else if (selectedCard.tcgplayer?.prices?.normal?.market) price = selectedCard.tcgplayer.prices.normal.market;
-                              else if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) price = selectedCard.tcgplayer.prices.reverseHolofoil.market;
-                              else if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) price = selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
-                              return price.toFixed(2);
+                              // Use TCGPlayer market price as primary source for all cards
+                              const tcgplayerPrices = selectedCard.tcgplayer?.prices || {}
+                              if (tcgplayerPrices.holofoil?.market) return tcgplayerPrices.holofoil.market.toFixed(2);
+                              if (tcgplayerPrices.normal?.market) return tcgplayerPrices.normal.market.toFixed(2);
+                              if (tcgplayerPrices.reverseHolofoil?.market) return tcgplayerPrices.reverseHolofoil.market.toFixed(2);
+                              if (tcgplayerPrices.firstEditionHolofoil?.market) return tcgplayerPrices.firstEditionHolofoil.market.toFixed(2);
+                              // Fallback to current_value or price
+                              if (selectedCard.current_value) return selectedCard.current_value.toFixed(2);
+                              if (selectedCard.price) return selectedCard.price.toFixed(2);
+                              return '0.00';
                             })()}
                           </span>
                         </div>
-                        <div className={`text-sm ${(selectedCard.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {selectedCard.dailyChange ? `$${Math.abs(selectedCard.dailyChange).toFixed(2)}` : '+$2.36'} ({selectedCard.change ? `${selectedCard.change > 0 ? '+' : ''}${selectedCard.change}%` : '+23.6%'})
+                        <div className={`text-sm ${(() => {
+                          // Use a static recent change based on card ID for consistency
+                          const cardId = selectedCard?.id || 'default'
+                          const seed = cardId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                          const staticChange = (seed % 20 - 10) / 100 // -10% to +10% based on card ID
+                          
+                          return staticChange >= 0 ? 'text-green-400' : 'text-red-400'
+                        })()}`}>
+                          {(() => {
+                            // Use a static recent change based on card ID for consistency
+                            const cardId = selectedCard?.id || 'default'
+                            const seed = cardId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                            const staticChange = (seed % 20 - 10) / 100 // -10% to +10% based on card ID
+                            
+                            // Get current price for percentage calculation
+                            const tcgplayerPrices = selectedCard?.tcgplayer?.prices || {}
+                            const holofoilPrice = tcgplayerPrices.holofoil?.market || tcgplayerPrices.holofoil?.mid
+                            const normalPrice = tcgplayerPrices.normal?.market || tcgplayerPrices.normal?.mid
+                            const currentPrice = holofoilPrice || normalPrice || 457.11
+                            
+                            const changeAmount = currentPrice * staticChange
+                            const changePercent = staticChange * 100
+                            
+                            return `$${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`
+                          })()}
                         </div>
                         <div className="text-gray-400 text-xs">
-                          past 7 days
+                          {(() => {
+                            // Check if we have TCGPlayer data
+                            const tcgplayerPrices = selectedCard.tcgplayer?.prices || {}
+                            const hasRealData = tcgplayerPrices.holofoil?.market || tcgplayerPrices.normal?.market
+                            return hasRealData ? 'market data' : 'estimated'
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -4318,12 +4949,115 @@ export default function App() {
                       <span className="text-white text-xl font-bold">
                   ${getCurrentPrice.toFixed(2)}
                       </span>
-                      <div className="flex items-center gap-1 text-green-400 text-sm">
+                      <div className={`flex items-center gap-1 text-sm ${(() => {
+                        // Use the same calculation as the chart data to ensure consistency
+                        const chartData = getCardChartData
+                        if (!chartData.datasets || chartData.datasets.length === 0) {
+                          return 'text-gray-400'
+                        }
+                        
+                        const history = chartData.datasets[0].data
+                        if (history.length < 2) {
+                          return 'text-gray-400'
+                        }
+                        
+                        // Calculate absolute price change from start to end of time range
+                        const currentPrice = history[history.length - 1]
+                        const startPrice = history[0]
+                        const absoluteChange = currentPrice - startPrice
+                        
+                        console.log('Market Value Price Change Debug (using chart data):', {
+                          chartData,
+                          history,
+                          currentPrice,
+                          startPrice,
+                          absoluteChange,
+                          isPositive: absoluteChange >= 0,
+                          colorClass: absoluteChange >= 0 ? 'text-green-400' : 'text-red-400'
+                        })
+                        
+                        return absoluteChange >= 0 ? 'text-green-400' : 'text-red-400'
+                      })()}`}>
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
+                            (() => {
+                              // Use the same calculation as the chart data to ensure consistency
+                              const chartData = getCardChartData
+                              if (!chartData.datasets || chartData.datasets.length === 0) {
+                                return "M7 11l5-5m0 0l5 5m-5-5v12" // Default up arrow
+                              }
+                              
+                              const history = chartData.datasets[0].data
+                              if (history.length < 2) {
+                                return "M7 11l5-5m0 0l5 5m-5-5v12" // Default up arrow
+                              }
+                              
+                              // Calculate absolute price change from start to end of time range
+                              const currentPrice = history[history.length - 1]
+                              const startPrice = history[0]
+                              const absoluteChange = currentPrice - startPrice
+                              
+                              console.log('Arrow Direction Debug (using chart data):', {
+                                currentPrice,
+                                startPrice,
+                                absoluteChange,
+                                isPositive: absoluteChange >= 0,
+                                arrowPath: absoluteChange >= 0 ? 'up' : 'down'
+                              })
+                              
+                              // Return correct arrow based on price change direction
+                              if (absoluteChange >= 0) {
+                                return "M7 11l5-5m0 0l5 5m-5-5v12" // Up arrow for increase
+                              } else {
+                                return "M17 13l-5 5m0 0l-5-5m5 5V6" // Down arrow for decrease
+                              }
+                            })()
+                          } />
                         </svg>
-                        <span>$1.23</span>
-                        <span>this weeks</span>
+                        <span>{(() => {
+                          // Use the same calculation as the chart data to ensure consistency
+                          const chartData = getCardChartData
+                          if (!chartData.datasets || chartData.datasets.length === 0) {
+                            return '$0.00'
+                          }
+                          
+                          const history = chartData.datasets[0].data
+                          if (history.length < 2) {
+                            return '$0.00'
+                          }
+                          
+                          // Calculate absolute price change from start to end of time range
+                          const currentPrice = history[history.length - 1]
+                          const startPrice = history[0]
+                          const absoluteChange = currentPrice - startPrice
+                          
+                          console.log('Price Display Debug (using chart data):', {
+                            currentPrice,
+                            startPrice,
+                            absoluteChange,
+                            displayValue: `$${absoluteChange >= 0 ? '+' : ''}${Math.abs(absoluteChange).toFixed(2)}`
+                          })
+                          
+                          return `$${absoluteChange >= 0 ? '+' : '-'}${Math.abs(absoluteChange).toFixed(2)}`
+                        })()}</span>
+                        <span>{(() => {
+                          // Update text based on timeline selection
+                          const tcgplayerPrices = selectedCard?.tcgplayer?.prices || {}
+                          const hasRealData = tcgplayerPrices.holofoil?.market || tcgplayerPrices.normal?.market
+                          
+                          if (!hasRealData) return 'estimated'
+                          
+                          switch (cardChartTimeRange) {
+                            case '1D': return 'today'
+                            case '7D': return 'this week'
+                            case '1M': return 'this month'
+                            case '3M': return 'past 3 months'
+                            case '6M': return 'past 6 months'
+                            case '1Y': return 'past year'
+                            case 'Max': return 'all time'
+                            default: return 'this week'
+                          }
+                        })()}</span>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -4560,28 +5294,48 @@ export default function App() {
                 {/* Card Info Section */}
                 <div className="bg-gray-800 rounded-2xl p-6 mb-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <img src="/Assets/CardInfo.svg" alt="Card Info" className="w-4 h-4" />
                     <h3 className="text-white font-medium">Card info</h3>
                   </div>
 
-                  {/* Ability Section */}
+                  {/* Attack Section */}
                   <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-red-400 text-sm font-medium">Ability</span>
-                      <span className="text-white text-sm">Stimulated Evolution</span>
-                    </div>
-                    <p className="text-white text-sm">
-                      If you have Shelmet in play, this Pokémon can evolve during your first turn or the turn you play it.
-                    </p>
-                  </div>
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      {/* Pokémon Power Section */}
+                      {selectedCard?.abilities && selectedCard.abilities.length > 0 && (
+                        <div className="mb-4">
+                          {selectedCard.abilities.map((ability, index) => (
+                            <div key={index} className={index > 0 ? "mt-4" : ""}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-red-400 text-sm font-medium">{ability.type}</span>
+                                <span className="text-white text-sm font-bold">{ability.name}</span>
+                              </div>
+                              <p className="text-white text-sm">
+                                {ability.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                  <div className="border-t border-gray-700 pt-4 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-5 h-5 bg-gray-600 rounded"></div>
-                      <span className="text-white text-sm">Attack</span>
-                      <span className="text-white text-sm ml-auto">10</span>
+                      {/* Divider */}
+                      {selectedCard?.attacks && selectedCard.attacks.length > 0 && (
+                        <div className="border-t border-gray-600 pt-4 mb-4">
+                          {selectedCard.attacks.map((attack, index) => (
+                            <div key={index} className={index > 0 ? "mt-4" : ""}>
+                              {/* Attack Cost */}
+                              <div className="flex items-center gap-2 mb-2">
+                                {renderEnergyCost(attack.cost)}
+                                <span className="text-white text-sm font-bold">{attack.name}</span>
+                                <span className="text-white text-sm ml-auto font-bold">{attack.damage}</span>
+                              </div>
+                              <p className="text-white text-sm">
+                                {attack.description}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -4605,11 +5359,21 @@ export default function App() {
                     </div>
                     <div className="bg-gray-700 rounded p-3 text-center">
                       <div className="text-white text-xs mb-2">HP</div>
-                      <div className="text-white text-sm">60</div>
+                      <div className="text-white text-sm">{selectedCard?.hp || 'N/A'}</div>
                     </div>
                     <div className="bg-gray-700 rounded p-3 text-center">
-                      <div className="text-white text-xs mb-2">Energy</div>
-                      <div className="w-5 h-5 bg-gray-600 rounded mx-auto"></div>
+                      <div className="text-white text-xs mb-2">Type</div>
+                      <div className="flex justify-center">
+                        {selectedCard?.type ? (
+                          <img 
+                            src={getEnergyIconPath(selectedCard.type)} 
+                            alt={`${selectedCard.type} Energy`} 
+                            className="w-5 h-5" 
+                          />
+                        ) : (
+                          <div className="w-5 h-5 bg-gray-600 rounded"></div>
+                        )}
+                      </div>
                     </div>
                     <div className="bg-gray-700 rounded p-3 text-center">
                       <div className="text-white text-xs mb-2">Stage</div>
@@ -6287,6 +7051,18 @@ export default function App() {
     )
   }
 
+  // Loading state for data
+  if (isLoadingData && currentScreen === 'dashboard') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading cards...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Splash Screen
   if (currentScreen === 'splash') {
     return (
@@ -7345,8 +8121,8 @@ export default function App() {
                       <div className="relative">
                         <div className="w-16 h-20 rounded-lg shadow-lg overflow-hidden bg-gray-800">
                           <img 
-                            src={topMoversData[1].imageUrl} 
-                            alt={topMoversData[1].name}
+                            src={topMoversData[1]?.imageUrl || ''} 
+                            alt={topMoversData[1]?.name || 'Card'}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.style.display = 'none'
@@ -8337,10 +9113,10 @@ export default function App() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                             )}
                             </svg>
-                          <span className="font-semibold">{Math.abs(mover.change).toFixed(1)}%</span>
+                          <span className="font-semibold">{Math.abs(mover.change).toFixed(2)}%</span>
                           </div>
                         <div className="text-gray-400 text-xs">
-                          {mover.dailyChange >= 0 ? '+' : ''}${mover.dailyChange} today
+                          {mover.dailyChange >= 0 ? '+' : ''}${mover.dailyChange.toFixed(2)} today
                       </div>
                     </div>
                       </div>
@@ -8470,7 +9246,7 @@ export default function App() {
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span className="font-semibold">+{card.change.toFixed(1)}%</span>
+                        <span className="font-semibold">+{card.change.toFixed(2)}%</span>
                       </div>
                   </div>
                 </div>
