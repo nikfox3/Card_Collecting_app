@@ -135,7 +135,6 @@ export default function App() {
   const [selectedVariant, setSelectedVariant] = useState('normal')
   const [addCardCondition, setAddCardCondition] = useState('Near Mint')
   const [isGraded, setIsGraded] = useState(false)
-  const [selectedGradingService, setSelectedGradingService] = useState('PSA')
   const [selectedGrade, setSelectedGrade] = useState('10')
   const [addNote, setAddNote] = useState('')
   
@@ -268,6 +267,11 @@ export default function App() {
   const [showEditPricePaidModal, setShowEditPricePaidModal] = useState(false)
   const [selectedPurchaseSource, setSelectedPurchaseSource] = useState('')
   const [showPurchaseSourceDropdown, setShowPurchaseSourceDropdown] = useState(false)
+  const [cardChartTimeRange, setCardChartTimeRange] = useState('6M')
+  const [selectedCardVariant, setSelectedCardVariant] = useState('normal')
+  const [showCardVariantDropdown, setShowCardVariantDropdown] = useState(false)
+  const [selectedGradingService, setSelectedGradingService] = useState('raw')
+  const [showGradingDropdown, setShowGradingDropdown] = useState(false)
   const [showAddToFolderModal, setShowAddToFolderModal] = useState(false)
   const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
   const [showAddToBinderModal, setShowAddToBinderModal] = useState(false)
@@ -382,38 +386,6 @@ export default function App() {
     return values
   }, [selectedCard])
 
-  // Chart.js options
-  const cardChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false // We'll use custom legend
-      },
-      tooltip: {
-        enabled: true,
-        mode: 'index',
-        intersect: false,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: 'white',
-        bodyColor: 'white',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderWidth: 1
-      }
-    },
-    scales: {
-      x: {
-        display: false
-      },
-      y: {
-        display: false
-      }
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index'
-    }
-  }
   const [flashEnabled, setFlashEnabled] = useState(false)
   const [selectedFolder, setSelectedFolder] = useState('My Collection')
   const [selectedCondition, setSelectedCondition] = useState('Near Mint')
@@ -2898,6 +2870,12 @@ export default function App() {
       if (showPricingMenu && !event.target.closest('.pricing-menu-container')) {
         setShowPricingMenu(false)
       }
+        if (showCardVariantDropdown && !event.target.closest('.variant-dropdown-container')) {
+          setShowCardVariantDropdown(false)
+        }
+        if (showGradingDropdown && !event.target.closest('.grading-dropdown-container')) {
+          setShowGradingDropdown(false)
+        }
       // Close dropdowns when clicking outside
       if (!event.target.closest('.dropdown-container')) {
         setShowFolderDropdown(false)
@@ -2912,7 +2890,7 @@ export default function App() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showCardMenu, showPricingMenu])
+  }, [showCardMenu, showPricingMenu, showCardVariantDropdown, showGradingDropdown])
 
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
@@ -3096,6 +3074,290 @@ export default function App() {
       ]
     }
   }, [selectedTimeRange, selectedCurrency, selectedCollection])
+
+  // Get graded card options and their prices
+  const getGradedOptions = useMemo(() => {
+    if (!selectedCard) return []
+    
+    const basePrice = selectedCard.current_value || selectedCard.price || 12.00
+    const gradingOptions = []
+    
+    // Add raw card option
+    gradingOptions.push({
+      id: 'raw',
+      name: 'Raw',
+      price: basePrice,
+      multiplier: 1.0
+    })
+    
+    // Add graded options with different multipliers based on grading service
+    const gradingServices = [
+      { id: 'psa', name: 'PSA', multiplier: 1.5 },
+      { id: 'cgc', name: 'CGC', multiplier: 1.3 },
+      { id: 'tag', name: 'TAG', multiplier: 1.2 },
+      { id: 'bgs', name: 'BGS', multiplier: 1.4 },
+      { id: 'ace', name: 'ACE', multiplier: 1.1 }
+    ]
+    
+    gradingServices.forEach(service => {
+      gradingOptions.push({
+        id: service.id,
+        name: service.name,
+        price: basePrice * service.multiplier,
+        multiplier: service.multiplier
+      })
+    })
+    
+    return gradingOptions
+  }, [selectedCard])
+
+  // Get card-specific variants and their prices (dynamic based on grading service)
+  const getCardVariants = useMemo(() => {
+    if (!selectedCard) return []
+    
+    const basePrice = selectedCard.current_value || selectedCard.price || 12.00
+    const grading = getGradedOptions.find(g => g.id === selectedGradingService)
+    const gradingMultiplier = grading ? grading.multiplier : 1.0
+    
+    const variants = []
+    
+    // Add normal variant
+    variants.push({
+      id: 'normal',
+      name: 'Normal',
+      price: basePrice * gradingMultiplier,
+      multiplier: 1.0
+    })
+    
+    // Add holofoil variant (typically 1.5-2x normal price)
+    variants.push({
+      id: 'holofoil',
+      name: 'Holofoil',
+      price: basePrice * 1.8 * gradingMultiplier,
+      multiplier: 1.8
+    })
+    
+    // Add reverse holofoil variant (typically 1.2-1.5x normal price)
+    variants.push({
+      id: 'reverseHolofoil',
+      name: 'Reverse Holo',
+      price: basePrice * 1.3 * gradingMultiplier,
+      multiplier: 1.3
+    })
+    
+    // Add first edition if it's a vintage card
+    if (selectedCard.set?.name?.includes('Base Set') || selectedCard.set?.name?.includes('Jungle') || selectedCard.set?.name?.includes('Fossil')) {
+      variants.push({
+        id: 'firstEdition',
+        name: '1st Edition',
+        price: basePrice * 3.0 * gradingMultiplier,
+        multiplier: 3.0
+      })
+    }
+    
+    // Add special variants for certain cards
+    if (selectedCard.name?.includes('Charizard') || selectedCard.name?.includes('Pikachu')) {
+      variants.push({
+        id: 'shadowless',
+        name: 'Shadowless',
+        price: basePrice * 2.5 * gradingMultiplier,
+        multiplier: 2.5
+      })
+    }
+    
+    return variants
+  }, [selectedCard, selectedGradingService, getGradedOptions])
+
+  // Get current price (variant prices already include grading multiplier)
+  const getCurrentPrice = useMemo(() => {
+    if (!selectedCard) return 12.00
+    
+    const variant = getCardVariants.find(v => v.id === selectedCardVariant)
+    return variant ? variant.price : (selectedCard?.current_value || selectedCard?.price || 12.00)
+  }, [selectedCard, selectedCardVariant, getCardVariants])
+
+  // Card-specific price chart data generator
+  const getCardChartData = useMemo(() => {
+    if (!selectedCard) {
+      return {
+        labels: [],
+        datasets: []
+      }
+    }
+
+        // Generate mock price history for the selected card, variant, and grading service
+        const generateCardPriceHistory = (card, timeRange) => {
+          const currentPrice = getCurrentPrice
+      const history = []
+      const now = new Date()
+      
+      let dataPoints = 30 // Default for 6M
+      let timeInterval = 24 * 60 * 60 * 1000 // 1 day in milliseconds
+      
+      switch (timeRange) {
+        case '1D':
+          dataPoints = 12 // 2-hour intervals
+          timeInterval = 2 * 60 * 60 * 1000 // 2 hours
+          break
+        case '7D':
+          dataPoints = 7 // Daily points
+          timeInterval = 24 * 60 * 60 * 1000 // 1 day
+          break
+        case '1M':
+          dataPoints = 15 // Every 2 days
+          timeInterval = 2 * 24 * 60 * 60 * 1000 // 2 days
+          break
+        case '3M':
+          dataPoints = 20 // Every 4-5 days
+          timeInterval = 4 * 24 * 60 * 60 * 1000 // 4 days
+          break
+        case '6M':
+          dataPoints = 24 // Every week
+          timeInterval = 7 * 24 * 60 * 60 * 1000 // 1 week
+          break
+        case '1Y':
+          dataPoints = 26 // Every 2 weeks
+          timeInterval = 14 * 24 * 60 * 60 * 1000 // 2 weeks
+          break
+        case 'Max':
+          dataPoints = 30 // Every month
+          timeInterval = 30 * 24 * 60 * 60 * 1000 // 1 month
+          break
+      }
+      
+      // Generate price data with some realistic variation
+      for (let i = dataPoints - 1; i >= 0; i--) {
+        const date = new Date(now.getTime() - (i * timeInterval))
+        const variation = (Math.random() - 0.5) * 0.2 // ±10% variation
+        const trend = Math.sin(i / dataPoints * Math.PI) * 0.1 // Slight trend
+        const price = currentPrice * (1 + variation + trend)
+        
+        history.push({
+          date: date.toISOString(),
+          value: Math.max(0.01, price) // Ensure positive price
+        })
+      }
+      
+      return history
+    }
+
+    const history = generateCardPriceHistory(selectedCard, cardChartTimeRange)
+    
+    if (!history || history.length === 0) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'Card Price',
+            data: [],
+            borderColor: '#605DEC',
+            backgroundColor: 'rgba(96, 93, 236, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#605DEC',
+            pointBorderColor: '#F9F9F9',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          }
+        ]
+      }
+    }
+    
+    return {
+      labels: history.map(point => {
+        const date = new Date(point.date)
+        if (cardChartTimeRange === '1D') {
+          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        } else if (cardChartTimeRange === '7D') {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (cardChartTimeRange === '1M') {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (cardChartTimeRange === '3M') {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (cardChartTimeRange === '6M') {
+          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        } else if (cardChartTimeRange === '1Y') {
+          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        } else if (cardChartTimeRange === 'Max') {
+          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        } else {
+          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        }
+      }),
+      datasets: [
+        {
+          label: 'Card Price',
+          data: history.map(point => point.value),
+          borderColor: '#605DEC',
+          backgroundColor: 'rgba(96, 93, 236, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#605DEC',
+          pointBorderColor: '#F9F9F9',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        }
+      ]
+    }
+  }, [selectedCard, cardChartTimeRange, selectedCardVariant, getCurrentPrice])
+
+  // Card chart options
+  const cardChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#F9F9F9',
+        bodyColor: '#F9F9F9',
+        borderColor: '#605DEC',
+        borderWidth: 1,
+        callbacks: {
+          label: function(context) {
+            return `Price: $${context.parsed.y.toFixed(2)}`
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: '#9CA3AF',
+          font: {
+            size: 10
+          }
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(156, 163, 175, 0.1)'
+        },
+        ticks: {
+          color: '#9CA3AF',
+          font: {
+            size: 10
+          },
+          callback: function(value) {
+            return `$${value.toFixed(2)}`
+          }
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  }
 
   const chartOptions = {
     responsive: true,
@@ -3876,7 +4138,7 @@ export default function App() {
                           >
                             <path d="M2.75499 14.7161L3.27199 16.6481C3.87599 18.9031 4.17899 20.0311 4.86399 20.7621C5.40464 21.3389 6.10408 21.7425 6.87399 21.9221C7.84999 22.1501 8.97799 21.8481 11.234 21.2441C13.488 20.6401 14.616 20.3381 15.347 19.6531C15.4077 19.5958 15.4663 19.5371 15.523 19.4771C15.1824 19.4464 14.8439 19.3963 14.509 19.3271C13.813 19.1891 12.986 18.9671 12.008 18.7051L11.901 18.6761L11.876 18.6701C10.812 18.3841 9.92299 18.1461 9.21299 17.8901C8.46599 17.6201 7.78799 17.2871 7.21099 16.7471C6.41731 16.0035 5.86191 15.0413 5.61499 13.9821C5.43499 13.2131 5.48699 12.4591 5.62699 11.6781C5.76099 10.9291 6.00099 10.0311 6.28899 8.95609L6.82399 6.96209L6.84199 6.89209C4.92199 7.40909 3.91099 7.71509 3.23699 8.34609C2.65949 8.88714 2.25545 9.58734 2.07599 10.3581C1.84799 11.3331 2.14999 12.4611 2.75499 14.7161Z" fill="#605DEC"/>
                             <path fillRule="evenodd" clipRule="evenodd" d="M20.83 10.715L20.312 12.647C19.707 14.902 19.405 16.03 18.72 16.761C18.1795 17.3382 17.48 17.7422 16.71 17.922C16.6133 17.9447 16.515 17.962 16.415 17.974C15.5 18.087 14.383 17.788 12.351 17.244C10.096 16.639 8.96799 16.337 8.23699 15.652C7.65966 15.1112 7.25563 14.4114 7.07599 13.641C6.84799 12.665 7.14999 11.538 7.75499 9.28299L8.27199 7.35099L8.51599 6.44599C8.97099 4.77999 9.27699 3.86299 9.86399 3.23599C10.4046 2.65919 11.1041 2.25553 11.874 2.07599C12.85 1.84799 13.978 2.14999 16.234 2.75499C18.488 3.35899 19.616 3.66099 20.347 4.34499C20.9245 4.88605 21.3285 5.58625 21.508 6.35699C21.736 7.33299 21.434 8.45999 20.83 10.715ZM11.051 9.80499C11.0765 9.70984 11.1205 9.62065 11.1805 9.54251C11.2405 9.46437 11.3154 9.39883 11.4007 9.34961C11.486 9.30039 11.5802 9.26847 11.6779 9.25566C11.7756 9.24286 11.8749 9.24943 11.97 9.27499L16.8 10.57C16.8976 10.5931 16.9897 10.6357 17.0706 10.695C17.1515 10.7544 17.2197 10.8294 17.2711 10.9156C17.3225 11.0018 17.3561 11.0974 17.3699 11.1968C17.3836 11.2963 17.3773 11.3974 17.3513 11.4943C17.3252 11.5913 17.28 11.682 17.2183 11.7611C17.1565 11.8402 17.0795 11.9062 16.9919 11.955C16.9042 12.0038 16.8076 12.0346 16.7078 12.0454C16.608 12.0562 16.5071 12.0469 16.411 12.018L11.581 10.724C11.389 10.6724 11.2254 10.5468 11.126 10.3747C11.0267 10.2025 10.9997 9.99701 11.051 9.80499ZM10.275 12.704C10.3266 12.512 10.4522 12.3484 10.6243 12.249C10.7964 12.1497 11.001 12.1227 11.193 12.174L14.091 12.951C14.1891 12.9736 14.2817 13.0158 14.3631 13.075C14.4446 13.1342 14.5133 13.2092 14.5652 13.2955C14.6171 13.3818 14.651 13.4777 14.665 13.5774C14.679 13.6771 14.6728 13.7786 14.6468 13.8759C14.6207 13.9732 14.5753 14.0642 14.5133 14.1435C14.4513 14.2229 14.374 14.2889 14.2859 14.3378C14.1978 14.3866 14.1008 14.4172 14.0007 14.4277C13.9005 14.4382 13.7993 14.4284 13.703 14.399L10.805 13.623C10.7098 13.5975 10.6206 13.5534 10.5425 13.4934C10.4644 13.4334 10.3988 13.3586 10.3496 13.2733C10.3004 13.1879 10.2685 13.0937 10.2557 12.9961C10.2429 12.8984 10.2494 12.7991 10.275 12.704Z" fill="#605DEC"/>
-                          </svg>
+                        </svg>
                         ) : (
                           <img 
                             src="/Assets/Notes Icon_None.svg" 
@@ -4054,17 +4316,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-col">
                       <span className="text-white text-xl font-bold">
-                        ${(() => {
-                          // Handle different pricing structures
-                          let price = 0;
-                          if (selectedCard.current_value) price = selectedCard.current_value;
-                          else if (selectedCard.price) price = selectedCard.price;
-                          else if (selectedCard.tcgplayer?.prices?.holofoil?.market) price = selectedCard.tcgplayer.prices.holofoil.market;
-                          else if (selectedCard.tcgplayer?.prices?.normal?.market) price = selectedCard.tcgplayer.prices.normal.market;
-                          else if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) price = selectedCard.tcgplayer.prices.reverseHolofoil.market;
-                          else if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) price = selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
-                          return price.toFixed(2);
-                        })()}
+                  ${getCurrentPrice.toFixed(2)}
                       </span>
                       <div className="flex items-center gap-1 text-green-400 text-sm">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4075,35 +4327,87 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button className="px-3 py-1 bg-gray-700 text-white text-sm rounded flex items-center gap-1">
-                        Reverse Holo
+                      <div className="relative variant-dropdown-container">
+                        <button 
+                          onClick={() => setShowCardVariantDropdown(!showCardVariantDropdown)}
+                          className="px-3 py-1 bg-gray-700 text-white text-sm rounded flex items-center gap-1 hover:bg-gray-600 transition-colors"
+                        >
+                          {getCardVariants.find(v => v.id === selectedCardVariant)?.name || 'Normal'}
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
-                      <button className="px-3 py-1 bg-gray-700 text-white text-sm rounded flex items-center gap-1">
-                        Raw
+                        {showCardVariantDropdown && (
+                          <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[120px]">
+                            {getCardVariants.map((variant) => (
+                              <button
+                                key={variant.id}
+                                onClick={() => {
+                                  setSelectedCardVariant(variant.id)
+                                  setShowCardVariantDropdown(false)
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                  selectedCardVariant === variant.id ? 'bg-gray-700 text-white' : 'text-gray-300'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{variant.name}</span>
+                                  <span className="text-xs text-gray-400">${variant.price.toFixed(2)}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Grading Service Dropdown */}
+                      <div className="relative grading-dropdown-container">
+                        <button 
+                          onClick={() => setShowGradingDropdown(!showGradingDropdown)}
+                          className="px-3 py-1 bg-gray-700 text-white text-sm rounded flex items-center gap-1 hover:bg-gray-600 transition-colors"
+                        >
+                          {getGradedOptions.find(g => g.id === selectedGradingService)?.name || 'Raw'}
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
+                        {showGradingDropdown && (
+                          <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[120px]">
+                            {getGradedOptions.map((grading) => (
+                              <button
+                                key={grading.id}
+                                onClick={() => {
+                                  setSelectedGradingService(grading.id)
+                                  setShowGradingDropdown(false)
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                  selectedGradingService === grading.id ? 'bg-gray-700 text-white' : 'text-gray-300'
+                                }`}
+                              >
+                                <span>{grading.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Chart Placeholder */}
-                  <div className="h-48 bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
-                    <span className="text-gray-400">Price Chart</span>
+                  {/* Card Price Chart */}
+                  <div className="h-48 bg-gray-700 rounded-lg mb-4 p-4">
+                    <Line data={getCardChartData} options={cardChartOptions} />
                   </div>
 
                   {/* Time Range Buttons */}
                   <div className="flex gap-2 mb-4">
-                    {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((period, index) => (
+                    {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((period) => (
                       <button 
                         key={period}
+                        onClick={() => setCardChartTimeRange(period === 'Max' ? 'Max' : period)}
                         className={`px-3 py-1 text-sm rounded ${
-                          period === '6M' 
+                          cardChartTimeRange === (period === 'Max' ? 'Max' : period) 
                             ? 'bg-[#605DEC] text-white' 
-                            : 'bg-gray-700 text-gray-300'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                       >
                         {period}
@@ -4111,22 +4415,144 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* Ungraded Values */}
+                  {/* Dynamic Values Section */}
                   <div className="border-t border-gray-700 pt-4">
-                    <h4 className="text-white text-sm mb-3">Ungraded Values</h4>
-                    <div className="grid grid-cols-5 gap-2">
-                      {[
-                        { label: 'NM', price: '$12.34' },
-                        { label: 'LP', price: '$10.23' },
-                        { label: 'MP', price: '$9.23' },
-                        { label: 'HP', price: '$8.23' },
-                        { label: 'DM', price: '$7.23' }
-                      ].map((item) => (
-                        <div key={item.label} className="bg-gray-700 rounded p-2 text-center">
-                          <div className="text-white text-xs mb-1">{item.label}</div>
-                          <div className="text-white text-xs font-medium">{item.price}</div>
-                        </div>
-                      ))}
+                    <h4 className="text-white text-sm mb-3">
+                      {selectedGradingService === 'raw' ? 'Ungraded Values' : `${getGradedOptions.find(g => g.id === selectedGradingService)?.name} Values`}
+                    </h4>
+                    <div className={`${selectedGradingService === 'raw' ? 'grid grid-cols-5 gap-2' : 'flex gap-2 overflow-x-auto pb-2'}`}>
+                      {selectedGradingService === 'raw' ? (
+                        // Raw card conditions
+                        [
+                          { id: 'nm', name: 'NM', fullName: 'Near Mint', multiplier: 1.0 },
+                          { id: 'lp', name: 'LP', fullName: 'Lightly Played', multiplier: 0.8 },
+                          { id: 'mp', name: 'MP', fullName: 'Moderately Played', multiplier: 0.6 },
+                          { id: 'hp', name: 'HP', fullName: 'Heavily Played', multiplier: 0.4 },
+                          { id: 'dm', name: 'DM', fullName: 'Damaged', multiplier: 0.2 }
+                        ].map(condition => {
+                          const basePrice = selectedCard?.current_value || selectedCard?.price || 12.00
+                          const price = basePrice * condition.multiplier
+                          return (
+                            <div key={condition.id} className="bg-gray-700 rounded p-2 text-center">
+                              <div className="text-white text-xs mb-1">{condition.name}</div>
+                              <div className="text-white text-xs font-medium">${price.toFixed(2)}</div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        // Graded card grades
+                        (() => {
+                          const gradingService = getGradedOptions.find(g => g.id === selectedGradingService)
+                          if (!gradingService) return []
+                          
+                          const basePrice = selectedCard?.current_value || selectedCard?.price || 12.00
+                          const gradingMultiplier = gradingService.multiplier
+                          
+                          // Define grade ranges for different services based on official grading scales
+                          const gradeRanges = {
+                            'psa': [
+                              { id: '10', name: '10', multiplier: 3.0 },
+                              { id: '9', name: '9', multiplier: 2.0 },
+                              { id: '8', name: '8', multiplier: 1.5 },
+                              { id: '7', name: '7', multiplier: 1.2 },
+                              { id: '6', name: '6', multiplier: 1.0 },
+                              { id: '5', name: '5', multiplier: 0.8 },
+                              { id: '4', name: '4', multiplier: 0.6 },
+                              { id: '3', name: '3', multiplier: 0.4 },
+                              { id: '2', name: '2', multiplier: 0.3 },
+                              { id: '1.5', name: '1.5', multiplier: 0.25 },
+                              { id: '1', name: '1', multiplier: 0.2 }
+                            ],
+                            'cgc': [
+                              { id: '10', name: '10', multiplier: 2.8 },
+                              { id: '9.5', name: '9.5', multiplier: 2.2 },
+                              { id: '9', name: '9', multiplier: 1.8 },
+                              { id: '8.5', name: '8.5', multiplier: 1.4 },
+                              { id: '8', name: '8', multiplier: 1.1 },
+                              { id: '7.5', name: '7.5', multiplier: 0.9 },
+                              { id: '7', name: '7', multiplier: 0.7 },
+                              { id: '6.5', name: '6.5', multiplier: 0.6 },
+                              { id: '6', name: '6', multiplier: 0.5 },
+                              { id: '5.5', name: '5.5', multiplier: 0.4 },
+                              { id: '5', name: '5', multiplier: 0.35 },
+                              { id: '4.5', name: '4.5', multiplier: 0.3 },
+                              { id: '4', name: '4', multiplier: 0.25 },
+                              { id: '3.5', name: '3.5', multiplier: 0.2 },
+                              { id: '3', name: '3', multiplier: 0.18 },
+                              { id: '2.5', name: '2.5', multiplier: 0.15 },
+                              { id: '2', name: '2', multiplier: 0.12 },
+                              { id: '1.5', name: '1.5', multiplier: 0.1 },
+                              { id: '1', name: '1', multiplier: 0.08 }
+                            ],
+                            'bgs': [
+                              { id: '10', name: '10', multiplier: 3.2 },
+                              { id: '9.5', name: '9.5', multiplier: 2.5 },
+                              { id: '9', name: '9', multiplier: 2.0 },
+                              { id: '8.5', name: '8.5', multiplier: 1.6 },
+                              { id: '8', name: '8', multiplier: 1.3 },
+                              { id: '7.5', name: '7.5', multiplier: 1.1 },
+                              { id: '7', name: '7', multiplier: 0.9 },
+                              { id: '6.5', name: '6.5', multiplier: 0.7 },
+                              { id: '6', name: '6', multiplier: 0.6 },
+                              { id: '5.5', name: '5.5', multiplier: 0.5 },
+                              { id: '5', name: '5', multiplier: 0.4 },
+                              { id: '4.5', name: '4.5', multiplier: 0.35 },
+                              { id: '4', name: '4', multiplier: 0.3 },
+                              { id: '3.5', name: '3.5', multiplier: 0.25 },
+                              { id: '3', name: '3', multiplier: 0.2 },
+                              { id: '2.5', name: '2.5', multiplier: 0.15 },
+                              { id: '2', name: '2', multiplier: 0.12 },
+                              { id: '1.5', name: '1.5', multiplier: 0.1 },
+                              { id: '1', name: '1', multiplier: 0.08 }
+                            ],
+                            'tag': [
+                              { id: '10', name: '10', multiplier: 2.5 },
+                              { id: '9.5', name: '9.5', multiplier: 2.0 },
+                              { id: '9', name: '9', multiplier: 1.8 },
+                              { id: '8.5', name: '8.5', multiplier: 1.5 },
+                              { id: '8', name: '8', multiplier: 1.4 },
+                              { id: '7.5', name: '7.5', multiplier: 1.2 },
+                              { id: '7', name: '7', multiplier: 1.1 },
+                              { id: '6.5', name: '6.5', multiplier: 0.9 },
+                              { id: '6', name: '6', multiplier: 0.8 },
+                              { id: '5.5', name: '5.5', multiplier: 0.7 },
+                              { id: '5', name: '5', multiplier: 0.6 },
+                              { id: '4.5', name: '4.5', multiplier: 0.5 },
+                              { id: '4', name: '4', multiplier: 0.45 },
+                              { id: '3.5', name: '3.5', multiplier: 0.4 },
+                              { id: '3', name: '3', multiplier: 0.35 },
+                              { id: '2.5', name: '2.5', multiplier: 0.3 },
+                              { id: '2', name: '2', multiplier: 0.25 },
+                              { id: '1.5', name: '1.5', multiplier: 0.2 },
+                              { id: '1', name: '1', multiplier: 0.15 }
+                            ],
+                            'ace': [
+                              { id: '10', name: '10', multiplier: 2.2 },
+                              { id: '9', name: '9', multiplier: 1.6 },
+                              { id: '8', name: '8', multiplier: 1.3 },
+                              { id: '7', name: '7', multiplier: 1.0 },
+                              { id: '6', name: '6', multiplier: 0.8 },
+                              { id: '5', name: '5', multiplier: 0.6 },
+                              { id: '4', name: '4', multiplier: 0.5 },
+                              { id: '3', name: '3', multiplier: 0.4 },
+                              { id: '2', name: '2', multiplier: 0.3 },
+                              { id: '1', name: '1', multiplier: 0.2 }
+                            ]
+                          }
+                          
+                          const grades = gradeRanges[selectedGradingService] || []
+                          
+                          return grades.map(grade => {
+                            const price = basePrice * gradingMultiplier * grade.multiplier
+                            return (
+                              <div key={grade.id} className="bg-gray-700 rounded p-2 text-center min-w-[60px] flex-shrink-0">
+                                <div className="text-white text-xs mb-1">{grade.name}</div>
+                                <div className="text-white text-xs font-medium">${price.toFixed(2)}</div>
+                              </div>
+                            )
+                          })
+                        })()
+                      )}
                     </div>
                   </div>
                 </div>
@@ -7290,8 +7716,8 @@ export default function App() {
                     <p className="text-gray-400 text-sm">No cards found matching your search.</p>
           </div>
         )}
-              </div>
-            )}
+          </div>
+        )}
 
 
             {/* Trending Cards Section - Only show when no search results */}
@@ -7303,7 +7729,7 @@ export default function App() {
                         </svg>
                 <h3 className="text-white font-medium">Trending Now</h3>
                 <span className="text-gray-400 text-sm ml-2">({visibleCardsCount} of {allTrendingCards.length})</span>
-                    </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
                   <div
@@ -7808,7 +8234,7 @@ export default function App() {
                 
                 {/* Subtle Glass Diffusion Effect */}
                 <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
-                          </div>
+                      </div>
                       </div>
                     </div>
 
@@ -7910,19 +8336,19 @@ export default function App() {
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                             )}
-                        </svg>
+                            </svg>
                           <span className="font-semibold">{Math.abs(mover.change).toFixed(1)}%</span>
-                      </div>
+                          </div>
                         <div className="text-gray-400 text-xs">
                           {mover.dailyChange >= 0 ? '+' : ''}${mover.dailyChange} today
+                      </div>
                     </div>
                       </div>
                           </div>
-                      </div>
                 ))}
+                      </div>
                     </div>
                       </div>
-                          </div>
         )}
 
         {/* Trending Cards Modal */}
@@ -7939,7 +8365,7 @@ export default function App() {
                           </div>
                   <h3 className="text-white text-xl font-bold">All Trending Cards</h3>
                       </div>
-                <button
+                <button 
                   onClick={() => setShowTrendingModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
@@ -7947,8 +8373,8 @@ export default function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                 </button>
-                    </div>
-
+              </div>
+              
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {trendingCardsData.map((card) => (
                   <div 
@@ -7991,8 +8417,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">{card.emoji}</span>
-                      </div>
-                          </div>
+                    </div>
+                  </div>
                         <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
                           card.color === 'orange' ? 'bg-orange-500' :
                           card.color === 'blue' ? 'bg-blue-500' :
@@ -8005,7 +8431,7 @@ export default function App() {
                         }`}>
                           <span className="text-white text-xs font-bold">{card.rank}</span>
                       </div>
-                    </div>
+                  </div>
                       <h4 className={`font-bold text-sm transition-colors mb-1 ${
                         card.color === 'orange' ? 'text-white group-hover:text-orange-400' :
                         card.color === 'blue' ? 'text-white group-hover:text-blue-400' :
@@ -8030,7 +8456,7 @@ export default function App() {
                         'text-gray-400'
                       }`}>
                         ${card.price}
-                      </div>
+                </div>
                       <div className={`flex items-center gap-1 text-xs ${
                         card.color === 'orange' ? 'text-orange-400' :
                         card.color === 'blue' ? 'text-blue-400' :
@@ -8043,15 +8469,15 @@ export default function App() {
                       }`}>
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                            </svg>
+                        </svg>
                         <span className="font-semibold">+{card.change.toFixed(1)}%</span>
-                          </div>
                       </div>
-                    </div>
+                  </div>
+                </div>
                 ))}
-              </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                      </div>
         )}
 
         {/* Sliding Menu */}
@@ -8070,7 +8496,7 @@ export default function App() {
               {/* Menu Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-white text-xl font-bold">Menu</h2>
-                <button
+                <button 
                   onClick={() => setShowSlidingMenu(false)}
                   className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition-colors"
                 >
@@ -8088,12 +8514,12 @@ export default function App() {
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-[#6865E7] to-[#5A57D1] rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">JD</span>
-                    </div>
+              </div>
                       <div>
                         <h3 className="text-white font-semibold">John Doe</h3>
                         <p className="text-gray-400 text-sm">john.doe@example.com</p>
-                  </div>
-                  </div>
+            </div>
+          </div>
                 </div>
 
             {/* Navigation Items */}
@@ -8112,7 +8538,7 @@ export default function App() {
                       <span className="text-white">Dashboard</span>
                 </button>
 
-            <button 
+                <button
               onClick={() => {
                         setActiveTab('collection')
                         setNavigationMode('collection')
@@ -8124,7 +8550,7 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                       <span className="text-white">My Collection</span>
-            </button>
+                </button>
 
           <button 
                       onClick={() => {
@@ -8150,11 +8576,11 @@ export default function App() {
                     >
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                        </svg>
                       <span className="text-white">Profile</span>
                 </button>
-              </div>
-              
+                </div>
+
                   {/* Settings Section */}
                   <div className="pt-4 border-t border-gray-700">
                     <h4 className="text-gray-400 text-sm font-medium mb-3">Settings</h4>
@@ -8170,21 +8596,21 @@ export default function App() {
                       <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors text-left">
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                        </svg>
                         <span className="text-white">Help & Support</span>
                   </button>
 
                       <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors text-left">
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                        </svg>
                         <span className="text-white">Sign Out</span>
                   </button>
-              </div>
-            </div>
+                      </div>
+                  </div>
                 </nav>
-          </div>
-              </div>
+                </div>
+                    </div>
           </>
         )}
 
@@ -8237,8 +8663,8 @@ export default function App() {
                 >
                   ✕
                 </button>
-              </div>
-              
+                </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {[
                   { value: 'trending', label: 'Trending' },
@@ -8286,7 +8712,7 @@ export default function App() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-white text-xl font-semibold">Add to Collection</h2>
-                  <button
+                <button 
                     onClick={() => {
                       setShowSearchResultsModal(false);
                       setCardToAddFromSearch(null);
@@ -8296,9 +8722,9 @@ export default function App() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </button>
-                </div>
-
+                </button>
+              </div>
+              
                 {/* Card Preview */}
                 {cardToAddFromSearch && (
                   <div className="mb-6 p-4 bg-gray-700 rounded-xl">
@@ -8324,10 +8750,10 @@ export default function App() {
                             ${calculateDynamicPrice(cardToAddFromSearch, selectedVariant, addCardCondition, isGraded, selectedGradingService, selectedGrade).toFixed(2)}
                           </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              </div>
+            </div>
+          </div>
+        )}
 
                 {/* Collection Selection */}
                 <div className="mb-5">
@@ -8335,20 +8761,20 @@ export default function App() {
                     Collection
                   </label>
                   <div className="relative dropdown-container">
-                    <button
+                <button
                       onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
+                >
                       <span>{selectedCollectionForAdd ? mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
                       <svg className={`w-4 h-4 transition-transform ${showCollectionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </button>
+                </button>
                     {showCollectionDropdown && (
                       <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                         <div className="py-1">
                           {mockUserData.collections.map(collection => (
-                            <button
+                <button
                               key={collection.id}
                               onClick={() => {
                                 setSelectedCollectionForAdd(collection.id);
@@ -8357,10 +8783,10 @@ export default function App() {
                               className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                             >
                               {collection.name}
-                            </button>
+                </button>
                           ))}
-                        </div>
-                      </div>
+              </div>
+                    </div>
                     )}
                   </div>
                 </div>
@@ -8378,21 +8804,21 @@ export default function App() {
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                      </svg>
+                        </svg>
                     </button>
                     <div className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-center">
                       <span className="text-white text-lg font-medium">{addQuantity}</span>
-                    </div>
+                      </div>
                     <button
                       onClick={() => setAddQuantity(addQuantity + 1)}
                       className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
+                        </svg>
                     </button>
-                  </div>
                 </div>
+              </div>
 
                 {/* Variant Selection */}
                 <div className="mb-5">
@@ -8400,7 +8826,7 @@ export default function App() {
                     Variant
                   </label>
                   <div className="relative dropdown-container">
-                    <button
+                <button 
                       onClick={() => setShowVariantDropdown(!showVariantDropdown)}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
@@ -8408,7 +8834,7 @@ export default function App() {
                       <svg className={`w-4 h-4 transition-transform ${showVariantDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </button>
+                </button>
                     {showVariantDropdown && (
                       <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                         <div className="py-1">
@@ -8424,11 +8850,11 @@ export default function App() {
                               {variant}
                             </button>
                           ))}
-                        </div>
-                      </div>
+              </div>
+              </div>
                     )}
-                  </div>
-                </div>
+            </div>
+          </div>
 
                 {/* Condition Selection */}
                 <div className="mb-5">
@@ -8443,28 +8869,28 @@ export default function App() {
                       <span>{addCardCondition}</span>
                       <svg className={`w-4 h-4 transition-transform ${showConditionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    </svg>
                     </button>
                     {showConditionDropdown && (
                       <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                         <div className="py-1">
                           {['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map(condition => (
-                            <button
+                <button
                               key={condition}
-                              onClick={() => {
+                  onClick={() => {
                                 setAddCardCondition(condition);
                                 setShowConditionDropdown(false);
                               }}
                               className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                             >
                               {condition}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                </button>
+              ))}
+            </div>
                 </div>
+              )}
+          </div>
+        </div>
 
                 {/* Graded Card Toggle */}
                 <div className="mb-5">
@@ -8477,7 +8903,7 @@ export default function App() {
                     />
                     <span>This is a graded card</span>
                   </label>
-                </div>
+      </div>
 
                 {/* Grading Service Selection - Only show if graded */}
                 {isGraded && (
@@ -8486,35 +8912,35 @@ export default function App() {
                       Grading Service
                     </label>
                     <div className="relative dropdown-container">
-                      <button
+            <button 
                         onClick={() => setShowGradingServiceDropdown(!showGradingServiceDropdown)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
+            >
                         <span>{selectedGradingService}</span>
                         <svg className={`w-4 h-4 transition-transform ${showGradingServiceDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
-                      </button>
+            </button>
                       {showGradingServiceDropdown && (
                         <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                           <div className="py-1">
                             {['PSA', 'CGC', 'TAG', 'BGS', 'ACE'].map(service => (
-                              <button
+            <button 
                                 key={service}
-                                onClick={() => {
+              onClick={() => {
                                   setSelectedGradingService(service);
                                   setShowGradingServiceDropdown(false);
-                                }}
+              }}
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
+            >
                                 {service}
-                              </button>
+            </button>
                             ))}
-                          </div>
-                        </div>
+          </div>
+        </div>
                       )}
-                    </div>
-                  </div>
+      </div>
+        </div>
                 )}
 
                 {/* Grade Selection - Only show if graded */}
@@ -8524,20 +8950,20 @@ export default function App() {
                       Grade
                     </label>
                     <div className="relative dropdown-container">
-                      <button
+          <button 
                         onClick={() => setShowGradeDropdown(!showGradeDropdown)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
+          >
                         <span>{selectedGrade}</span>
                         <svg className={`w-4 h-4 transition-transform ${showGradeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+            </svg>
+          </button>
                       {showGradeDropdown && (
                         <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           <div className="py-1">
                             {selectedGradingService === 'PSA' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
+            <button
                                 key={grade}
                                 onClick={() => {
                                   setSelectedGrade(grade);
@@ -8546,10 +8972,10 @@ export default function App() {
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                               >
                                 {grade}
-                              </button>
+            </button>
                             ))}
                             {selectedGradingService === 'CGC' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
+            <button
                                 key={grade}
                                 onClick={() => {
                                   setSelectedGrade(grade);
@@ -8558,10 +8984,10 @@ export default function App() {
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                               >
                                 {grade}
-                              </button>
+            </button>
                             ))}
                             {selectedGradingService === 'TAG' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
+                    <button 
                                 key={grade}
                                 onClick={() => {
                                   setSelectedGrade(grade);
@@ -8570,10 +8996,10 @@ export default function App() {
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                               >
                                 {grade}
-                              </button>
+                    </button>
                             ))}
                             {selectedGradingService === 'BGS' && ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'].map(grade => (
-                              <button
+                    <button 
                                 key={grade}
                                 onClick={() => {
                                   setSelectedGrade(grade);
@@ -8582,7 +9008,7 @@ export default function App() {
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                               >
                                 {grade}
-                              </button>
+                    </button>
                             ))}
                             {selectedGradingService === 'ACE' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
                               <button
@@ -8594,12 +9020,12 @@ export default function App() {
                                 className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
                               >
                                 {grade}
-                              </button>
+                </button>
                             ))}
-                          </div>
-                        </div>
+                  </div>
+                  </div>
                       )}
-                    </div>
+                </div>
                   </div>
                 )}
 
@@ -8637,9 +9063,9 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+                </div>
+              </div>
+            )}
 
 
       </div>
