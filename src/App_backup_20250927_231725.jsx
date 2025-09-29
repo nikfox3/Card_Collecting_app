@@ -125,12 +125,6 @@ export default function App() {
   const [showAddToCollectionModal, setShowAddToCollectionModal] = useState(false)
   const [cardToAdd, setCardToAdd] = useState(null)
   const [selectedCollectionForAdd, setSelectedCollectionForAdd] = useState('pokemon-collection')
-  
-  // Separate modal states for search results and card profile
-  const [showSearchResultsModal, setShowSearchResultsModal] = useState(false)
-  const [cardToAddFromSearch, setCardToAddFromSearch] = useState(null)
-  const [showCardProfileModal, setShowCardProfileModal] = useState(false)
-  const [cardToAddFromProfile, setCardToAddFromProfile] = useState(null)
   const [addQuantity, setAddQuantity] = useState(1)
   const [selectedVariant, setSelectedVariant] = useState('normal')
   const [addCardCondition, setAddCardCondition] = useState('Near Mint')
@@ -263,11 +257,6 @@ export default function App() {
   const [showWishlistNotification, setShowWishlistNotification] = useState(false)
   const [wishlistNotificationMessage, setWishlistNotificationMessage] = useState('')
   const [showCardMenu, setShowCardMenu] = useState(false)
-  const [showPricingMenu, setShowPricingMenu] = useState(false)
-  const [showPriceAlertModal, setShowPriceAlertModal] = useState(false)
-  const [showEditPricePaidModal, setShowEditPricePaidModal] = useState(false)
-  const [selectedPurchaseSource, setSelectedPurchaseSource] = useState('')
-  const [showPurchaseSourceDropdown, setShowPurchaseSourceDropdown] = useState(false)
   const [showAddToFolderModal, setShowAddToFolderModal] = useState(false)
   const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
   const [showAddToBinderModal, setShowAddToBinderModal] = useState(false)
@@ -2677,6 +2666,10 @@ export default function App() {
 
   // Handle opening Add to Collection modal
   const handleAddToCollection = (card) => {
+    console.log('Opening Add to Collection modal for:', card.name);
+    setCardToAdd(card);
+    setShowAddToCollectionModal(true);
+    
     // Reset form to defaults
     setSelectedCollectionForAdd('pokemon-collection');
     setAddQuantity(1);
@@ -2693,19 +2686,6 @@ export default function App() {
     setShowConditionDropdown(false);
     setShowGradingServiceDropdown(false);
     setShowGradeDropdown(false);
-    
-    // Determine which modal to open based on current page
-    if (showCardProfile) {
-      setCardToAddFromProfile(card);
-      setShowCardProfileModal(true);
-    } else if (showSearchResults || activeTab === 'cards' || activeTab === 'search') {
-      setCardToAddFromSearch(card);
-      setShowSearchResultsModal(true);
-    } else {
-      // Fallback to original behavior
-      setCardToAdd(card);
-      setShowAddToCollectionModal(true);
-    }
   }
 
   // Calculate dynamic price based on variant, condition, and grade
@@ -2848,21 +2828,6 @@ export default function App() {
     setShowCardMenu(!showCardMenu)
   }
 
-  const handlePricingMenuToggle = () => {
-    setShowPricingMenu(!showPricingMenu)
-  }
-
-  // Handle pricing menu item clicks
-  const handleSetPriceAlert = () => {
-    setShowPricingMenu(false)
-    setShowPriceAlertModal(true)
-  }
-
-  const handleEditPricePaid = () => {
-    setShowPricingMenu(false)
-    setShowEditPricePaidModal(true)
-  }
-
   // Handle menu item clicks
   const handleAddToFolder = () => {
     setShowCardMenu(false)
@@ -2895,16 +2860,12 @@ export default function App() {
       if (showCardMenu && !event.target.closest('.card-menu-container')) {
         setShowCardMenu(false)
       }
-      if (showPricingMenu && !event.target.closest('.pricing-menu-container')) {
-        setShowPricingMenu(false)
-      }
       // Close dropdowns when clicking outside
       if (!event.target.closest('.dropdown-container')) {
         setShowFolderDropdown(false)
         setShowDeckDropdown(false)
         setShowBinderDropdown(false)
         setShowIssueDropdown(false)
-        setShowPurchaseSourceDropdown(false)
       }
     }
 
@@ -2912,7 +2873,7 @@ export default function App() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showCardMenu, showPricingMenu])
+  }, [showCardMenu])
 
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
@@ -3857,7 +3818,7 @@ export default function App() {
               {/* Card Details Section */}
               <div className="px-4 pb-6">
                 {/* Card Number and Set Info */}
-                <div className="bg-gray-800 rounded-2xl p-6 mb-6 -mt-12 relative z-[1]">
+                <div className="bg-gray-800 rounded-2xl p-6 mb-6 -mt-12 relative z-10">
 
 
                   {/* Action Icons */}
@@ -3975,19 +3936,18 @@ export default function App() {
                           <span className="text-white text-lg font-bold">
                             ${(() => {
                               // Handle different pricing structures
-                              let price = 0;
-                              if (selectedCard.current_value) price = selectedCard.current_value;
-                              else if (selectedCard.price) price = selectedCard.price;
-                              else if (selectedCard.tcgplayer?.prices?.holofoil?.market) price = selectedCard.tcgplayer.prices.holofoil.market;
-                              else if (selectedCard.tcgplayer?.prices?.normal?.market) price = selectedCard.tcgplayer.prices.normal.market;
-                              else if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) price = selectedCard.tcgplayer.prices.reverseHolofoil.market;
-                              else if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) price = selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
-                              return price.toFixed(2);
+                              if (selectedCard.current_value) return selectedCard.current_value;
+                              if (selectedCard.price) return selectedCard.price;
+                              if (selectedCard.tcgplayer?.prices?.holofoil?.market) return selectedCard.tcgplayer.prices.holofoil.market;
+                              if (selectedCard.tcgplayer?.prices?.normal?.market) return selectedCard.tcgplayer.prices.normal.market;
+                              if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) return selectedCard.tcgplayer.prices.reverseHolofoil.market;
+                              if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) return selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
+                              return 0;
                             })()}
                           </span>
                         </div>
                         <div className={`text-sm ${(selectedCard.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {selectedCard.dailyChange ? `$${Math.abs(selectedCard.dailyChange).toFixed(2)}` : '+$2.36'} ({selectedCard.change ? `${selectedCard.change > 0 ? '+' : ''}${selectedCard.change}%` : '+23.6%'})
+                          {selectedCard.dailyChange ? `$${Math.abs(selectedCard.dailyChange)}` : '+$2.36'} ({selectedCard.change ? `${selectedCard.change > 0 ? '+' : ''}${selectedCard.change}%` : '+23.6%'})
                         </div>
                         <div className="text-gray-400 text-xs">
                           past 7 days
@@ -3999,10 +3959,7 @@ export default function App() {
 
                 {/* Add to Collection Button */}
                 <div className="mb-6">
-                  <button 
-                    onClick={() => handleAddToCollection(selectedCard)}
-                    className="w-full bg-[#605DEC] text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-[#605DEC]/80 transition-colors flex items-center justify-center gap-2"
-                  >
+                  <button className="w-full bg-[#605DEC] text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-[#605DEC]/80 transition-colors flex items-center justify-center gap-2">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -4011,44 +3968,20 @@ export default function App() {
                 </div>
 
                 {/* Market Value Chart Section */}
-                <div className="bg-gray-800 rounded-2xl p-6 mb-6 relative">
+                <div className="bg-gray-800 rounded-2xl p-6 mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 17 18">
-                        <path d="M1.70093 2.17285V15.7705H15.2986" stroke="white" strokeWidth="1.28571" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M4.83911 8.44851L6.59152 10.2009C7.03773 10.6471 7.78063 10.5736 8.13067 10.0485L11.0651 5.64692C11.3784 5.17688 12.0187 5.05953 12.4784 5.38789L15.2989 7.40253" stroke="white" strokeWidth="1.28571" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                       <h3 className="text-white font-medium">Market Value</h3>
                     </div>
-                    <button 
-                      className="w-6 h-6 text-white hover:opacity-80 transition-opacity relative pricing-menu-container"
-                      onClick={handlePricingMenuToggle}
-                    >
+                    <button className="w-6 h-6 text-white">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
                   </div>
-
-                  {/* Pricing Menu */}
-                  {showPricingMenu && (
-                    <div className="absolute right-0 top-12 z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-lg py-2 w-56 pricing-menu-container">
-                      <button
-                        onClick={handleSetPriceAlert}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center gap-3"
-                      >
-                        <img src="/Assets/PriceAlert.svg" alt="Price Alert" className="w-4 h-4" />
-                        <span>Set Pricing Alerts</span>
-                      </button>
-                      <button
-                        onClick={handleEditPricePaid}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors flex items-center gap-3"
-                      >
-                        <img src="/Assets/Edit Price Paid.svg" alt="Edit Price Paid" className="w-4 h-4" />
-                        <span>Edit Price Paid</span>
-                      </button>
-                    </div>
-                  )}
 
                   {/* Price and Filters */}
                   <div className="flex items-center justify-between mb-4">
@@ -4056,21 +3989,20 @@ export default function App() {
                       <span className="text-white text-xl font-bold">
                         ${(() => {
                           // Handle different pricing structures
-                          let price = 0;
-                          if (selectedCard.current_value) price = selectedCard.current_value;
-                          else if (selectedCard.price) price = selectedCard.price;
-                          else if (selectedCard.tcgplayer?.prices?.holofoil?.market) price = selectedCard.tcgplayer.prices.holofoil.market;
-                          else if (selectedCard.tcgplayer?.prices?.normal?.market) price = selectedCard.tcgplayer.prices.normal.market;
-                          else if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) price = selectedCard.tcgplayer.prices.reverseHolofoil.market;
-                          else if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) price = selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
-                          return price.toFixed(2);
+                          if (selectedCard.current_value) return selectedCard.current_value;
+                          if (selectedCard.price) return selectedCard.price;
+                          if (selectedCard.tcgplayer?.prices?.holofoil?.market) return selectedCard.tcgplayer.prices.holofoil.market;
+                          if (selectedCard.tcgplayer?.prices?.normal?.market) return selectedCard.tcgplayer.prices.normal.market;
+                          if (selectedCard.tcgplayer?.prices?.reverseHolofoil?.market) return selectedCard.tcgplayer.prices.reverseHolofoil.market;
+                          if (selectedCard.tcgplayer?.prices?.firstEditionHolofoil?.market) return selectedCard.tcgplayer.prices.firstEditionHolofoil.market;
+                          return 0;
                         })()}
                       </span>
                       <div className="flex items-center gap-1 text-green-400 text-sm">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span>$1.23</span>
+                        <span>1.23</span>
                         <span>this weeks</span>
                       </div>
                     </div>
@@ -4720,245 +4652,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Set Pricing Alerts Modal - Card Profile Only */}
-              {showPriceAlertModal && (
-                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <img src="/Assets/PriceAlert.svg" alt="Price Alert" className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-white text-xl font-semibold">Set Pricing Alert</h2>
-                        <p className="text-gray-400 text-sm">Get notified when price changes</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-5">
-                      {/* Alert Type */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-3">
-                          Alert Type
-                        </label>
-                        <div className="flex gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="alertType"
-                              value="above"
-                              className="w-4 h-4 text-primary bg-gray-700 border-gray-600 focus:ring-primary focus:ring-2"
-                            />
-                            <span className="text-white text-sm">Price goes above</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="alertType"
-                              value="below"
-                              className="w-4 h-4 text-primary bg-gray-700 border-gray-600 focus:ring-primary focus:ring-2"
-                            />
-                            <span className="text-white text-sm">Price goes below</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Price Threshold */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Price Threshold
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Notification Method */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-3">
-                          Notification Method
-                        </label>
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-                            />
-                            <span className="text-white text-sm">Push Notification</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-                            />
-                            <span className="text-white text-sm">Email</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Notes */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Notes (Optional)
-                        </label>
-                        <textarea
-                          placeholder="Add any additional notes about this alert..."
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none h-20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 mt-6">
-                      <button 
-                        onClick={() => setShowPriceAlertModal(false)}
-                        className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={() => {
-                          // Handle price alert creation
-                          console.log('Price alert created');
-                          setShowPriceAlertModal(false);
-                        }}
-                        className="flex-1 bg-primary hover:bg-primary/80 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                      >
-                        Create Alert
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Edit Price Paid Modal - Card Profile Only */}
-              {showEditPricePaidModal && (
-                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-auto relative modal-container">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                        <img src="/Assets/Edit Price Paid.svg" alt="Edit Price Paid" className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-white text-xl font-semibold">Edit Price Paid</h2>
-                        <p className="text-gray-400 text-sm">Update your purchase price</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-5">
-                      {/* Current Price Display */}
-                      <div className="bg-gray-700 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-300 text-sm">Current Market Value</span>
-                          <span className="text-white text-lg font-bold">$12.00</span>
-                        </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-gray-300 text-sm">Your Purchase Price</span>
-                          <span className="text-gray-400 text-sm">$0.00</span>
-                        </div>
-                      </div>
-
-                      {/* Price Paid Input */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Price You Paid
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Purchase Date */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Purchase Date
-                        </label>
-                        <input
-                          type="date"
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Purchase Source */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Purchase Source
-                        </label>
-                        <div className="relative dropdown-container">
-                          <button
-                            onClick={() => setShowPurchaseSourceDropdown(!showPurchaseSourceDropdown)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          >
-                            <span>{selectedPurchaseSource || 'Select source'}</span>
-                            <svg className={`w-4 h-4 transition-transform ${showPurchaseSourceDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          {showPurchaseSourceDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                              <div className="py-1">
-                                {['eBay', 'TCGPlayer', 'Local Store', 'Trade', 'Gift', 'Other'].map(source => (
-                                  <button
-                                    key={source}
-                                    onClick={() => {
-                                      setSelectedPurchaseSource(source);
-                                      setShowPurchaseSourceDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {source}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Notes */}
-                      <div>
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Notes (Optional)
-                        </label>
-                        <textarea
-                          placeholder="Add any notes about this purchase..."
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none h-20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 mt-6">
-                      <button 
-                        onClick={() => setShowEditPricePaidModal(false)}
-                        className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={() => {
-                          // Handle price paid update
-                          console.log('Price paid updated');
-                          setShowEditPricePaidModal(false);
-                        }}
-                        className="flex-1 bg-primary hover:bg-primary/80 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Wishlist Notification */}
               {showWishlistNotification && (
                 <div className="fixed bottom-24 left-0 right-0 z-[70] animate-slide-up-notification">
@@ -4970,7 +4663,6 @@ export default function App() {
                   </div>
                 </div>
               )}
-
 
               {/* Bottom Spacing */}
               <div className="h-20"></div>
@@ -5262,370 +4954,6 @@ export default function App() {
                       >
                         {selectedCard?.note ? 'Update Note' : 'Save Note'}
                       </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Add to Collection Modal - Card Profile */}
-              {showCardProfileModal && cardToAddFromProfile && showCardProfile && (
-                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[90vh] flex flex-col">
-                    <div className="p-6 overflow-y-auto flex-1">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-white text-xl font-semibold">Add to Collection</h2>
-                      <button
-                        onClick={() => {
-                          setShowCardProfileModal(false);
-                          setCardToAddFromProfile(null);
-                        }}
-                        className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white hover:bg-gray-500 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Card Preview */}
-                    {cardToAddFromProfile && (
-                      <div className="mb-6 p-4 bg-gray-700 rounded-xl">
-                        <div className="flex gap-4 items-center">
-                          <img 
-                            src={cardToAddFromProfile.imageUrl || cardToAddFromProfile.images?.large || cardToAddFromProfile.images?.small || cardImages[cardToAddFromProfile.id]} 
-                            alt={cardToAddFromProfile.name}
-                            className="w-20 h-28 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h3 className="text-white text-base font-bold mb-2">
-                              {cardToAddFromProfile.name}
-                            </h3>
-                            <p className="text-gray-300 text-sm mb-1">
-                              {cardToAddFromProfile.set_name || cardToAddFromProfile.set?.name || cardToAddFromProfile.set || 'Set Name'}
-                            </p>
-                            <p className="text-gray-400 text-xs mb-2">
-                              #{cardToAddFromProfile.number ? cardToAddFromProfile.number.replace('#', '') : '001'}
-                            </p>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300 text-xs">Est. Value:</span>
-                              <span className="text-primary text-base font-bold">
-                                ${calculateDynamicPrice(cardToAddFromProfile, selectedVariant, addCardCondition, isGraded, selectedGradingService, selectedGrade).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Collection Selection */}
-                    <div className="mb-5">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Collection
-                      </label>
-                      <div className="relative dropdown-container">
-                        <button
-                          onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                          <span>{selectedCollectionForAdd ? mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
-                          <svg className={`w-4 h-4 transition-transform ${showCollectionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        {showCollectionDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                            <div className="py-1">
-                              {mockUserData.collections.map(collection => (
-                                <button
-                                  key={collection.id}
-                                  onClick={() => {
-                                    setSelectedCollectionForAdd(collection.id);
-                                    setShowCollectionDropdown(false);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                >
-                                  {collection.name}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quantity Selection */}
-                    <div className="mb-5">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Quantity
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setAddQuantity(Math.max(1, addQuantity - 1))}
-                          className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={addQuantity <= 1}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                          </svg>
-                        </button>
-                        <div className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-center">
-                          <span className="text-white text-lg font-medium">{addQuantity}</span>
-                        </div>
-                        <button
-                          onClick={() => setAddQuantity(addQuantity + 1)}
-                          className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Variant Selection */}
-                    <div className="mb-5">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Variant
-                      </label>
-                      <div className="relative dropdown-container">
-                        <button
-                          onClick={() => setShowVariantDropdown(!showVariantDropdown)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                          <span>{selectedVariant}</span>
-                          <svg className={`w-4 h-4 transition-transform ${showVariantDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        {showVariantDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                            <div className="py-1">
-                              {['normal', 'holo', 'reverse holo', '1st edition'].map(variant => (
-                                <button
-                                  key={variant}
-                                  onClick={() => {
-                                    setSelectedVariant(variant);
-                                    setShowVariantDropdown(false);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                >
-                                  {variant}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Condition Selection */}
-                    <div className="mb-5">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Condition
-                      </label>
-                      <div className="relative dropdown-container">
-                        <button
-                          onClick={() => setShowConditionDropdown(!showConditionDropdown)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                          <span>{addCardCondition}</span>
-                          <svg className={`w-4 h-4 transition-transform ${showConditionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        {showConditionDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                            <div className="py-1">
-                              {['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map(condition => (
-                                <button
-                                  key={condition}
-                                  onClick={() => {
-                                    setAddCardCondition(condition);
-                                    setShowConditionDropdown(false);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                >
-                                  {condition}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Graded Card Toggle */}
-                    <div className="mb-5">
-                      <label className="flex items-center gap-3 text-gray-300 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isGraded}
-                          onChange={(e) => setIsGraded(e.target.checked)}
-                          className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-                        />
-                        <span>This is a graded card</span>
-                      </label>
-                    </div>
-
-                    {/* Grading Service Selection - Only show if graded */}
-                    {isGraded && (
-                      <div className="mb-5">
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Grading Service
-                        </label>
-                        <div className="relative dropdown-container">
-                          <button
-                            onClick={() => setShowGradingServiceDropdown(!showGradingServiceDropdown)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          >
-                            <span>{selectedGradingService}</span>
-                            <svg className={`w-4 h-4 transition-transform ${showGradingServiceDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          {showGradingServiceDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                              <div className="py-1">
-                                {['PSA', 'CGC', 'TAG', 'BGS', 'ACE'].map(service => (
-                                  <button
-                                    key={service}
-                                    onClick={() => {
-                                      setSelectedGradingService(service);
-                                      setShowGradingServiceDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {service}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Grade Selection - Only show if graded */}
-                    {isGraded && (
-                      <div className="mb-5">
-                        <label className="block text-gray-300 text-sm font-medium mb-2">
-                          Grade
-                        </label>
-                        <div className="relative dropdown-container">
-                          <button
-                            onClick={() => setShowGradeDropdown(!showGradeDropdown)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          >
-                            <span>{selectedGrade}</span>
-                            <svg className={`w-4 h-4 transition-transform ${showGradeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          {showGradeDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              <div className="py-1">
-                                {selectedGradingService === 'PSA' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                                  <button
-                                    key={grade}
-                                    onClick={() => {
-                                      setSelectedGrade(grade);
-                                      setShowGradeDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {grade}
-                                  </button>
-                                ))}
-                                {selectedGradingService === 'CGC' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                                  <button
-                                    key={grade}
-                                    onClick={() => {
-                                      setSelectedGrade(grade);
-                                      setShowGradeDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {grade}
-                                  </button>
-                                ))}
-                                {selectedGradingService === 'TAG' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                                  <button
-                                    key={grade}
-                                    onClick={() => {
-                                      setSelectedGrade(grade);
-                                      setShowGradeDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {grade}
-                                  </button>
-                                ))}
-                                {selectedGradingService === 'BGS' && ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'].map(grade => (
-                                  <button
-                                    key={grade}
-                                    onClick={() => {
-                                      setSelectedGrade(grade);
-                                      setShowGradeDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {grade}
-                                  </button>
-                                ))}
-                                {selectedGradingService === 'ACE' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                                  <button
-                                    key={grade}
-                                    onClick={() => {
-                                      setSelectedGrade(grade);
-                                      setShowGradeDropdown(false);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                                  >
-                                    {grade}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Notes */}
-                    <div className="mb-6">
-                      <label className="block text-gray-300 text-sm font-medium mb-2">
-                        Notes (Optional)
-                      </label>
-                      <textarea
-                        value={addNote}
-                        onChange={(e) => setAddNote(e.target.value)}
-                        placeholder="Add any notes about this card..."
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none h-20"
-                      />
-                    </div>
-
-                    </div>
-                    
-                    {/* Action Buttons - Fixed at bottom */}
-                    <div className="p-6 pt-4 border-t border-gray-700">
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => {
-                            setShowCardProfileModal(false);
-                            setCardToAddFromProfile(null);
-                          }}
-                          className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          onClick={handleConfirmAddToCollection}
-                          className="flex-1 bg-primary hover:bg-primary/80 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                        >
-                          Add to Collection
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -6612,7 +5940,7 @@ export default function App() {
             }}
             placeholder="Search cards, sets, attacks, abilities..."
             isMenuOpen={showSlidingMenu}
-            isModalOpen={showSearchResultsModal || showCardProfileModal}
+            isModalOpen={showAddToCollectionModal}
           />
           </div>
 
@@ -7292,7 +6620,6 @@ export default function App() {
         )}
               </div>
             )}
-
 
             {/* Trending Cards Section - Only show when no search results */}
             {!showSearchResults && (
@@ -8275,371 +7602,887 @@ export default function App() {
                       </div>
         )}
 
+        {/* Add to Collection Modal */}
+        {showAddToCollectionModal && cardToAdd && (
+            <div 
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                backgroundColor: 'rgba(0,0,0,0.8)', 
+                zIndex: 999999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowAddToCollectionModal(false);
+                  setCardToAdd(null);
+                }
+              }}
+            >
+            <div style={{
+              backgroundColor: '#2b2b2b',
+              borderRadius: '16px',
+              padding: '24px',
+              minWidth: '400px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid #444',
+              position: 'relative',
+              zIndex: 1000000
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Add to Collection</h2>
+                <button
+                  onClick={() => {
+                    setShowAddToCollectionModal(false);
+                    setCardToAdd(null);
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+                </div>
 
+              {/* Card Preview */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '16px', 
+                marginBottom: '24px',
+                padding: '16px',
+                backgroundColor: '#333',
+                borderRadius: '12px'
+              }}>
+                <img 
+                  src={cardToAdd.imageUrl || cardToAdd.images?.large || cardToAdd.images?.small} 
+                  alt={cardToAdd.name}
+                  style={{ width: '80px', height: '112px', objectFit: 'cover', borderRadius: '8px' }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div style={{ display: 'none', width: '80px', height: '112px', backgroundColor: '#444', borderRadius: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#888', fontSize: '12px' }}>No Image</span>
+                    </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{cardToAdd.name}</h3>
+                  <p style={{ color: '#888', fontSize: '14px', margin: '0 0 4px 0' }}>{cardToAdd.set?.name || cardToAdd.set || 'Unknown Set'}</p>
+                  <p style={{ color: '#888', fontSize: '12px', margin: '0 0 8px 0' }}>{cardToAdd.rarity || 'Unknown Rarity'}</p>
+                  
+                  {/* Dynamic Price Display */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    backgroundColor: '#444',
+                    borderRadius: '6px',
+                    border: '1px solid #555'
+                  }}>
+                    <span style={{ color: '#888', fontSize: '12px', fontWeight: '500' }}>Est. Value:</span>
+                    <span style={{ 
+                      color: '#6865E7', 
+                      fontSize: '16px', 
+                      fontWeight: 'bold' 
+                    }}>
+                      ${calculateDynamicPrice(cardToAdd).toFixed(2)}
+                    </span>
+                    </div>
+                  </div>
+                </div>
 
-
-        {/* Add to Collection Modal - Search Results - Rendered at top level */}
-        {showSearchResultsModal && cardToAddFromSearch && (showSearchResults || activeTab === 'cards' || activeTab === 'search') && (
-          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[90vh] flex flex-col">
-              <div className="p-6 overflow-y-auto flex-1">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-white text-xl font-semibold">Add to Collection</h2>
-                  <button
-                    onClick={() => {
-                      setShowSearchResultsModal(false);
-                      setCardToAddFromSearch(null);
+              {/* Collection Selection */}
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Collection</label>
+                <div
+                  onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  <span>{mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name || 'Select Collection'}</span>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ 
+                      transform: showCollectionDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
                     }}
-                    className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white hover:bg-gray-500 transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                </div>
+
+                {showCollectionDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    zIndex: 1000,
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {mockUserData.collections.map(collection => (
+                      <div
+                        key={collection.id}
+                        onClick={() => {
+                          setSelectedCollectionForAdd(collection.id);
+                          setShowCollectionDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          color: 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: selectedCollectionForAdd === collection.id ? '#6865E7' : 'transparent',
+                          borderBottom: '1px solid #555'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedCollectionForAdd !== collection.id) {
+                            e.target.style.backgroundColor = '#555';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedCollectionForAdd !== collection.id) {
+                            e.target.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {collection.name}
+                    </div>
+                    ))}
+                  </div>
+                )}
+                </div>
+
+              {/* Quantity Stepper */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Quantity</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button
+                    onClick={() => setAddQuantity(Math.max(1, addQuantity - 1))}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px'
+                    }}
+                  >
+                    −
                   </button>
-                </div>
-
-                {/* Card Preview */}
-                {cardToAddFromSearch && (
-                  <div className="mb-6 p-4 bg-gray-700 rounded-xl">
-                    <div className="flex gap-4 items-center">
-                      <img 
-                        src={cardToAddFromSearch.imageUrl || cardToAddFromSearch.images?.large || cardToAddFromSearch.images?.small || cardImages[cardToAddFromSearch.id]} 
-                        alt={cardToAddFromSearch.name}
-                        className="w-20 h-28 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <h3 className="text-white text-base font-bold mb-2">
-                          {cardToAddFromSearch.name}
-                        </h3>
-                        <p className="text-gray-300 text-sm mb-1">
-                          {cardToAddFromSearch.set_name || cardToAddFromSearch.set?.name || cardToAddFromSearch.set || 'Set Name'}
-                        </p>
-                        <p className="text-gray-400 text-xs mb-2">
-                          #{cardToAddFromSearch.number ? cardToAddFromSearch.number.replace('#', '') : '001'}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-300 text-xs">Est. Value:</span>
-                          <span className="text-primary text-base font-bold">
-                            ${calculateDynamicPrice(cardToAddFromSearch, selectedVariant, addCardCondition, isGraded, selectedGradingService, selectedGrade).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Collection Selection */}
-                <div className="mb-5">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Collection
-                  </label>
-                  <div className="relative dropdown-container">
-                    <button
-                      onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <span>{selectedCollectionForAdd ? mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
-                      <svg className={`w-4 h-4 transition-transform ${showCollectionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {showCollectionDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                        <div className="py-1">
-                          {mockUserData.collections.map(collection => (
-                            <button
-                              key={collection.id}
-                              onClick={() => {
-                                setSelectedCollectionForAdd(collection.id);
-                                setShowCollectionDropdown(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                            >
-                              {collection.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold', minWidth: '40px', textAlign: 'center' }}>
+                    {addQuantity}
+                  </span>
+                  <button
+                    onClick={() => setAddQuantity(addQuantity + 1)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px'
+                    }}
+                  >
+                    +
+                  </button>
                   </div>
                 </div>
 
-                {/* Quantity Selection */}
-                <div className="mb-5">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Quantity
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setAddQuantity(Math.max(1, addQuantity - 1))}
-                      className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={addQuantity <= 1}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                      </svg>
-                    </button>
-                    <div className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-center">
-                      <span className="text-white text-lg font-medium">{addQuantity}</span>
-                    </div>
-                    <button
-                      onClick={() => setAddQuantity(addQuantity + 1)}
-                      className="w-10 h-10 bg-gray-700 border border-gray-600 rounded-lg flex items-center justify-center text-white hover:bg-gray-600 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Variant Selection */}
-                <div className="mb-5">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Variant
-                  </label>
-                  <div className="relative dropdown-container">
-                    <button
-                      onClick={() => setShowVariantDropdown(!showVariantDropdown)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <span>{selectedVariant}</span>
-                      <svg className={`w-4 h-4 transition-transform ${showVariantDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {showVariantDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                        <div className="py-1">
-                          {['normal', 'holo', 'reverse holo', '1st edition'].map(variant => (
-                            <button
-                              key={variant}
-                              onClick={() => {
-                                setSelectedVariant(variant);
-                                setShowVariantDropdown(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                            >
-                              {variant}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Condition Selection */}
-                <div className="mb-5">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Condition
-                  </label>
-                  <div className="relative dropdown-container">
-                    <button
-                      onClick={() => setShowConditionDropdown(!showConditionDropdown)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <span>{addCardCondition}</span>
-                      <svg className={`w-4 h-4 transition-transform ${showConditionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {showConditionDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                        <div className="py-1">
-                          {['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map(condition => (
-                            <button
-                              key={condition}
-                              onClick={() => {
-                                setAddCardCondition(condition);
-                                setShowConditionDropdown(false);
-                              }}
-                              className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                            >
-                              {condition}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Graded Card Toggle */}
-                <div className="mb-5">
-                  <label className="flex items-center gap-3 text-gray-300 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isGraded}
-                      onChange={(e) => setIsGraded(e.target.checked)}
-                      className="w-4 h-4 text-primary bg-gray-700 border-gray-600 rounded focus:ring-primary focus:ring-2"
-                    />
-                    <span>This is a graded card</span>
-                  </label>
-                </div>
-
-                {/* Grading Service Selection - Only show if graded */}
-                {isGraded && (
-                  <div className="mb-5">
-                    <label className="block text-gray-300 text-sm font-medium mb-2">
-                      Grading Service
-                    </label>
-                    <div className="relative dropdown-container">
-                      <button
-                        onClick={() => setShowGradingServiceDropdown(!showGradingServiceDropdown)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
-                        <span>{selectedGradingService}</span>
-                        <svg className={`w-4 h-4 transition-transform ${showGradingServiceDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              {/* Variant Selection */}
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Variant</label>
+                <div
+                  onClick={() => setShowVariantDropdown(!showVariantDropdown)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  <span>{selectedVariant.charAt(0).toUpperCase() + selectedVariant.slice(1).replace('-', ' ')}</span>
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="white" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    style={{ 
+                      transform: showVariantDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6,9 12,15 18,9"></polyline>
                         </svg>
-                      </button>
-                      {showGradingServiceDropdown && (
-                        <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
-                          <div className="py-1">
-                            {['PSA', 'CGC', 'TAG', 'BGS', 'ACE'].map(service => (
-                              <button
-                                key={service}
-                                onClick={() => {
-                                  setSelectedGradingService(service);
-                                  setShowGradingServiceDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {service}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Grade Selection - Only show if graded */}
-                {isGraded && (
-                  <div className="mb-5">
-                    <label className="block text-gray-300 text-sm font-medium mb-2">
-                      Grade
-                    </label>
-                    <div className="relative dropdown-container">
-                      <button
-                        onClick={() => setShowGradeDropdown(!showGradeDropdown)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
-                        <span>{selectedGrade}</span>
-                        <svg className={`w-4 h-4 transition-transform ${showGradeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {showGradeDropdown && (
-                        <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          <div className="py-1">
-                            {selectedGradingService === 'PSA' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
-                                key={grade}
-                                onClick={() => {
-                                  setSelectedGrade(grade);
-                                  setShowGradeDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {grade}
-                              </button>
-                            ))}
-                            {selectedGradingService === 'CGC' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
-                                key={grade}
-                                onClick={() => {
-                                  setSelectedGrade(grade);
-                                  setShowGradeDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {grade}
-                              </button>
-                            ))}
-                            {selectedGradingService === 'TAG' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
-                                key={grade}
-                                onClick={() => {
-                                  setSelectedGrade(grade);
-                                  setShowGradeDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {grade}
-                              </button>
-                            ))}
-                            {selectedGradingService === 'BGS' && ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'].map(grade => (
-                              <button
-                                key={grade}
-                                onClick={() => {
-                                  setSelectedGrade(grade);
-                                  setShowGradeDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {grade}
-                              </button>
-                            ))}
-                            {selectedGradingService === 'ACE' && ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(grade => (
-                              <button
-                                key={grade}
-                                onClick={() => {
-                                  setSelectedGrade(grade);
-                                  setShowGradeDropdown(false);
-                                }}
-                                className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
-                              >
-                                {grade}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                <div className="mb-6">
-                  <label className="block text-gray-300 text-sm font-medium mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={addNote}
-                    onChange={(e) => setAddNote(e.target.value)}
-                    placeholder="Add any notes about this card..."
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none h-20"
-                  />
                 </div>
+
+                {showVariantDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    zIndex: 1000,
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {[
+                      { value: 'normal', label: 'Normal' },
+                      { value: 'holo', label: 'Holo' },
+                      { value: 'reverse-holo', label: 'Reverse Holo' },
+                      { value: 'first-edition', label: '1st Edition' },
+                      { value: 'shadowless', label: 'Shadowless' },
+                      { value: 'unlimited', label: 'Unlimited' }
+                    ].map(variant => (
+                      <div
+                        key={variant.value}
+                        onClick={() => {
+                          setSelectedVariant(variant.value);
+                          setShowVariantDropdown(false);
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          color: 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          backgroundColor: selectedVariant === variant.value ? '#6865E7' : 'transparent',
+                          borderBottom: '1px solid #555'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedVariant !== variant.value) {
+                            e.target.style.backgroundColor = '#555';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedVariant !== variant.value) {
+                            e.target.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        {variant.label}
+                    </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Graded Toggle */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Graded Card</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                    onClick={() => setIsGraded(false)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      backgroundColor: !isGraded ? '#6865E7' : '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Raw
+                  </button>
+                  <button
+                    onClick={() => setIsGraded(true)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      backgroundColor: isGraded ? '#6865E7' : '#444',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Graded
+                </button>
+              </div>
+              </div>
+
+              {/* Condition (only show if not graded) */}
+              {!isGraded && (
+                <div style={{ marginBottom: '20px', position: 'relative' }}>
+                  <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Condition</label>
+                  <div
+                    onClick={() => setShowConditionDropdown(!showConditionDropdown)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#444',
+                      border: '1px solid #666',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      position: 'relative'
+                    }}
+                  >
+                    <span>{addCardCondition}</span>
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="white" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      style={{ 
+                        transform: showConditionDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease'
+                      }}
+                    >
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
               </div>
               
-              {/* Action Buttons - Fixed at bottom */}
-              <div className="p-6 pt-4 border-t border-gray-700">
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => {
-                      setShowSearchResultsModal(false);
-                      setCardToAddFromSearch(null);
-                    }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleConfirmAddToCollection}
-                    className="flex-1 bg-primary hover:bg-primary/80 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                  >
-                    Add to Collection
-                  </button>
+                  {showConditionDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: '#444',
+                      border: '1px solid #666',
+                      borderRadius: '8px',
+                      marginTop: '4px',
+                      zIndex: 1000,
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {[
+                        { value: 'Near Mint', label: 'Near Mint (NM)' },
+                        { value: 'Lightly Played', label: 'Lightly Played (LP)' },
+                        { value: 'Moderately Played', label: 'Moderately Played (MP)' },
+                        { value: 'Heavily Played', label: 'Heavily Played (HP)' },
+                        { value: 'Damaged', label: 'Damaged (DM)' }
+                      ].map(condition => (
+                        <div
+                          key={condition.value}
+                          onClick={() => {
+                            setAddCardCondition(condition.value);
+                            setShowConditionDropdown(false);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            color: 'white',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            backgroundColor: addCardCondition === condition.value ? '#6865E7' : 'transparent',
+                            borderBottom: '1px solid #555'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (addCardCondition !== condition.value) {
+                              e.target.style.backgroundColor = '#555';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (addCardCondition !== condition.value) {
+                              e.target.style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        >
+                          {condition.label}
+                    </div>
+                      ))}
+                  </div>
+                    )}
+                  </div>
+              )}
+
+              {/* Grading Options (only show if graded) */}
+              {isGraded && (
+                <>
+                  <div style={{ marginBottom: '20px', position: 'relative' }}>
+                    <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grading Service</label>
+                    <div
+                      onClick={() => setShowGradingServiceDropdown(!showGradingServiceDropdown)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        position: 'relative'
+                      }}
+                    >
+                      <span>{selectedGradingService}</span>
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="white" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        style={{ 
+                          transform: showGradingServiceDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }}
+                      >
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
                 </div>
+
+                    {showGradingServiceDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}>
+                        {['PSA', 'BGS', 'CGC', 'TAG', 'ACE'].map(service => (
+                          <div
+                            key={service}
+                            onClick={() => {
+                              setSelectedGradingService(service);
+                              setSelectedGrade('10'); // Reset grade when service changes
+                              setShowGradingServiceDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGradingService === service ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGradingService !== service) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGradingService !== service) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {service}
+                    </div>
+                        ))}
+                  </div>
+                    )}
               </div>
-            </div>
+
+                  <div style={{ marginBottom: '20px', position: 'relative' }}>
+                    <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Grade</label>
+                    <div
+                      onClick={() => setShowGradeDropdown(!showGradeDropdown)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        position: 'relative'
+                      }}
+                    >
+                      <span>{selectedGrade}</span>
+                      <svg 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="white" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        style={{ 
+                          transform: showGradeDropdown ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease'
+                        }}
+                      >
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                      </svg>
+              </div>
+              
+                    {showGradeDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#444',
+                        border: '1px solid #666',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                      }}>
+                        {selectedGradingService === 'PSA' && [
+                          { value: '10', label: '10 - Gem Mint' },
+                          { value: '9', label: '9 - Mint' },
+                          { value: '8', label: '8 - Near Mint-Mint' },
+                          { value: '7', label: '7 - Near Mint' },
+                          { value: '6', label: '6 - Excellent-Mint' },
+                          { value: '5', label: '5 - Excellent' },
+                          { value: '4', label: '4 - Very Good-Excellent' },
+                          { value: '3', label: '3 - Very Good' },
+                          { value: '2', label: '2 - Good' },
+                          { value: '1', label: '1 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                  onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+                  </div>
+                        ))}
+                        {selectedGradingService === 'BGS' && [
+                          { value: '10', label: '10 - Pristine' },
+                          { value: '9.5', label: '9.5 - Black Label' },
+                          { value: '9', label: '9 - Gold Label' },
+                          { value: '8.5', label: '8.5 - Silver Label' },
+                          { value: '8', label: '8 - Silver Label' },
+                          { value: '7.5', label: '7.5 - Silver Label' },
+                          { value: '7', label: '7 - Silver Label' },
+                          { value: '6.5', label: '6.5 - Silver Label' },
+                          { value: '6', label: '6 - Silver Label' },
+                          { value: '5.5', label: '5.5 - Silver Label' },
+                          { value: '5', label: '5 - Silver Label' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                     style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
           </div>
-        )}
+                        ))}
+                        {selectedGradingService === 'CGC' && [
+                          { value: '10', label: '10 - Pristine' },
+                          { value: '9.5', label: '9.5 - Gem Mint' },
+                          { value: '9', label: '9 - Mint' },
+                          { value: '8.5', label: '8.5 - Near Mint+' },
+                          { value: '8', label: '8 - Near Mint' },
+                          { value: '7.5', label: '7.5 - Excellent+' },
+                          { value: '7', label: '7 - Excellent' },
+                          { value: '6.5', label: '6.5 - Very Good+' },
+                          { value: '6', label: '6 - Very Good' },
+                          { value: '5.5', label: '5.5 - Good+' },
+                          { value: '5', label: '5 - Good' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+          </div>
+                        ))}
+                        {selectedGradingService === 'TAG' && [
+                          { value: '10', label: '10 - Perfect' },
+                          { value: '9.5', label: '9.5 - Near Perfect' },
+                          { value: '9', label: '9 - Excellent' },
+                          { value: '8.5', label: '8.5 - Very Good+' },
+                          { value: '8', label: '8 - Very Good' },
+                          { value: '7.5', label: '7.5 - Good+' },
+                          { value: '7', label: '7 - Good' },
+                          { value: '6.5', label: '6.5 - Fair+' },
+                          { value: '6', label: '6 - Fair' },
+                          { value: '5.5', label: '5.5 - Poor+' },
+                          { value: '5', label: '5 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+              onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+          </div>
+                        ))}
+                        {selectedGradingService === 'ACE' && [
+                          { value: '10', label: '10 - Perfect' },
+                          { value: '9.5', label: '9.5 - Near Perfect' },
+                          { value: '9', label: '9 - Excellent' },
+                          { value: '8.5', label: '8.5 - Very Good+' },
+                          { value: '8', label: '8 - Very Good' },
+                          { value: '7.5', label: '7.5 - Good+' },
+                          { value: '7', label: '7 - Good' },
+                          { value: '6.5', label: '6.5 - Fair+' },
+                          { value: '6', label: '6 - Fair' },
+                          { value: '5.5', label: '5.5 - Poor+' },
+                          { value: '5', label: '5 - Poor' }
+                        ].map(grade => (
+                          <div
+                            key={grade.value}
+                            onClick={() => {
+                              setSelectedGrade(grade.value);
+                              setShowGradeDropdown(false);
+                            }}
+                            style={{
+                              padding: '12px 16px',
+                              color: 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedGrade === grade.value ? '#6865E7' : 'transparent',
+                              borderBottom: '1px solid #555'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = '#555';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGrade !== grade.value) {
+                                e.target.style.backgroundColor = 'transparent';
+                              }
+                            }}
+                          >
+                            {grade.label}
+        </div>
+                        ))}
+      </div>
+                    )}
+          </div>
+                </>
+              )}
+
+              {/* Notes */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Notes (Optional)</label>
+                <textarea
+                  value={addNote}
+                  onChange={(e) => setAddNote(e.target.value)}
+                  placeholder="Add any notes about this card..."
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    minHeight: '80px',
+                    resize: 'vertical'
+                  }}
+                  />
+                </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                  onClick={() => {
+                    setShowAddToCollectionModal(false);
+                    setCardToAdd(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#444',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Cancel
+                    </button>
+                    <button 
+                  onClick={handleConfirmAddToCollection}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#6865E7',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Add to Collection
+                    </button>
+                  </div>
+                </div>
+                  </div>
+            )}
+
 
 
       </div>
