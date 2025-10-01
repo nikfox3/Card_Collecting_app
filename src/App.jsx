@@ -1,6 +1,88 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+
+// Marketplace Card Component
+const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, price, onClick, isCollection = false, isSelected = false, onPressStart, onPressEnd, onTouchStart, onTouchEnd, onTouchMove, cardImage }) => {
+  const affiliateLinks = {
+    'TCGPlayer': 'https://www.tcgplayer.com',
+    'eBay': 'https://www.ebay.com',
+    'Whatnot': 'https://www.whatnot.com',
+    'Drip': 'https://www.drip.com',
+    'Fanatics': 'https://www.fanaticsollect.com'
+  }
+
+  const handleClick = (e) => {
+    e.preventDefault()
+    if (isCollection) {
+      if (onClick) onClick()
+    } else {
+      window.open(affiliateLinks[platform] || '#', '_blank')
+      if (onClick) onClick()
+    }
+  }
+
+  const cardClasses = `flex-shrink-0 ${isCollection ? 'w-[190px]' : 'w-[160px]'} cursor-pointer hover:transform hover:scale-105 transition-transform ${
+    isCollection && isSelected ? 'ring-2 ring-[#8871FF] bg-[#8871FF]/10' : ''
+  }`
+
+  return (
+    <div
+      className={cardClasses}
+      onClick={handleClick}
+      onMouseDown={isCollection ? onPressStart : undefined}
+      onMouseUp={isCollection ? onPressEnd : undefined}
+      onMouseLeave={isCollection ? onPressEnd : undefined}
+      onTouchStart={isCollection ? onTouchStart : undefined}
+      onTouchEnd={isCollection ? onTouchEnd : undefined}
+      onTouchMove={isCollection ? onTouchMove : undefined}
+    >
+      <div className="bg-[#202020] rounded-lg p-3 shadow-lg">
+        <div className="aspect-[3/4] bg-gray-700 rounded mb-4 flex items-center justify-center overflow-hidden relative">
+          {cardImage ? (
+            <img 
+              src={cardImage} 
+              alt={cardName} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'flex'
+              }}
+            />
+          ) : null}
+          <span className="text-gray-400 text-sm" style={{ display: cardImage ? 'none' : 'flex' }}>
+            Card Image
+          </span>
+          {isCollection && isSelected && (
+            <div className="absolute top-2 right-2 w-6 h-6 bg-[#8871FF] rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+        </div>
+        <div className="px-1">
+          <h3 className="text-white text-sm font-bold mb-3 truncate">{cardName}</h3>
+          <div className="text-gray-400 text-xs space-y-1">
+            <p className="truncate">{setName}</p>
+            <p className="truncate">{rarity}</p>
+            <p>{cardNumber}</p>
+          </div>
+          <div className="flex items-center justify-between mt-4">
+            <span className="text-[#8871FF] text-base font-bold">{price}</span>
+            {!isCollection && (
+              <div className="h-4 px-2 bg-gray-600 rounded flex items-center justify-center">
+                <span className="text-[10px] text-white whitespace-nowrap">{platform}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 import cardService from './services/cardService'
 import priceService from './services/priceService'
+import tcgplayerService from './services/tcgplayerService'
+import userDatabase from './services/userDatabase'
 import './styles/holographic.css'
 import './styles/card-rarities.css'
 import HolographicCard from './components/HolographicCard'
@@ -58,11 +140,35 @@ export default function App() {
   
   // Dashboard state
   const [searchQuery, setSearchQuery] = useState('')
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState('')
+  
+  // Marketplace state
+  const [marketplaceSearchQuery, setMarketplaceSearchQuery] = useState('')
+  const [trendingProducts, setTrendingProducts] = useState([])
+  const [recentSearches, setRecentSearches] = useState([])
+  const [wishlistItems, setWishlistItems] = useState([])
   const [selectedCollection, setSelectedCollection] = useState('pokemon-collection')
   const [selectedTimeRange, setSelectedTimeRange] = useState('6M')
   const [selectedCurrency, setSelectedCurrency] = useState('USD')
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false)
   const [showCollectionDropdown, setShowCollectionDropdown] = useState(false)
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [collectionSortOption, setCollectionSortOption] = useState('name')
+  const [showCollectionCardActions, setShowCollectionCardActions] = useState(false)
+  const [selectedCollectionCard, setSelectedCollectionCard] = useState(null)
+  const [collectionCardActionsPosition, setCollectionCardActionsPosition] = useState({ x: 0, y: 0 })
+  const [selectedCollectionCards, setSelectedCollectionCards] = useState(new Set())
+  const [isCollectionMultiSelectMode, setIsCollectionMultiSelectMode] = useState(false)
+  const [longPressTimer, setLongPressTimer] = useState(null)
+  const [isScrolling, setIsScrolling] = useState(false)
+  const [touchStartPosition, setTouchStartPosition] = useState(null)
+  const [scrollTimeout, setScrollTimeout] = useState(null)
+  const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false)
+  const [availableFolders, setAvailableFolders] = useState([])
+  const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
+  const [availableDecks, setAvailableDecks] = useState([])
+  const [showAddToBinderModal, setShowAddToBinderModal] = useState(false)
+  const [availableBinders, setAvailableBinders] = useState([])
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState('')
   const [showAllActivity, setShowAllActivity] = useState(false)
@@ -72,24 +178,28 @@ export default function App() {
   const [showTrendingModal, setShowTrendingModal] = useState(false)
   const [showSlidingMenu, setShowSlidingMenu] = useState(false)
 
-  // Mock recent activity data
-  const recentActivityData = [
-    { id: 1, cardName: "Charizard ex", action: "Added", type: "add", time: "2 min ago" },
-    { id: 2, cardName: "Pikachu VMAX", action: "Removed", type: "remove", time: "15 min ago" },
-    { id: 3, cardName: "Blastoise ex", action: "Added", type: "add", time: "1 hour ago" },
-    { id: 4, cardName: "Venusaur ex", action: "Added", type: "add", time: "2 hours ago" },
-    { id: 5, cardName: "Mewtwo V", action: "Removed", type: "remove", time: "3 hours ago" },
-    { id: 6, cardName: "Lugia V", action: "Added", type: "add", time: "4 hours ago" },
-    { id: 7, cardName: "Ho-Oh V", action: "Added", type: "add", time: "5 hours ago" },
-    { id: 8, cardName: "Rayquaza VMAX", action: "Removed", type: "remove", time: "6 hours ago" }
-  ]
-
-  const displayedActivity = recentActivityData.slice(0, 3)
+  // Real user data from database
+  const [userData, setUserData] = useState(null)
+  const [recentActivityData, setRecentActivityData] = useState([])
+  const [displayedActivity, setDisplayedActivity] = useState([])
 
   // State for real data
   const [topMoversData, setTopMoversData] = useState([])
   const [trendingCardsData, setTrendingCardsData] = useState([])
   const [isLoadingData, setIsLoadingData] = useState(true)
+
+  // Load user data from database
+  useEffect(() => {
+    const loadUserData = () => {
+      const data = userDatabase.getUserData()
+      if (data) {
+        setUserData(data)
+        setRecentActivityData(data.recentActivity || [])
+        setDisplayedActivity((data.recentActivity || []).slice(0, 3))
+      }
+    }
+    loadUserData()
+  }, [])
 
   // Load real data from API
   useEffect(() => {
@@ -162,7 +272,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/base1/4_hires.png", 
       artist: "Mitsuhiro Arita",
       hp: 120,
-      type: "Fire",
+      pokemonType: "Fire",
       abilities: [
         {
           type: "Pokémon Power",
@@ -196,7 +306,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/base1/2_hires.png", 
       artist: "Atsuko Nishida",
       hp: 100,
-      type: "Water",
+      pokemonType: "Water",
       abilities: [
         {
           type: "Pokémon Power",
@@ -230,7 +340,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/base1/15_hires.png", 
       artist: "Atsuko Nishida",
       hp: 100,
-      type: "Grass",
+      pokemonType: "Grass",
       abilities: [
         {
           type: "Pokémon Power",
@@ -264,7 +374,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
       artist: "Atsuko Nishida",
       hp: 320,
-      type: "Lightning",
+      pokemonType: "Lightning",
       abilities: [
         {
           type: "Pokémon Power",
@@ -298,7 +408,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
       artist: "Hitoshi Ariga",
       hp: 220,
-      type: "Colorless",
+      pokemonType: "Colorless",
       abilities: [
         {
           type: "Pokémon Power",
@@ -332,7 +442,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
       artist: "Ryuta Fuse",
       hp: 320,
-      type: "Dragon",
+      pokemonType: "Dragon",
       abilities: [
         {
           type: "Pokémon Power",
@@ -366,7 +476,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
       artist: "Mitsuhiro Arita",
       hp: 220,
-      type: "Psychic",
+      pokemonType: "Psychic",
       abilities: [],
       attacks: [
         {
@@ -400,7 +510,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
       artist: "Ryuta Fuse",
       hp: 320,
-      type: "Psychic",
+      pokemonType: "Psychic",
       abilities: [
         {
           type: "Pokémon Power",
@@ -436,7 +546,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
       artist: "Atsuko Nishida",
       hp: 320,
-      type: "Lightning",
+      pokemonType: "Lightning",
       abilities: [
         {
           type: "Pokémon Power",
@@ -468,7 +578,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
       artist: "Hitoshi Ariga",
       hp: 220,
-      type: "Colorless",
+      pokemonType: "Colorless",
       abilities: [
         {
           type: "Pokémon Power",
@@ -500,7 +610,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
       artist: "Ryuta Fuse",
       hp: 320,
-      type: "Dragon",
+      pokemonType: "Dragon",
       abilities: [
         {
           type: "Pokémon Power",
@@ -532,7 +642,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
       artist: "Mitsuhiro Arita",
       hp: 220,
-      type: "Psychic",
+      pokemonType: "Psychic",
       abilities: [],
       attacks: [
         {
@@ -564,7 +674,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png", 
       artist: "Mitsuhiro Arita",
       hp: 330,
-      type: "Fire",
+      pokemonType: "Fire",
       abilities: [
         {
           type: "Pokémon Power",
@@ -596,7 +706,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png", 
       artist: "Atsuko Nishida",
       hp: 330,
-      type: "Water",
+      pokemonType: "Water",
       abilities: [
         {
           type: "Pokémon Power",
@@ -628,7 +738,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png", 
       artist: "Atsuko Nishida",
       hp: 330,
-      type: "Grass",
+      pokemonType: "Grass",
       abilities: [
         {
           type: "Pokémon Power",
@@ -660,7 +770,7 @@ export default function App() {
       imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
       artist: "Ryuta Fuse",
       hp: 320,
-      type: "Psychic",
+      pokemonType: "Psychic",
       abilities: [
         {
           type: "Pokémon Power",
@@ -719,6 +829,24 @@ export default function App() {
   const [selectedSet, setSelectedSet] = useState(null)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [cardNote, setCardNote] = useState('')
+  
+  // Edit card modal states
+  const [showEditCardModal, setShowEditCardModal] = useState(false)
+  const [editingCard, setEditingCard] = useState(null)
+  const [editQuantity, setEditQuantity] = useState(1)
+  const [editCondition, setEditCondition] = useState('Near Mint')
+  const [editVariant, setEditVariant] = useState('Normal')
+  const [editGrade, setEditGrade] = useState('')
+  const [editGradingService, setEditGradingService] = useState('raw')
+  const [editPricePaid, setEditPricePaid] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editIsGraded, setEditIsGraded] = useState(false)
+  
+  // Edit modal specific dropdown states
+  const [showEditConditionDropdown, setShowEditConditionDropdown] = useState(false)
+  const [showEditVariantDropdown, setShowEditVariantDropdown] = useState(false)
+  const [showEditGradeDropdown, setShowEditGradeDropdown] = useState(false)
+  const [showEditGradingServiceDropdown, setShowEditGradingServiceDropdown] = useState(false)
   const [quickFilters, setQuickFilters] = useState({
     owned: false,
     missing: false,
@@ -832,7 +960,18 @@ export default function App() {
   const [wishlist, setWishlist] = useState(new Set())
   const [showWishlistNotification, setShowWishlistNotification] = useState(false)
   const [wishlistNotificationMessage, setWishlistNotificationMessage] = useState('')
+  const [showCollectionNotification, setShowCollectionNotification] = useState(false)
+  const [collectionNotificationMessage, setCollectionNotificationMessage] = useState('')
   const [showCardMenu, setShowCardMenu] = useState(false)
+  const [showViewMyCardsModal, setShowViewMyCardsModal] = useState(false)
+  const [myCardEntries, setMyCardEntries] = useState([])
+  const [swipedEntryId, setSwipedEntryId] = useState(null)
+  const [pressedEntryId, setPressedEntryId] = useState(null)
+  const [pressTimer, setPressTimer] = useState(null)
+  const [touchStartPos, setTouchStartPos] = useState(null)
+  const [mouseStartPos, setMouseStartPos] = useState(null)
+  const [selectedEntries, setSelectedEntries] = useState(new Set())
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
   const [showPricingMenu, setShowPricingMenu] = useState(false)
   const [showPriceAlertModal, setShowPriceAlertModal] = useState(false)
   const [showEditPricePaidModal, setShowEditPricePaidModal] = useState(false)
@@ -844,8 +983,6 @@ export default function App() {
   const [selectedGradingService, setSelectedGradingService] = useState('raw')
   const [showGradingDropdown, setShowGradingDropdown] = useState(false)
   const [showAddToFolderModal, setShowAddToFolderModal] = useState(false)
-  const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
-  const [showAddToBinderModal, setShowAddToBinderModal] = useState(false)
   const [showSetCustomTagModal, setShowSetCustomTagModal] = useState(false)
   const [showSendFeedbackModal, setShowSendFeedbackModal] = useState(false)
   
@@ -2177,6 +2314,11 @@ export default function App() {
 
   // Search functions using database API
   const handleSearch = async () => {
+    // Don't trigger search if we're on the collection tab (use collection search instead)
+    if (activeTab === 'collection') {
+      return
+    }
+    
     try {
       setLoading(true);
         
@@ -2943,10 +3085,16 @@ export default function App() {
   // Pokémon TCG API integration
   const fetchCardImage = async (cardName, setName) => {
     try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+      
       // First try searching by name only
       let searchQuery = `name:"${cardName}"`
       console.log('Searching for:', searchQuery)
-      let response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`)
+      let response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`, {
+        signal: controller.signal
+      })
       let data = await response.json()
       console.log('API Response (name only):', data)
       
@@ -2954,10 +3102,14 @@ export default function App() {
       if (!data.data || data.data.length === 0) {
         searchQuery = `name:"${cardName}" set.name:"${setName}"`
         console.log('Trying with set name:', searchQuery)
-        response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`)
+        response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`, {
+          signal: controller.signal
+        })
         data = await response.json()
         console.log('API Response (with set):', data)
       }
+      
+      clearTimeout(timeoutId)
       
       if (data.data && data.data.length > 0) {
         console.log('Found card:', data.data[0].name, 'Image URL:', data.data[0].images.small)
@@ -2966,7 +3118,11 @@ export default function App() {
       console.log('No card found for:', cardName, setName)
       return null
     } catch (error) {
-      console.error('Error fetching card image:', error)
+      if (error.name === 'AbortError') {
+        console.warn('Image fetch timed out for:', cardName)
+      } else {
+        console.error('Error fetching card image:', error)
+      }
       return null
     }
   }
@@ -2999,6 +3155,436 @@ export default function App() {
     if (showCurrencyDropdown && !e.target.closest('.currency-dropdown')) {
       setShowCurrencyDropdown(false)
     }
+    if (showCollectionCardActions && !e.target.closest('.collection-card-actions')) {
+      setShowCollectionCardActions(false)
+    }
+    if (isCollectionMultiSelectMode && !e.target.closest('.collection-card') && !e.target.closest('.collection-multi-select-bar')) {
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+    }
+    if (showMoveToFolderModal && !e.target.closest('.move-to-folder-modal')) {
+      setShowMoveToFolderModal(false)
+    }
+    if (showAddToDeckModal && !e.target.closest('.add-to-deck-modal')) {
+      setShowAddToDeckModal(false)
+    }
+    if (showAddToBinderModal && !e.target.closest('.add-to-binder-modal')) {
+      setShowAddToBinderModal(false)
+    }
+    if (showEditCardModal && !e.target.closest('.edit-card-modal')) {
+      setShowEditCardModal(false)
+    }
+    // Close edit modal dropdowns when clicking outside
+    if (!e.target.closest('.edit-card-modal')) {
+      setShowEditConditionDropdown(false)
+      setShowEditVariantDropdown(false)
+      setShowEditGradeDropdown(false)
+      setShowEditGradingServiceDropdown(false)
+    }
+  }
+
+  // Handle collection card press and hold
+  const handleCollectionCardPressStart = (e, card) => {
+    // Don't prevent default on touch events to avoid passive listener issues
+    if (e.type !== 'touchstart') {
+      e.preventDefault()
+    }
+    e.stopPropagation()
+    
+    console.log('Press start on card:', card.name)
+    
+    // Clear any existing timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+    }
+    
+    // Store initial touch position for scroll detection
+    if (e.type === 'touchstart') {
+      setTouchStartPosition({
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      })
+    }
+    
+    // Set a timer for long press (500ms)
+    const timer = setTimeout(() => {
+      // Only start multi-select if we're not scrolling
+      if (!isScrolling) {
+        console.log('Long press detected - entering multi-select mode with card:', card.name)
+        setIsCollectionMultiSelectMode(true)
+        setSelectedCollectionCards(new Set([card.id]))
+      } else {
+        console.log('Long press cancelled - user was scrolling')
+      }
+      setLongPressTimer(null)
+    }, 500)
+    
+    setLongPressTimer(timer)
+  }
+
+  const handleCollectionCardPressEnd = (e) => {
+    // Don't prevent default on touch events to avoid passive listener issues
+    if (e.type !== 'touchend') {
+      e.preventDefault()
+    }
+    e.stopPropagation()
+    
+    // Clear the long press timer if it hasn't fired yet
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      setLongPressTimer(null)
+    }
+    
+    // Clear scroll timeout
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout)
+      setScrollTimeout(null)
+    }
+    
+    // Reset scroll detection
+    setIsScrolling(false)
+    setTouchStartPosition(null)
+  }
+
+  // Handle touch move to detect scrolling
+  const handleCollectionCardTouchMove = (e) => {
+    if (!touchStartPosition) return
+    
+    const touch = e.touches[0]
+    const deltaX = Math.abs(touch.clientX - touchStartPosition.x)
+    const deltaY = Math.abs(touch.clientY - touchStartPosition.y)
+    
+    // If user moved more than 10px, consider it scrolling
+    if (deltaX > 10 || deltaY > 10) {
+      setIsScrolling(true)
+      // Cancel the long press timer if scrolling
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        setLongPressTimer(null)
+      }
+      
+      // Clear any existing scroll timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+      
+      // Set a timeout to reset scrolling state after 200ms of no movement
+      const timeout = setTimeout(() => {
+        setIsScrolling(false)
+        setScrollTimeout(null)
+      }, 200)
+      
+      setScrollTimeout(timeout)
+    }
+  }
+
+  // Handle collection card click
+  const handleCollectionCardClick = (e, card) => {
+    // Don't prevent default on touch events to avoid passive listener issues
+    if (e.type !== 'touchend') {
+      e.preventDefault()
+    }
+    e.stopPropagation()
+    
+    // Only handle click if we're not in the middle of a long press
+    if (longPressTimer) {
+      console.log('Click ignored - long press in progress')
+      return
+    }
+    
+    // Don't handle click if we were scrolling
+    if (isScrolling) {
+      console.log('Click ignored - user was scrolling')
+      return
+    }
+    
+    if (isCollectionMultiSelectMode) {
+      // Toggle selection in multi-select mode
+      const newSelected = new Set(selectedCollectionCards)
+      if (newSelected.has(card.id)) {
+        newSelected.delete(card.id)
+        console.log('Deselected card:', card.name)
+      } else {
+        newSelected.add(card.id)
+        console.log('Selected card:', card.name)
+      }
+      setSelectedCollectionCards(newSelected)
+      
+      // Exit multi-select mode if no cards selected
+      if (newSelected.size === 0) {
+        console.log('Exiting multi-select mode - no cards selected')
+        setIsCollectionMultiSelectMode(false)
+      }
+    } else {
+      // Normal click - open card profile
+      console.log('Normal click - opening card profile:', card.name)
+      handleCardClick(card)
+    }
+  }
+
+  // Handle collection card long press
+  const handleCollectionCardLongPress = (e, card) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Start multi-select mode with this card
+    setIsCollectionMultiSelectMode(true)
+    setSelectedCollectionCards(new Set([card.id]))
+  }
+
+  // Handle collection card touch end (for mobile)
+  const handleCollectionCardTouchEnd = (e, card) => {
+    e.stopPropagation()
+    
+    // Only handle if we're not in the middle of a long press
+    if (longPressTimer) {
+      console.log('Touch end ignored - long press in progress')
+      return
+    }
+    
+    // Don't handle touch end if we were scrolling
+    if (isScrolling) {
+      console.log('Touch end ignored - user was scrolling')
+      return
+    }
+    
+    if (isCollectionMultiSelectMode) {
+      // Toggle selection in multi-select mode
+      const newSelected = new Set(selectedCollectionCards)
+      if (newSelected.has(card.id)) {
+        newSelected.delete(card.id)
+        console.log('Touch deselected card:', card.name)
+      } else {
+        newSelected.add(card.id)
+        console.log('Touch selected card:', card.name)
+      }
+      setSelectedCollectionCards(newSelected)
+      
+      // Exit multi-select mode if no cards selected
+      if (newSelected.size === 0) {
+        console.log('Exiting multi-select mode - no cards selected')
+        setIsCollectionMultiSelectMode(false)
+      }
+    } else {
+      // Normal touch - open card profile
+      console.log('Normal touch - opening card profile:', card.name)
+      handleCardClick(card)
+    }
+  }
+
+  // Handle move to folder button click
+  const handleMoveToFolder = () => {
+    // Get all collections except the current one
+    const currentCollection = userData?.collections?.find(c => c.id === selectedCollection)
+    const otherCollections = userData?.collections?.filter(c => c.id !== selectedCollection) || []
+    
+    // Transform collections to folder format
+    const folders = otherCollections.map(collection => ({
+      id: collection.id,
+      name: collection.name,
+      color: collection.color || '#605DEC' // Default to app theme color
+    }))
+    
+    setAvailableFolders(folders)
+    setShowMoveToFolderModal(true)
+  }
+
+  // Handle folder selection
+  const handleFolderSelection = async (folderId) => {
+    try {
+      const cardIds = Array.from(selectedCollectionCards)
+      const currentCollection = userData?.collections?.find(c => c.id === selectedCollection)
+      const targetCollection = userData?.collections?.find(c => c.id === folderId)
+      
+      if (!currentCollection || !targetCollection) {
+        console.error('Collection not found')
+        return
+      }
+
+      // Get the cards to move
+      const cardsToMove = currentCollection.cards.filter(card => cardIds.includes(card.id))
+      
+      if (cardsToMove.length === 0) {
+        console.error('No cards found to move')
+        return
+      }
+
+      // Move cards from current collection to target collection
+      for (const card of cardsToMove) {
+        // Remove from current collection
+        await userDatabase.removeCardFromCollection(selectedCollection, card.id)
+        
+        // Add to target collection
+        await userDatabase.addCardToCollection(
+          folderId,
+          card.cardId, // Use the original cardId for the API
+          card.condition,
+          card.variant,
+          card.grade,
+          card.gradingService,
+          card.pricePaid,
+          card.notes
+        )
+      }
+
+      // Refresh user data
+      const updatedUserData = await userDatabase.getUserData()
+      setUserData(updatedUserData)
+
+      console.log(`Successfully moved ${cardsToMove.length} cards to ${targetCollection.name}`)
+      
+      // Close modals and reset state
+      setShowMoveToFolderModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+      
+    } catch (error) {
+      console.error('Error moving cards:', error)
+      // Still close the modal even if there's an error
+      setShowMoveToFolderModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+    }
+  }
+
+  // Handle add to deck button click
+  const handleAddToDeck = () => {
+    // Get all decks from user data
+    const userDecks = userData?.decks || []
+    
+    // Transform decks to the format needed for the modal
+    const decks = userDecks.map(deck => ({
+      id: deck.id,
+      name: deck.name,
+      color: deck.color || '#605DEC', // Default to app theme color
+      cardCount: deck.cards?.length || 0
+    }))
+    
+    setAvailableDecks(decks)
+    setShowAddToDeckModal(true)
+  }
+
+  // Handle deck selection
+  const handleDeckSelection = async (deckId) => {
+    try {
+      const cardIds = Array.from(selectedCollectionCards)
+      const currentCollection = userData?.collections?.find(c => c.id === selectedCollection)
+      const targetDeck = userData?.decks?.find(d => d.id === deckId)
+      
+      if (!currentCollection || !targetDeck) {
+        console.error('Collection or deck not found')
+        return
+      }
+
+      // Get the cards to add
+      const cardsToAdd = currentCollection.cards.filter(card => cardIds.includes(card.id))
+      
+      if (cardsToAdd.length === 0) {
+        console.error('No cards found to add')
+        return
+      }
+
+      // Add cards to the selected deck
+      for (const card of cardsToAdd) {
+        await userDatabase.addCardToDeck(
+          deckId,
+          card.cardId, // Use the original cardId for the API
+          card.condition,
+          card.variant,
+          card.grade,
+          card.gradingService,
+          card.pricePaid,
+          card.notes
+        )
+      }
+
+      // Refresh user data
+      const updatedUserData = await userDatabase.getUserData()
+      setUserData(updatedUserData)
+
+      console.log(`Successfully added ${cardsToAdd.length} cards to ${targetDeck.name}`)
+      
+      // Close modals and reset state
+      setShowAddToDeckModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+      
+    } catch (error) {
+      console.error('Error adding cards to deck:', error)
+      setShowAddToDeckModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+    }
+  }
+
+  // Handle add to binder button click
+  const handleAddToBinder = () => {
+    // Get all binders from user data
+    const userBinders = userData?.binders || []
+    
+    // Transform binders to the format needed for the modal
+    const binders = userBinders.map(binder => ({
+      id: binder.id,
+      name: binder.name,
+      color: binder.color || '#605DEC', // Default to app theme color
+      cardCount: binder.cards?.length || 0
+    }))
+    
+    setAvailableBinders(binders)
+    setShowAddToBinderModal(true)
+  }
+
+  // Handle binder selection
+  const handleBinderSelection = async (binderId) => {
+    try {
+      const cardIds = Array.from(selectedCollectionCards)
+      const currentCollection = userData?.collections?.find(c => c.id === selectedCollection)
+      const targetBinder = userData?.binders?.find(b => b.id === binderId)
+      
+      if (!currentCollection || !targetBinder) {
+        console.error('Collection or binder not found')
+        return
+      }
+
+      // Get the cards to add
+      const cardsToAdd = currentCollection.cards.filter(card => cardIds.includes(card.id))
+      
+      if (cardsToAdd.length === 0) {
+        console.error('No cards found to add')
+        return
+      }
+
+      // Add cards to the selected binder
+      for (const card of cardsToAdd) {
+        await userDatabase.addCardToBinder(
+          binderId,
+          card.cardId, // Use the original cardId for the API
+          card.condition,
+          card.variant,
+          card.grade,
+          card.gradingService,
+          card.pricePaid,
+          card.notes
+        )
+      }
+
+      // Refresh user data
+      const updatedUserData = await userDatabase.getUserData()
+      setUserData(updatedUserData)
+
+      console.log(`Successfully added ${cardsToAdd.length} cards to ${targetBinder.name}`)
+      
+      // Close modals and reset state
+      setShowAddToBinderModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+      
+    } catch (error) {
+      console.error('Error adding cards to binder:', error)
+      setShowAddToBinderModal(false)
+      setIsCollectionMultiSelectMode(false)
+      setSelectedCollectionCards(new Set())
+    }
   }
 
   // Add event listener for clicking outside
@@ -3007,7 +3593,19 @@ export default function App() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showCountryDropdown, showCurrencyDropdown])
+  }, [showCountryDropdown, showCurrencyDropdown, showCollectionCardActions, isCollectionMultiSelectMode, showMoveToFolderModal, showAddToDeckModal, showAddToBinderModal, showEditCardModal, showEditConditionDropdown, showEditVariantDropdown, showEditGradeDropdown, showEditGradingServiceDropdown])
+
+  // Cleanup long press timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [longPressTimer, scrollTimeout])
 
   // Load card images on component mount - now using direct API structure
   React.useEffect(() => {
@@ -3168,10 +3766,53 @@ export default function App() {
   }
 
   // Card profile handlers
-  const handleCardClick = (card) => {
-    console.log('Card clicked:', card.name, 'Attacks:', card.attacks)
-    setSelectedCard(card)
+  const handleCardClick = async (card) => {
+    // Show the modal immediately for better UX
     setShowCardProfile(true)
+    
+    // If the card has a cardId, fetch the complete data from the API
+    if (card.cardId) {
+      try {
+        // Extract the base card ID from the cardId (remove timestamp parts)
+        const baseCardId = card.cardId.includes('-') ? card.cardId.split('-').slice(0, 2).join('-') : card.cardId
+        
+        const response = await fetch(`http://localhost:3001/api/cards/${baseCardId}`)
+        if (response.ok) {
+          const result = await response.json()
+          const cardData = result.data
+          
+          // Set the card data first (without image) for immediate display
+          setSelectedCard(cardData)
+          
+          // Fetch image URL from Pokémon TCG API asynchronously
+          // Don't await this - let it update the card when ready
+          fetchCardImage(cardData.name, cardData.set_name)
+            .then(imageUrl => {
+              if (imageUrl) {
+                setSelectedCard(prevCard => ({
+                  ...prevCard,
+                  imageUrl: imageUrl,
+                  images: {
+                    small: imageUrl,
+                    large: imageUrl
+                  }
+                }))
+              }
+            })
+            .catch(imageError => {
+              console.warn('Error fetching card image:', imageError)
+            })
+        } else {
+          setSelectedCard(card)
+        }
+      } catch (error) {
+        console.error('Error fetching card data:', error)
+        setSelectedCard(card)
+      }
+    } else {
+      // Use the provided card data if no cardId
+      setSelectedCard(card)
+    }
   }
 
   // Handle native share functionality
@@ -3303,38 +3944,378 @@ export default function App() {
     setSelectedFormats({});
   }
 
+  // Handle viewing my cards in collection
+  const handleViewMyCards = () => {
+    if (!selectedCard || !userData || !userData.collections) return;
+    
+    // Find all entries of this card in user's collections
+    const entries = [];
+    const searchCardId = selectedCard.cardId || selectedCard.id;
+    
+    userData.collections.forEach(collection => {
+      if (collection.cards && collection.cards.length > 0) {
+        collection.cards.forEach(card => {
+          const baseCardId = card.cardId || card.id;
+          const searchBaseCardId = searchCardId;
+          
+          // Extract the base card ID from the full ID (remove timestamp part)
+          const cardBaseId = baseCardId.includes('-') ? baseCardId.split('-').slice(0, 2).join('-') : baseCardId;
+          const searchBaseId = searchBaseCardId.includes('-') ? searchBaseCardId.split('-').slice(0, 2).join('-') : searchBaseCardId;
+          
+          if (cardBaseId === searchBaseId || baseCardId === searchBaseCardId) {
+            entries.push({
+              ...card,
+              collectionName: collection.name,
+              collectionId: collection.id
+            });
+          }
+        });
+      }
+    });
+    
+    console.log('View My Cards - Found entries:', {
+      searchCardId,
+      entriesCount: entries.length,
+      totalQuantity: entries.reduce((sum, entry) => sum + (entry.quantity || 0), 0)
+    });
+    
+    setMyCardEntries(entries);
+    setSelectedEntries(new Set());
+    setIsMultiSelectMode(false);
+    setShowViewMyCardsModal(true);
+    setShowCardMenu(false);
+  };
+
+  // Handle multi-select toggle
+  const toggleMultiSelect = () => {
+    setIsMultiSelectMode(!isMultiSelectMode);
+    setSelectedEntries(new Set());
+  };
+
+  // Handle entry selection
+  const toggleEntrySelection = (entryId) => {
+    const newSelected = new Set(selectedEntries);
+    if (newSelected.has(entryId)) {
+      newSelected.delete(entryId);
+    } else {
+      newSelected.add(entryId);
+    }
+    setSelectedEntries(newSelected);
+  };
+
+  // Handle select all
+  const selectAllEntries = () => {
+    const allEntryIds = myCardEntries.map(entry => entry.id);
+    setSelectedEntries(new Set(allEntryIds));
+  };
+
+  // Handle deselect all
+  const deselectAllEntries = () => {
+    setSelectedEntries(new Set());
+  };
+
+  // Handle bulk remove
+  const handleBulkRemove = () => {
+    if (selectedEntries.size === 0) return;
+    
+    const entriesToRemove = myCardEntries.filter(entry => selectedEntries.has(entry.id));
+    const totalQuantity = entriesToRemove.reduce((sum, entry) => sum + (entry.quantity || 0), 0);
+    
+    if (confirm(`Remove ${selectedEntries.size} entries (${totalQuantity} cards) from your collection?`)) {
+      let successCount = 0;
+      entriesToRemove.forEach(entry => {
+        const success = userDatabase.removeCardFromCollection(entry.collectionId, entry.id, entry.quantity || 1);
+        if (success) successCount++;
+      });
+      
+      if (successCount > 0) {
+        // Refresh data
+        const updatedUserData = userDatabase.getUserData();
+        setUserData({...updatedUserData});
+        setRecentActivityData([...(updatedUserData.recentActivity || [])]);
+        setDisplayedActivity([...(updatedUserData.recentActivity || []).slice(0, 3)]);
+        
+        // Refresh the entries list
+        const updatedEntries = myCardEntries.filter(entry => !selectedEntries.has(entry.id));
+        setMyCardEntries(updatedEntries);
+        setSelectedEntries(new Set());
+        
+        // Show notification
+        setCollectionNotificationMessage(`Removed ${successCount} entries from collection`);
+        setShowCollectionNotification(true);
+        setTimeout(() => {
+          setShowCollectionNotification(false);
+        }, 3000);
+      }
+    }
+  };
+
+  // Handle click outside to close swipe actions
+  const handleSwipeClickOutside = (e) => {
+    if (swipedEntryId && !e.target.closest('.swipe-actions')) {
+      setSwipedEntryId(null);
+    }
+  };
+
+  // Add click-outside listener for swipe actions
+  useEffect(() => {
+    if (swipedEntryId) {
+      document.addEventListener('click', handleSwipeClickOutside);
+      return () => document.removeEventListener('click', handleSwipeClickOutside);
+    }
+  }, [swipedEntryId]);
+
+  // Handle press and hold for entry
+  const handleEntryPressStart = (entryId) => {
+    const timer = setTimeout(() => {
+      if (!isMultiSelectMode) {
+        // Enter multi-select mode on press and hold
+        setIsMultiSelectMode(true);
+        setSelectedEntries(new Set([entryId]));
+      } else {
+        // Toggle selection in multi-select mode
+        toggleEntrySelection(entryId);
+      }
+    }, 500); // 500ms press and hold
+    setPressTimer(timer);
+  };
+
+  const handleEntryPressEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
+  };
+
+  // Handle swipe gestures
+  const handleEntrySwipe = (entryId, direction) => {
+    if (direction === 'right' && !isMultiSelectMode) {
+      setSwipedEntryId(entryId);
+    }
+  };
+
+  // Touch swipe detection
+  const handleEntryTouchStart = (e, entryId) => {
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY, entryId });
+    handleEntryPressStart(entryId);
+  };
+
+  const handleEntryTouchEnd = (e, entryId) => {
+    if (!touchStartPos) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartPos.x;
+    const deltaY = touch.clientY - touchStartPos.y;
+    
+    // Check if it's a horizontal swipe (more horizontal than vertical movement)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+      handleEntrySwipe(entryId, deltaX > 0 ? 'right' : 'left');
+    }
+    
+    setTouchStartPos(null);
+    handleEntryPressEnd();
+  };
+
+  // Mouse swipe detection
+  const handleEntryMouseDown = (e, entryId) => {
+    setMouseStartPos({ x: e.clientX, y: e.clientY, entryId });
+    handleEntryPressStart(entryId);
+  };
+
+  const handleEntryMouseUp = (e, entryId) => {
+    if (!mouseStartPos) return;
+    
+    const deltaX = e.clientX - mouseStartPos.x;
+    const deltaY = e.clientY - mouseStartPos.y;
+    
+    // Check if it's a horizontal swipe (more horizontal than vertical movement)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+      handleEntrySwipe(entryId, deltaX > 0 ? 'right' : 'left');
+    }
+    
+    setMouseStartPos(null);
+    handleEntryPressEnd();
+  };
+
+  // Handle entry actions
+  const handleEditEntry = (entry) => {
+    setSwipedEntryId(null);
+    setPressedEntryId(null);
+    
+    // Set up edit form with current values
+    setEditingCard(entry);
+    setEditQuantity(entry.quantity || 1);
+    setEditCondition(entry.condition || 'Near Mint');
+    setEditVariant(entry.variant || 'Normal');
+    setEditGrade(entry.grade || '');
+    setEditGradingService(entry.gradingService || 'raw');
+    setEditPricePaid(entry.pricePaid || '');
+    setEditNotes(entry.notes || '');
+    setEditIsGraded(!!(entry.grade && entry.gradingService && entry.gradingService !== 'raw'));
+    
+    setShowEditCardModal(true);
+  };
+
+  // Handle saving edited card
+  const handleSaveEdit = () => {
+    if (!editingCard) return;
+    
+    const updates = {
+      quantity: parseInt(editQuantity) || 1,
+      condition: editCondition,
+      variant: editVariant,
+      grade: editIsGraded ? editGrade : null,
+      gradingService: editIsGraded ? editGradingService : 'raw',
+      pricePaid: editPricePaid ? parseFloat(editPricePaid) : null,
+      notes: editNotes.trim()
+    };
+    
+    const success = userDatabase.updateCardInCollection(editingCard.collectionId, editingCard.id, updates);
+    
+    if (success) {
+      // Refresh data
+      const updatedUserData = userDatabase.getUserData();
+      setUserData({...updatedUserData});
+      setRecentActivityData([...(updatedUserData.recentActivity || [])]);
+      setDisplayedActivity([...(updatedUserData.recentActivity || []).slice(0, 3)]);
+      
+      // Refresh the entries list
+      const updatedEntries = myCardEntries.map(entry => 
+        entry.id === editingCard.id 
+          ? { ...entry, ...updates, lastUpdated: new Date().toISOString() }
+          : entry
+      );
+      setMyCardEntries(updatedEntries);
+      
+      // Close modal and reset form
+      setShowEditCardModal(false);
+      setEditingCard(null);
+      setEditQuantity(1);
+      setEditCondition('Near Mint');
+      setEditVariant('Normal');
+      setEditGrade('');
+      setEditGradingService('raw');
+      setEditPricePaid('');
+      setEditNotes('');
+      setEditIsGraded(false);
+      
+      // Reset dropdown states
+      setShowEditConditionDropdown(false);
+      setShowEditVariantDropdown(false);
+      setShowEditGradeDropdown(false);
+      setShowEditGradingServiceDropdown(false);
+    } else {
+      alert('Failed to update card. Please try again.');
+    }
+  };
+
+  const handleRemoveEntry = (entry) => {
+    setSwipedEntryId(null);
+    setPressedEntryId(null);
+    
+    if (confirm(`Remove ${entry.quantity || 1} ${entry.name} from ${entry.collectionName}?`)) {
+      const success = userDatabase.removeCardFromCollection(entry.collectionId, entry.id, entry.quantity || 1);
+      if (success) {
+        // Refresh data
+        const updatedUserData = userDatabase.getUserData();
+        setUserData({...updatedUserData});
+        setRecentActivityData([...(updatedUserData.recentActivity || [])]);
+        setDisplayedActivity([...(updatedUserData.recentActivity || []).slice(0, 3)]);
+        
+        // Refresh the entries list
+        const updatedEntries = myCardEntries.filter(e => e.id !== entry.id);
+        setMyCardEntries(updatedEntries);
+        
+        // Show notification
+        setCollectionNotificationMessage(`Removed ${entry.name} from ${entry.collectionName}`);
+        setShowCollectionNotification(true);
+        setTimeout(() => {
+          setShowCollectionNotification(false);
+        }, 3000);
+      }
+    }
+  };
+
   // Handle opening Add to Collection modal
   const handleAddToCollection = (card) => {
-    // Reset form to defaults
-    setSelectedCollectionForAdd('pokemon-collection');
-    setAddQuantity(1);
-    setSelectedVariant('normal');
-    setAddCardCondition('Near Mint');
-    setIsGraded(false);
-    setSelectedGradingService('PSA');
-    setSelectedGrade('10');
-    setAddNote('');
+    // First close any open modals
+    setShowCardProfileModal(false);
+    setShowSearchResultsModal(false);
+    setShowAddToCollectionModal(false);
     
-    // Reset dropdown states
-    setShowCollectionDropdown(false);
-    setShowVariantDropdown(false);
-    setShowConditionDropdown(false);
-    setShowGradingServiceDropdown(false);
-    setShowGradeDropdown(false);
-    
-    // Determine which modal to open based on current page
-    if (showCardProfile) {
-      setCardToAddFromProfile(card);
-      setShowCardProfileModal(true);
-    } else if (showSearchResults || activeTab === 'cards' || activeTab === 'search') {
-      setCardToAddFromSearch(card);
-      setShowSearchResultsModal(true);
-    } else {
-      // Fallback to original behavior
-      setCardToAdd(card);
-      setShowAddToCollectionModal(true);
-    }
+    // Small delay to ensure modal closes and resets
+    setTimeout(() => {
+      // Reset form to defaults
+      setSelectedCollectionForAdd('pokemon-collection');
+      setAddQuantity(1);
+      setSelectedVariant('normal');
+      setAddCardCondition('Near Mint');
+      setIsGraded(false);
+      setSelectedGradingService('PSA');
+      setSelectedGrade('10');
+      setAddNote('');
+      
+      // Reset dropdown states
+      setShowCollectionDropdown(false);
+      setShowVariantDropdown(false);
+      setShowConditionDropdown(false);
+      setShowGradingServiceDropdown(false);
+      setShowGradeDropdown(false);
+      
+      // Determine which modal to open based on current page
+      if (showCardProfile) {
+        setCardToAddFromProfile(card);
+        setShowCardProfileModal(true);
+      } else if (showSearchResults || activeTab === 'cards' || activeTab === 'search') {
+        setCardToAddFromSearch(card);
+        setShowSearchResultsModal(true);
+      } else {
+        // Fallback to original behavior
+        setCardToAdd(card);
+        setShowAddToCollectionModal(true);
+      }
+    }, 50);
   }
+
+  // Get total quantity of a card in user's collection
+  const getCardQuantityInCollection = (cardId) => {
+    // Always get fresh data from userDatabase to ensure we have the latest state
+    const freshUserData = userDatabase.getUserData();
+    
+    if (!freshUserData || !freshUserData.collections) return 0;
+    
+    let totalQuantity = 0;
+    freshUserData.collections.forEach(collection => {
+      if (collection.cards && collection.cards.length > 0) {
+        collection.cards.forEach(card => {
+          // Check if this card matches the base cardId (before the timestamp)
+          const baseCardId = card.cardId || card.id;
+          const searchBaseCardId = cardId;
+          
+          // Extract the base card ID from the full ID (remove timestamp part)
+          const cardBaseId = baseCardId.includes('-') ? baseCardId.split('-').slice(0, 2).join('-') : baseCardId;
+          const searchBaseId = searchBaseCardId.includes('-') ? searchBaseCardId.split('-').slice(0, 2).join('-') : searchBaseCardId;
+          
+          if (cardBaseId === searchBaseId || baseCardId === searchBaseCardId) {
+            totalQuantity += (card.quantity || 0);
+          }
+        });
+      }
+    });
+    
+    // Debug logging
+    if (cardId && cardId.includes('det1-7')) {
+      console.log('getCardQuantityInCollection debug (using fresh data):', {
+        cardId,
+        totalQuantity,
+        userDataUpdated: freshUserData.lastUpdated,
+        collectionsCount: freshUserData.collections.length
+      });
+    }
+    
+    return totalQuantity;
+  };
 
   // Calculate dynamic price based on variant, condition, and grade
   const calculateDynamicPrice = (card) => {
@@ -3497,15 +4478,6 @@ export default function App() {
     setShowAddToFolderModal(true)
   }
 
-  const handleAddToDeck = () => {
-    setShowCardMenu(false)
-    setShowAddToDeckModal(true)
-  }
-
-  const handleAddToBinder = () => {
-    setShowCardMenu(false)
-    setShowAddToBinderModal(true)
-  }
 
   const handleSetCustomTag = () => {
     setShowCardMenu(false)
@@ -3550,10 +4522,12 @@ export default function App() {
 
   // Handle actually adding the card to collection with all options
   const handleConfirmAddToCollection = () => {
-    if (!cardToAdd) return;
+    // Determine which card to add based on which modal is open
+    const card = cardToAdd || cardToAddFromProfile || cardToAddFromSearch;
+    if (!card) return;
     
     console.log('Adding card to collection with options:', {
-      card: cardToAdd.name,
+      card: card.name,
       collection: selectedCollectionForAdd,
       quantity: addQuantity,
       variant: selectedVariant,
@@ -3564,83 +4538,77 @@ export default function App() {
       note: addNote
     });
     
-    // Find the target collection
-    const targetCollection = mockUserData.collections.find(c => c.id === selectedCollectionForAdd);
-    if (!targetCollection) {
-      console.error('Collection not found. Available collections:', mockUserData.collections.map(c => c.id));
-      return;
-    }
-    
-    // Initialize cards array if it doesn't exist
-    if (!targetCollection.cards) {
-      targetCollection.cards = [];
-    }
-    
-    // Create the card entry with all selected options
-    const newCard = {
-      id: Date.now(), // Generate unique ID
-      name: cardToAdd.name,
-      set: cardToAdd.set?.name || cardToAdd.set || 'Unknown Set',
-      rarity: cardToAdd.rarity || 'Unknown',
-      number: cardToAdd.number || '001',
-      price: cardToAdd.price || cardToAdd.currentValue || cardToAdd.tcgplayer?.prices?.holofoil?.market || cardToAdd.tcgplayer?.prices?.normal?.market || 0,
-      imageUrl: cardToAdd.imageUrl || cardToAdd.images?.large || cardToAdd.images?.small,
-      artist: cardToAdd.artist || 'Unknown Artist',
-      variant: selectedVariant,
-      condition: isGraded ? null : addCardCondition, // No condition if graded
-      isGraded: isGraded,
-      gradingService: isGraded ? selectedGradingService : null,
-      grade: isGraded ? selectedGrade : null,
-      note: addNote || null,
-      folder: 'Collection',
-      dateAdded: new Date().toISOString(),
-      quantity: addQuantity,
-      collected: true
+    // Prepare card data for database
+    const cardData = {
+      id: card.id || card.cardId || Date.now().toString(),
+      name: card.name,
+      set: card.set?.name || card.set || card.set_name || 'Unknown Set',
+      set_name: card.set?.name || card.set || card.set_name || 'Unknown Set',
+      rarity: card.rarity || 'Unknown',
+      number: card.number || '001',
+      imageUrl: card.imageUrl || card.images?.large || card.images?.small,
+      images: card.images || { small: card.imageUrl, large: card.imageUrl },
+      artist: card.artist || 'Unknown Artist',
+      currentValue: card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0,
+      tcgplayer: card.tcgplayer
     };
     
-    // Check if similar card already exists (same name, set, variant, condition/grade)
-    const existingCard = targetCollection.cards.find(c => 
-      c.name === newCard.name && 
-      c.set === newCard.set && 
-      c.variant === newCard.variant &&
-      (isGraded ? (c.gradingService === newCard.gradingService && c.grade === newCard.grade) : c.condition === newCard.condition)
+    // Add card to collection using userDatabase
+    const success = userDatabase.addCardToCollection(
+      selectedCollectionForAdd,
+      cardData,
+      addQuantity,
+      isGraded ? null : addCardCondition,
+      selectedVariant,
+      isGraded ? selectedGrade : null,
+      isGraded ? selectedGradingService : null,
+      null, // pricePaid
+      addNote || ''
     );
     
-    if (existingCard) {
-      // If similar card exists, increase quantity
-      existingCard.quantity = (existingCard.quantity || 1) + addQuantity;
-      console.log(`Increased quantity of ${newCard.name} to ${existingCard.quantity}`);
+    if (success) {
+      // Reload user data to reflect changes
+      const updatedUserData = userDatabase.getUserData();
+      
+      // Update states
+      if (updatedUserData) {
+        setUserData({...updatedUserData});
+        setRecentActivityData([...(updatedUserData.recentActivity || [])]);
+        setDisplayedActivity([...(updatedUserData.recentActivity || []).slice(0, 3)]);
+      }
+      
+      // Show notification
+      const collectionName = updatedUserData?.collections.find(c => c.id === selectedCollectionForAdd)?.name || 'Collection';
+      const quantityText = addQuantity > 1 ? ` (${addQuantity})` : '';
+      setCollectionNotificationMessage(`Added ${card.name}${quantityText} to ${collectionName}`);
+      setShowCollectionNotification(true);
+      
+      // Auto-hide notification after 3 seconds
+      setTimeout(() => {
+        setShowCollectionNotification(false);
+      }, 3000);
+      
+      // Close all modals and reset states
+      setShowAddToCollectionModal(false);
+      setShowCardProfileModal(false);
+      setShowSearchResultsModal(false);
+      setCardToAdd(null);
+      setCardToAddFromProfile(null);
+      setCardToAddFromSearch(null);
+      
+      // Reset form fields for next use
+      setAddQuantity(1);
+      setSelectedVariant('normal');
+      setAddCardCondition('Near Mint');
+      setIsGraded(false);
+      setSelectedGradingService('PSA');
+      setSelectedGrade('10');
+      setAddNote('');
+      setSelectedCollectionForAdd('pokemon-collection');
     } else {
-      // If no similar card exists, add new entry
-      targetCollection.cards.push(newCard);
-      console.log(`Added new card ${newCard.name} to collection`);
+      console.error('Failed to add card to collection');
+      alert('Failed to add card to collection. Please try again.');
     }
-    
-    // Update collection stats
-    targetCollection.totalCards = (targetCollection.totalCards || 0) + addQuantity;
-    const cardValue = newCard.price * addQuantity;
-    targetCollection.totalValue = (targetCollection.totalValue || 0) + cardValue;
-    
-    // Add to recent activity
-    for (let i = 0; i < addQuantity; i++) {
-      recentActivityData.unshift({
-        id: Date.now() + i,
-        cardName: cardToAdd.name,
-        action: "Added",
-        type: "add",
-        time: "Just now"
-      });
-    }
-    
-    // Show success feedback
-    console.log(`Successfully added ${addQuantity} ${cardToAdd.name} to collection!`);
-    console.log('Collection now has', targetCollection.cards.length, 'cards');
-    console.log('Total collection value:', targetCollection.totalValue);
-    
-    // Close modal and show success
-    setShowAddToCollectionModal(false);
-    setCardToAdd(null);
-    alert(`✅ Added ${addQuantity} ${cardToAdd.name} to your collection!`);
   }
 
   const handleCloseCardProfile = () => {
@@ -3664,9 +4632,55 @@ export default function App() {
 
   // Chart data generator
   const getChartData = useMemo(() => {
-    const currentCollection = mockUserData.collections.find(c => c.id === selectedCollection) || mockUserData.collections[0]
-    const history = mockUserData.collectionPortfolioHistory?.[selectedCollection]?.[selectedTimeRange] || []
+    if (!userData) {
+      return {
+        labels: [],
+        datasets: [{
+          label: 'Portfolio Value',
+          data: [],
+          borderColor: '#6865E7',
+          backgroundColor: 'rgba(104, 101, 231, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#6865E7',
+          pointBorderColor: '#F9F9F9',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      }
+    }
+
+    const currentCollection = userData.collections.find(c => c.id === selectedCollection) || userData.collections[0]
+    const history = userData.portfolioHistory?.[selectedCollection]?.[selectedTimeRange] || []
     
+    // If no history but collection exists, generate initial data point with current value
+    if (history.length === 0 && currentCollection) {
+      const currentValue = currentCollection.totalValue || 0
+      const now = new Date()
+      
+      // Generate a simple data point showing the current value
+      const singlePoint = { date: now.toISOString(), value: currentValue }
+      
+      return {
+        labels: [now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })],
+        datasets: [{
+          label: 'Portfolio Value',
+          data: [convertCurrency(currentValue)],
+          borderColor: '#6865E7',
+          backgroundColor: 'rgba(104, 101, 231, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#6865E7',
+          pointBorderColor: '#F9F9F9',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      }
+    }
     
     // Ensure we have valid data
     if (!history || history.length === 0) {
@@ -3729,7 +4743,30 @@ export default function App() {
         }
       ]
     }
-  }, [selectedTimeRange, selectedCurrency, selectedCollection])
+  }, [selectedTimeRange, selectedCurrency, selectedCollection, userData])
+
+  // Get top valued cards from user's collection
+  const myTopMovers = useMemo(() => {
+    if (!userData || !userData.collections) return []
+    
+    // Get all cards from all collections
+    const allCards = []
+    userData.collections.forEach(collection => {
+      if (collection.cards && collection.cards.length > 0) {
+        collection.cards.forEach(card => {
+          allCards.push({
+            ...card,
+            totalValue: (card.currentValue || 0) * (card.quantity || 1)
+          })
+        })
+      }
+    })
+    
+    // Sort by total value (descending) and take top 3
+    return allCards
+      .sort((a, b) => b.totalValue - a.totalValue)
+      .slice(0, 3)
+  }, [userData])
 
   // Get graded card options and their prices
   const getGradedOptions = useMemo(() => {
@@ -3772,6 +4809,8 @@ export default function App() {
     if (!selectedCard) return []
     
     const basePrice = selectedCard.current_value || selectedCard.price || 12.00
+    
+    
     const grading = getGradedOptions.find(g => g.id === selectedGradingService)
     const gradingMultiplier = grading ? grading.multiplier : 1.0
     
@@ -3826,86 +4865,171 @@ export default function App() {
 
   // Get current price (variant prices already include grading multiplier)
   const getCurrentPrice = useMemo(() => {
-    if (!selectedCard) return 12.00
+    if (!selectedCard) return 0.45 // Default to Psyduck price
     
     const variant = getCardVariants.find(v => v.id === selectedCardVariant)
-    return variant ? variant.price : (selectedCard?.current_value || selectedCard?.price || 12.00)
+    if (variant) {
+      return variant.price;
+    }
+    
+    // Use the same TCGPlayer data parsing logic as the "Avg. market value" section
+    let tcgplayerPrices = {};
+    if (selectedCard?.tcgplayer) {
+      try {
+        tcgplayerPrices = typeof selectedCard.tcgplayer === 'string' 
+          ? JSON.parse(selectedCard.tcgplayer) 
+          : selectedCard.tcgplayer;
+      } catch (error) {
+        console.warn('Error parsing TCGPlayer data in getCurrentPrice:', error);
+        tcgplayerPrices = {};
+      }
+    }
+
+    // Use TCGPlayer market price as primary source
+    if (tcgplayerPrices.prices?.holofoil?.market) return tcgplayerPrices.prices.holofoil.market;
+    if (tcgplayerPrices.prices?.normal?.market) return tcgplayerPrices.prices.normal.market;
+    if (tcgplayerPrices.prices?.reverseHolofoil?.market) return tcgplayerPrices.prices.reverseHolofoil.market;
+    if (tcgplayerPrices.prices?.firstEditionHolofoil?.market) return tcgplayerPrices.prices.firstEditionHolofoil.market;
+    
+    // Fallback to current_value (this should have the market price from TCGPlayer)
+    if (selectedCard?.current_value) return selectedCard.current_value;
+    
+    // If no price data available, use a default value based on card name
+    if (selectedCard?.name === 'Psyduck') return 0.45;
+    return 12.00;
   }, [selectedCard, selectedCardVariant, getCardVariants])
 
   // Card-specific price chart data generator
-  const getCardChartData = useMemo(() => {
-    if (!selectedCard) {
+  // Helper function to get chart data with parameters
+  const getCardChartData = async (card, timeRange, variant, condition, gradingService, grade) => {
+    if (!card) {
       return {
         labels: [],
-        datasets: []
+        datasets: [],
+        absoluteChange: 0,
+        percentageChange: 0
       }
     }
 
-    // Use the new price service for more realistic historical data
-    const dataPoints = priceService.getDataPointsForRange(cardChartTimeRange)
-    const history = priceService.generateHistoricalData(selectedCard, cardChartTimeRange, dataPoints)
-    
-    if (!history || history.length === 0) {
+    try {
+      // Use TCGPlayer service for real data
+      const chartData = await tcgplayerService.getChartData(card.name, card.set_name || card.set, timeRange)
+      return chartData
+    } catch (error) {
+      console.warn('Error fetching TCGPlayer chart data, falling back to mock data:', error)
+      
+      // Fallback to mock data if TCGPlayer fails
+      const dataPoints = priceService.getDataPointsForRange(timeRange)
+      const history = priceService.generateHistoricalData(card, timeRange, dataPoints)
+      
+      // Calculate price changes
+      const absoluteChange = history.length > 1 ? history[history.length - 1].value - history[0].value : 0
+      const percentageChange = history.length > 1 ? ((history[history.length - 1].value - history[0].value) / history[0].value) * 100 : 0
+
       return {
-        labels: [],
-        datasets: [
-          {
-            label: 'Card Price',
-            data: [],
-            borderColor: '#605DEC',
-            backgroundColor: 'rgba(96, 93, 236, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#605DEC',
-            pointBorderColor: '#F9F9F9',
-            pointBorderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          }
-        ]
-      }
-    }
-    
-    return {
-      labels: history.map(point => {
-        const date = new Date(point.date)
-        if (cardChartTimeRange === '1D') {
-          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        } else if (cardChartTimeRange === '7D') {
+        labels: history.map(point => {
+          const date = new Date(point.date)
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        } else if (cardChartTimeRange === '1M') {
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        } else if (cardChartTimeRange === '3M') {
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        } else if (cardChartTimeRange === '6M') {
-          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        } else if (cardChartTimeRange === '1Y') {
-          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        } else if (cardChartTimeRange === 'Max') {
-          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        } else {
-          return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        }
-      }),
-      datasets: [
-        {
-          label: 'Card Price',
+        }),
+        datasets: [{
+          label: 'Price',
           data: history.map(point => point.value),
-          borderColor: '#605DEC',
-          backgroundColor: 'rgba(96, 93, 236, 0.1)',
+          borderColor: '#8871FF',
+          backgroundColor: 'rgba(136, 113, 255, 0.1)',
           borderWidth: 2,
           fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#605DEC',
-          pointBorderColor: '#F9F9F9',
-          pointBorderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 5
-        }
-      ]
+          tension: 0.4
+        }],
+        absoluteChange,
+        percentageChange
+      }
     }
-  }, [selectedCard, cardChartTimeRange, selectedCardVariant, getCurrentPrice])
+  }
+
+  // Chart data state for async loading
+  const [cardChartData, setCardChartData] = useState({
+    labels: [],
+    datasets: []
+  })
+
+  // Market value data state for async loading
+  const [marketValueData, setMarketValueData] = useState({
+    currentPrice: 0,
+    absoluteChange: 0,
+    percentageChange: 0,
+    isPositive: false
+  })
+
+  // Chart error state
+  const [chartError, setChartError] = useState(null)
+
+  // Load chart data when selectedCard or timeRange changes
+  useEffect(() => {
+    const loadChartData = async () => {
+      if (!selectedCard) {
+        setCardChartData({
+          labels: [],
+          datasets: []
+        })
+        return
+      }
+
+      console.log(`Loading chart data for ${selectedCard.name} with time range: ${cardChartTimeRange}`)
+      
+      try {
+        const chartData = await getCardChartData(selectedCard, cardChartTimeRange, selectedCardVariant, 'raw', 'PSA', '10')
+        console.log(`Chart data loaded for ${cardChartTimeRange}:`, chartData)
+        setCardChartData(chartData)
+        setChartError(null) // Clear any previous errors
+      } catch (error) {
+        console.error('Error loading chart data:', error)
+        setChartError(error.message || 'Failed to load chart data')
+        // Set empty chart data
+        setCardChartData({
+          labels: [],
+          datasets: []
+        })
+      }
+    }
+
+    loadChartData()
+  }, [selectedCard, cardChartTimeRange, selectedCardVariant])
+
+  // Load market value data when selectedCard changes
+  useEffect(() => {
+    const loadMarketValueData = async () => {
+      if (!selectedCard) {
+        setMarketValueData({
+          currentPrice: 0,
+          absoluteChange: 0,
+          percentageChange: 0,
+          isPositive: false
+        })
+        return
+      }
+
+      try {
+        // Use the same time range as the chart for consistency
+        const chartData = await getCardChartData(selectedCard, cardChartTimeRange, 'normal', 'raw', 'PSA', '10')
+        setMarketValueData({
+          currentPrice: chartData.currentPrice || getCurrentPrice,
+          absoluteChange: chartData.absoluteChange || 0,
+          percentageChange: chartData.percentageChange || 0,
+          isPositive: (chartData.absoluteChange || 0) >= 0
+        })
+      } catch (error) {
+        console.error('Error loading market value data:', error)
+        setMarketValueData({
+          currentPrice: getCurrentPrice,
+          absoluteChange: 0,
+          percentageChange: 0,
+          isPositive: false
+        })
+      }
+    }
+
+    loadMarketValueData()
+  }, [selectedCard, cardChartTimeRange, getCurrentPrice])
 
   // Card chart options
   const cardChartOptions = {
@@ -4610,7 +5734,11 @@ export default function App() {
                   {/* Card Image */}
                   <div className="w-[217px] h-[301px]">
                     <HolographicCard
-                      src={selectedCard.imageUrl || selectedCard.images?.large || selectedCard.images?.small || cardImages[selectedCard.id]}
+                      src={(() => {
+                        // Ensure we return a string, not a function
+                        const imageSrc = selectedCard.imageUrl || selectedCard.images?.large || selectedCard.images?.small || cardImages[selectedCard.id];
+                        return typeof imageSrc === 'string' ? imageSrc : '';
+                      })()}
                       alt={selectedCard.name}
                       className="w-full h-full bg-transparent rounded-xl overflow-hidden"
                       enableGyroscope={true}
@@ -4772,7 +5900,7 @@ export default function App() {
                     
                     {/* Centered Quantity Text */}
                     <div className="absolute left-1/2 transform -translate-x-1/2">
-                      <span className="text-white text-sm">Qty: {selectedCard.quantity || 1}</span>
+                      <span className="text-white text-sm">Qty: {getCardQuantityInCollection(selectedCard.cardId || selectedCard.id)}</span>
                     </div>
                     
                     <button 
@@ -4789,6 +5917,22 @@ export default function App() {
                   {showCardMenu && (
                     <div className="absolute top-16 right-0 z-[80] bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-lg shadow-2xl min-w-[160px] card-menu-container">
                       <div className="py-2">
+                        <button 
+                          onClick={handleViewMyCards}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
+                        >
+                          <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 20 20">
+                            <g clipPath="url(#clip0_363_5703)">
+                              <path d="M15.105 19.0527L10.4474 16.8878C10.1388 16.7443 10.0046 16.3774 10.1481 16.0684L13.444 8.97766C13.5872 8.66891 13.9545 8.53493 14.2629 8.67817L18.9207 10.8436C19.2293 10.987 19.3632 11.3539 19.2197 11.6625L15.924 18.7532C15.7804 19.062 15.4133 19.196 15.105 19.0527ZM3.86524 18.2791L0.773053 11.0973C0.638366 10.7845 0.783014 10.4214 1.09532 10.287L2.62641 9.6279L4.5395 16.8171C4.72286 17.5041 5.42837 17.9139 6.11606 17.7308L7.64075 17.3251L4.67563 18.6019C4.36286 18.7364 3.99993 18.5919 3.86524 18.2791ZM5.18907 16.644L3.17821 9.08743C3.09071 8.75852 3.2868 8.42032 3.61532 8.33305L4.94473 7.97946L4.78465 9.1695C4.69005 9.87403 5.18403 10.5231 5.88954 10.6182L9.00782 11.0384L7.73841 15.3145C7.60774 15.7551 7.72395 16.2109 8.00661 16.5325L5.94333 17.0813C5.61442 17.1688 5.27657 16.9731 5.18907 16.644ZM9.42454 16.458L8.79876 16.2721C8.47219 16.1748 8.28626 15.832 8.38298 15.5054L10.6084 8.0093C10.7054 7.68274 11.049 7.4968 11.3749 7.59329L13.2918 8.16294C13.0929 8.29413 12.9344 8.47837 12.8343 8.69458L9.53825 15.7856C9.44059 15.9955 9.40141 16.2277 9.42454 16.458ZM9.20161 10.3865L5.9795 9.95227C5.64227 9.90673 5.40512 9.59602 5.45067 9.2586L6.49481 1.50899C6.54012 1.17177 6.85126 0.934851 7.18778 0.980164L12.2787 1.66622C12.6157 1.71177 12.8526 2.02266 12.8073 2.35966L12.1649 7.12735L11.566 6.94954C10.8837 6.74653 10.1666 7.13641 9.9643 7.81798L9.20161 10.3865Z" fill="#8F8F94"/>
+                            </g>
+                            <defs>
+                              <clipPath id="clip0_363_5703">
+                                <rect width="20" height="20" fill="white"/>
+                              </clipPath>
+                            </defs>
+                          </svg>
+                          <span className="text-gray-300 text-sm font-medium">View My Cards</span>
+                        </button>
                         <button 
                           onClick={handleAddToFolder}
                           className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-700/50 transition-colors"
@@ -4833,57 +5977,21 @@ export default function App() {
                       <span className="text-white">Avg. market value</span>
                       <div className="flex flex-col items-end">
                         <div className="flex items-center gap-1">
-                          <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                          <svg className={`w-4 h-4 ${marketValueData.isPositive ? 'text-green-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={marketValueData.isPositive 
+                              ? "M7 11l5-5m0 0l5 5m-5-5v12"
+                              : "M17 13l-5 5m0 0l-5-5m5 5V6"
+                            } />
                           </svg>
                           <span className="text-white text-lg font-bold">
-                            ${(() => {
-                              // Use TCGPlayer market price as primary source for all cards
-                              const tcgplayerPrices = selectedCard.tcgplayer?.prices || {}
-                              if (tcgplayerPrices.holofoil?.market) return tcgplayerPrices.holofoil.market.toFixed(2);
-                              if (tcgplayerPrices.normal?.market) return tcgplayerPrices.normal.market.toFixed(2);
-                              if (tcgplayerPrices.reverseHolofoil?.market) return tcgplayerPrices.reverseHolofoil.market.toFixed(2);
-                              if (tcgplayerPrices.firstEditionHolofoil?.market) return tcgplayerPrices.firstEditionHolofoil.market.toFixed(2);
-                              // Fallback to current_value or price
-                              if (selectedCard.current_value) return selectedCard.current_value.toFixed(2);
-                              if (selectedCard.price) return selectedCard.price.toFixed(2);
-                              return '0.00';
-                            })()}
+                            ${marketValueData.currentPrice.toFixed(2)}
                           </span>
                         </div>
-                        <div className={`text-sm ${(() => {
-                          // Use a static recent change based on card ID for consistency
-                          const cardId = selectedCard?.id || 'default'
-                          const seed = cardId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                          const staticChange = (seed % 20 - 10) / 100 // -10% to +10% based on card ID
-                          
-                          return staticChange >= 0 ? 'text-green-400' : 'text-red-400'
-                        })()}`}>
-                          {(() => {
-                            // Use a static recent change based on card ID for consistency
-                            const cardId = selectedCard?.id || 'default'
-                            const seed = cardId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-                            const staticChange = (seed % 20 - 10) / 100 // -10% to +10% based on card ID
-                            
-                            // Get current price for percentage calculation
-                            const tcgplayerPrices = selectedCard?.tcgplayer?.prices || {}
-                            const holofoilPrice = tcgplayerPrices.holofoil?.market || tcgplayerPrices.holofoil?.mid
-                            const normalPrice = tcgplayerPrices.normal?.market || tcgplayerPrices.normal?.mid
-                            const currentPrice = holofoilPrice || normalPrice || 457.11
-                            
-                            const changeAmount = currentPrice * staticChange
-                            const changePercent = staticChange * 100
-                            
-                            return `$${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`
-                          })()}
+                        <div className={`text-sm ${marketValueData.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                          ${marketValueData.absoluteChange >= 0 ? '+' : ''}${marketValueData.absoluteChange.toFixed(2)} ({marketValueData.percentageChange >= 0 ? '+' : ''}${marketValueData.percentageChange.toFixed(2)}%)
                         </div>
                         <div className="text-gray-400 text-xs">
-                          {(() => {
-                            // Check if we have TCGPlayer data
-                            const tcgplayerPrices = selectedCard.tcgplayer?.prices || {}
-                            const hasRealData = tcgplayerPrices.holofoil?.market || tcgplayerPrices.normal?.market
-                            return hasRealData ? 'market data' : 'estimated'
-                          })()}
+                          market data
                         </div>
                       </div>
                     </div>
@@ -5054,7 +6162,6 @@ export default function App() {
                             case '3M': return 'past 3 months'
                             case '6M': return 'past 6 months'
                             case '1Y': return 'past year'
-                            case 'Max': return 'all time'
                             default: return 'this week'
                           }
                         })()}</span>
@@ -5129,17 +6236,37 @@ export default function App() {
 
                   {/* Card Price Chart */}
                   <div className="h-48 bg-gray-700 rounded-lg mb-4 p-4">
-                    <Line data={getCardChartData} options={cardChartOptions} />
+                    {chartError ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center">
+                        <svg className="w-12 h-12 text-red-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <h3 className="text-lg font-semibold text-red-400 mb-2">Chart Data Unavailable</h3>
+                        <p className="text-gray-300 text-sm mb-3">{chartError}</p>
+                        <button 
+                          onClick={() => {
+                            setChartError(null)
+                            // Trigger reload by updating time range
+                            setCardChartTimeRange(cardChartTimeRange)
+                          }}
+                          className="px-4 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    ) : (
+                      <Line data={cardChartData} options={cardChartOptions} />
+                    )}
                   </div>
 
                   {/* Time Range Buttons */}
-                  <div className="flex gap-2 mb-4">
-                    {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((period) => (
+                  <div className="flex gap-2 mb-4 w-full">
+                    {['1D', '7D', '1M', '3M', '6M', '1Y'].map((period) => (
                       <button 
                         key={period}
-                        onClick={() => setCardChartTimeRange(period === 'Max' ? 'Max' : period)}
-                        className={`px-3 py-1 text-sm rounded ${
-                          cardChartTimeRange === (period === 'Max' ? 'Max' : period) 
+                        onClick={() => setCardChartTimeRange(period)}
+                        className={`flex-1 px-3 py-2 text-sm rounded font-medium ${
+                          cardChartTimeRange === period 
                             ? 'bg-[#605DEC] text-white' 
                             : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
@@ -5319,9 +6446,23 @@ export default function App() {
                       )}
 
                       {/* Divider */}
-                      {selectedCard?.attacks && selectedCard.attacks.length > 0 && (
+                      {selectedCard?.attacks && (() => {
+                        try {
+                          const attacks = typeof selectedCard.attacks === 'string' 
+                            ? JSON.parse(selectedCard.attacks) 
+                            : selectedCard.attacks;
+                          return attacks && attacks.length > 0;
+                        } catch {
+                          return false;
+                        }
+                      })() && (
                         <div className="border-t border-gray-600 pt-4 mb-4">
-                          {selectedCard.attacks.map((attack, index) => (
+                          {(() => {
+                            try {
+                              const attacks = typeof selectedCard.attacks === 'string' 
+                                ? JSON.parse(selectedCard.attacks) 
+                                : selectedCard.attacks;
+                              return attacks.map((attack, index) => (
                             <div key={index} className={index > 0 ? "mt-4" : ""}>
                               {/* Attack Cost */}
                               <div className="flex items-center gap-2 mb-2">
@@ -5333,7 +6474,11 @@ export default function App() {
                                 {attack.description}
                               </p>
                             </div>
-                          ))}
+                              ));
+                            } catch {
+                              return null;
+                            }
+                          })()}
                         </div>
                       )}
                     </div>
@@ -5364,10 +6509,10 @@ export default function App() {
                     <div className="bg-gray-700 rounded p-3 text-center">
                       <div className="text-white text-xs mb-2">Type</div>
                       <div className="flex justify-center">
-                        {selectedCard?.type ? (
+                        {selectedCard?.pokemonType ? (
                           <img 
-                            src={getEnergyIconPath(selectedCard.type)} 
-                            alt={`${selectedCard.type} Energy`} 
+                            src={getEnergyIconPath(selectedCard.pokemonType)} 
+                            alt={`${selectedCard.pokemonType} Energy`} 
                             className="w-5 h-5" 
                           />
                         ) : (
@@ -5452,6 +6597,247 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
+              {/* View My Cards Modal */}
+              {showViewMyCardsModal && (
+                <div className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className={`bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-auto relative max-h-[90vh] overflow-y-auto ${isMultiSelectMode ? 'pb-24' : ''}`}>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 20 20">
+                          <g clipPath="url(#clip0_363_5703_modal)">
+                            <path d="M15.105 19.0527L10.4474 16.8878C10.1388 16.7443 10.0046 16.3774 10.1481 16.0684L13.444 8.97766C13.5872 8.66891 13.9545 8.53493 14.2629 8.67817L18.9207 10.8436C19.2293 10.987 19.3632 11.3539 19.2197 11.6625L15.924 18.7532C15.7804 19.062 15.4133 19.196 15.105 19.0527ZM3.86524 18.2791L0.773053 11.0973C0.638366 10.7845 0.783014 10.4214 1.09532 10.287L2.62641 9.6279L4.5395 16.8171C4.72286 17.5041 5.42837 17.9139 6.11606 17.7308L7.64075 17.3251L4.67563 18.6019C4.36286 18.7364 3.99993 18.5919 3.86524 18.2791ZM5.18907 16.644L3.17821 9.08743C3.09071 8.75852 3.2868 8.42032 3.61532 8.33305L4.94473 7.97946L4.78465 9.1695C4.69005 9.87403 5.18403 10.5231 5.88954 10.6182L9.00782 11.0384L7.73841 15.3145C7.60774 15.7551 7.72395 16.2109 8.00661 16.5325L5.94333 17.0813C5.61442 17.1688 5.27657 16.9731 5.18907 16.644ZM9.42454 16.458L8.79876 16.2721C8.47219 16.1748 8.28626 15.832 8.38298 15.5054L10.6084 8.0093C10.7054 7.68274 11.049 7.4968 11.3749 7.59329L13.2918 8.16294C13.0929 8.29413 12.9344 8.47837 12.8343 8.69458L9.53825 15.7856C9.44059 15.9955 9.40141 16.2277 9.42454 16.458ZM9.20161 10.3865L5.9795 9.95227C5.64227 9.90673 5.40512 9.59602 5.45067 9.2586L6.49481 1.50899C6.54012 1.17177 6.85126 0.934851 7.18778 0.980164L12.2787 1.66622C12.6157 1.71177 12.8526 2.02266 12.8073 2.35966L12.1649 7.12735L11.566 6.94954C10.8837 6.74653 10.1666 7.13641 9.9643 7.81798L9.20161 10.3865Z" fill="#8F8F94"/>
+                          </g>
+                          <defs>
+                            <clipPath id="clip0_363_5703_modal">
+                              <rect width="20" height="20" fill="white"/>
+                            </clipPath>
+                          </defs>
+                        </svg>
+                        <h2 className="text-white text-xl font-semibold">My Cards: {selectedCard?.name}</h2>
+                      </div>
+                      <button 
+                        onClick={() => setShowViewMyCardsModal(false)}
+                        className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white hover:bg-gray-500 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {myCardEntries.length > 0 && !isMultiSelectMode && (
+                        <div className="text-center text-gray-400 text-xs mb-2">
+                          💡 Swipe right to reveal actions • Press and hold to multi-select
+                        </div>
+                      )}
+                      {myCardEntries.length > 0 && isMultiSelectMode && (
+                        <div className="text-center text-blue-400 text-xs mb-2">
+                          ✨ Multi-select mode: Tap entries to select them
+                        </div>
+                      )}
+                      {myCardEntries.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                          </div>
+                          <h3 className="text-white font-semibold text-lg mb-2">No Cards Found</h3>
+                          <p className="text-gray-400 text-sm">You don't have this card in your collection yet.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-gray-400 text-sm mb-4">
+                            Found {myCardEntries.length} {myCardEntries.length === 1 ? 'entry' : 'entries'} • Total Quantity: {myCardEntries.reduce((sum, entry) => sum + (entry.quantity || 0), 0)}
+                          </div>
+                          {myCardEntries.map((entry, index) => (
+                            <div 
+                              key={entry.id || index}
+                              className={`relative bg-gray-700/50 rounded-xl border transition-all duration-300 cursor-pointer overflow-hidden ${
+                                isMultiSelectMode && selectedEntries.has(entry.id)
+                                  ? 'border-[#8871FF] shadow-lg shadow-[#8871FF]/20 bg-[#8871FF]/10'
+                                  : pressedEntryId === entry.id 
+                                  ? 'border-[#8871FF] shadow-lg shadow-[#8871FF]/20' 
+                                  : swipedEntryId === entry.id
+                                  ? 'border-[#8871FF] shadow-lg shadow-[#8871FF]/20'
+                                  : 'border-gray-600/50 hover:border-gray-500/50'
+                              }`}
+                              onClick={() => {
+                                if (isMultiSelectMode) {
+                                  toggleEntrySelection(entry.id);
+                                } else if (swipedEntryId === entry.id) {
+                                  // Close swipe actions when clicking on the card
+                                  setSwipedEntryId(null);
+                                }
+                              }}
+                              onMouseDown={(e) => handleEntryMouseDown(e, entry.id)}
+                              onMouseUp={(e) => handleEntryMouseUp(e, entry.id)}
+                              onMouseLeave={handleEntryPressEnd}
+                              onTouchStart={(e) => handleEntryTouchStart(e, entry.id)}
+                              onTouchEnd={(e) => handleEntryTouchEnd(e, entry.id)}
+                              style={{
+                                transform: swipedEntryId === entry.id ? 'translateX(60px)' : 'translateX(0)',
+                                transition: 'transform 0.3s ease-in-out'
+                              }}
+                            >
+                              <div className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-3">
+                                    {isMultiSelectMode && (
+                                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                        selectedEntries.has(entry.id)
+                                          ? 'bg-[#8871FF] border-[#8871FF]'
+                                          : 'border-gray-400'
+                                      }`}>
+                                        {selectedEntries.has(entry.id) && (
+                                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                    )}
+                                    <h4 className="text-white font-semibold">{entry.collectionName}</h4>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-primary font-bold">Qty: {entry.quantity || 1}</span>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                  <div>
+                                    <span className="text-gray-400">Variant:</span>
+                                    <span className="text-white ml-2 capitalize">{entry.variant || 'Normal'}</span>
+                                  </div>
+                                  {entry.gradingService && entry.gradingService !== 'raw' ? (
+                                    <>
+                                      <div>
+                                        <span className="text-gray-400">Grade:</span>
+                                        <span className="text-white ml-2">{entry.gradingService} {entry.grade}</span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div>
+                                      <span className="text-gray-400">Condition:</span>
+                                      <span className="text-white ml-2">{entry.condition || 'Near Mint'}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="text-gray-400">Value:</span>
+                                    <span className="text-white ml-2">${(entry.currentValue || 0).toFixed(2)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Total:</span>
+                                    <span className="text-white ml-2">${((entry.currentValue || 0) * (entry.quantity || 1)).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                                {entry.notes && (
+                                  <div className="mt-2 pt-2 border-t border-gray-600/50">
+                                    <span className="text-gray-400 text-xs">Notes:</span>
+                                    <p className="text-white text-xs mt-1">{entry.notes}</p>
+                                  </div>
+                                )}
+                                <div className="text-gray-500 text-xs mt-2">
+                                  Added {new Date(entry.dateAdded).toLocaleDateString()}
+                                </div>
+                              </div>
+                              
+                              {/* Swipe-to-reveal action buttons */}
+                              {swipedEntryId === entry.id && !isMultiSelectMode && (
+                                <div className="swipe-actions absolute left-0 right-0 bottom-0 bg-gray-600/90 backdrop-blur-sm flex items-center justify-start gap-4 py-3 px-4 rounded-b-xl">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditEntry(entry);
+                                    }}
+                                    className="px-4 py-2 bg-[#8871FF] hover:bg-[#7A5FFF] text-white rounded-lg flex items-center gap-2 transition-colors"
+                                    title="Edit"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span className="text-sm font-medium">Edit</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveEntry(entry);
+                                    }}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                    title="Remove"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span className="text-sm font-medium">Remove</span>
+                                  </button>
+                                </div>
+                              )}
+                              
+                              {/* Press and hold indicator */}
+                              {pressedEntryId === entry.id && (
+                                <div className="absolute inset-0 bg-[#8871FF]/10 rounded-xl pointer-events-none animate-pulse"></div>
+                              )}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Multi-select floating action bar */}
+                    {isMultiSelectMode && (
+                      <div className="fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm border-t border-gray-600/50 p-4 z-[100]">
+                        <div className="max-w-2xl mx-auto flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-white font-medium">
+                              {selectedEntries.size} selected
+                            </span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={selectAllEntries}
+                                className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors"
+                              >
+                                All
+                              </button>
+                              <button 
+                                onClick={deselectAllEntries}
+                                className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors"
+                              >
+                                None
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {selectedEntries.size > 0 && (
+                              <button 
+                                onClick={handleBulkRemove}
+                                className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+                              >
+                                Remove
+                              </button>
+                            )}
+                            <button 
+                              onClick={toggleMultiSelect}
+                              className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                      <button 
+                        onClick={() => setShowViewMyCardsModal(false)}
+                        className="bg-gray-600 hover:bg-gray-500 text-white py-3 px-6 rounded-lg font-medium transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Add to Folder Modal */}
               {showAddToFolderModal && (
@@ -6184,15 +7570,18 @@ export default function App() {
                     <button 
                       onClick={() => {
                         console.log('Home button clicked - navigating to dashboard');
-                        setActiveTab('home')
+                        setSelectedCard(null) // Close card profile modal
                         setShowCardProfile(false)
                         setShowSearchResults(false)
-                        // Trigger indicator animation after navigation is complete
                         setTimeout(() => {
-                          console.log('Triggering indicator animation');
-                          setIndicatorAnimation('exit');
+                          setActiveTab('home')
+                          // Trigger indicator animation after navigation is complete
                           setTimeout(() => {
-                            setIndicatorAnimation('enter');
+                            console.log('Triggering indicator animation');
+                            setIndicatorAnimation('exit');
+                            setTimeout(() => {
+                              setIndicatorAnimation('enter');
+                            }, 50);
                           }, 50);
                         }, 100);
                       }}
@@ -6208,14 +7597,19 @@ export default function App() {
                     
                     <button 
                       onClick={() => {
-                        setActiveTab('cards')
+                        console.log('Collection button clicked in card profile')
+                        setSelectedCard(null) // Close card profile modal
                         setShowCardProfile(false)
                         setShowSearchResults(false)
-                        // Trigger indicator animation after navigation is complete
                         setTimeout(() => {
-                          setIndicatorAnimation('exit');
+                          setActiveTab('collection')
+                          setNavigationMode('collection')
+                          // Trigger indicator animation after navigation is complete
                           setTimeout(() => {
-                            setIndicatorAnimation('enter');
+                            setIndicatorAnimation('exit');
+                            setTimeout(() => {
+                              setIndicatorAnimation('enter');
+                            }, 50);
                           }, 50);
                         }, 100);
                       }}
@@ -6239,7 +7633,7 @@ export default function App() {
                     
                     <button 
                       onClick={() => {
-                        setActiveTab('scan')
+                        setActiveTab('marketplace')
                         setShowCardProfile(false)
                         setShowSearchResults(false)
                         // Trigger indicator animation after navigation is complete
@@ -6270,14 +7664,18 @@ export default function App() {
                     
                     <button 
                       onClick={() => {
-                        setActiveTab('profile')
+                        console.log('Profile button clicked in card profile')
+                        setSelectedCard(null) // Close card profile modal
                         setShowCardProfile(false)
                         setShowSearchResults(false)
-                        // Trigger indicator animation after navigation is complete
                         setTimeout(() => {
-                          setIndicatorAnimation('exit');
+                          setActiveTab('profile')
+                          // Trigger indicator animation after navigation is complete
                           setTimeout(() => {
-                            setIndicatorAnimation('enter');
+                            setIndicatorAnimation('exit');
+                            setTimeout(() => {
+                              setIndicatorAnimation('enter');
+                            }, 50);
                           }, 50);
                         }, 100);
                       }}
@@ -6457,6 +7855,539 @@ export default function App() {
                 </div>
               )}
 
+              {/* Edit Card Modal */}
+              {showEditCardModal && editingCard && (
+                <div 
+                  style={{ 
+                    position: 'fixed', 
+                    top: 0, 
+                    left: 0, 
+                    right: 0, 
+                    bottom: 0, 
+                    backgroundColor: 'rgba(0,0,0,0.8)', 
+                    zIndex: 9999999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                  }}
+                  onClick={() => setShowEditCardModal(false)}
+                >
+                  <div 
+                    className="edit-card-modal"
+                    style={{
+                      backgroundColor: '#2b2b2b',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      width: '100%',
+                      maxWidth: '500px',
+                      maxHeight: '90vh',
+                      overflowY: 'auto',
+                      border: '1px solid #444'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                      <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '600', margin: 0 }}>
+                        Edit Card
+                      </h2>
+                      <button
+                        onClick={() => setShowEditCardModal(false)}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor: '#444',
+                          border: 'none',
+                          borderRadius: '50%',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Card Info */}
+                    <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#333', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img 
+                          src={editingCard.imageUrl} 
+                          alt={editingCard.name}
+                          style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '4px' }}
+                        />
+                        <div>
+                          <h3 style={{ color: 'white', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                            {editingCard.name}
+                          </h3>
+                          <p style={{ color: '#888', fontSize: '14px', margin: '4px 0 0 0' }}>
+                            {editingCard.set} • {editingCard.rarity}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form Fields */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Quantity */}
+                      <div>
+                        <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                          Quantity
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editQuantity}
+                          onChange={(e) => setEditQuantity(parseInt(e.target.value) || 1)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#444',
+                            border: '1px solid #666',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Condition */}
+                      <div>
+                        <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                          Condition
+                        </label>
+                        <select
+                          value={editCondition}
+                          onChange={(e) => setEditCondition(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#444',
+                            border: '1px solid #666',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px'
+                          }}
+                        >
+                          <option value="Near Mint">Near Mint</option>
+                          <option value="Lightly Played">Lightly Played</option>
+                          <option value="Moderately Played">Moderately Played</option>
+                          <option value="Heavily Played">Heavily Played</option>
+                          <option value="Damaged">Damaged</option>
+                        </select>
+                      </div>
+
+                      {/* Variant */}
+                      <div>
+                        <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                          Variant
+                        </label>
+                        <select
+                          value={editVariant}
+                          onChange={(e) => setEditVariant(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#444',
+                            border: '1px solid #666',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px'
+                          }}
+                        >
+                          <option value="Normal">Normal</option>
+                          <option value="Holo">Holo</option>
+                          <option value="Reverse Holo">Reverse Holo</option>
+                          <option value="Foil">Foil</option>
+                        </select>
+                      </div>
+
+                      {/* Grading Toggle */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <input
+                          type="checkbox"
+                          id="isGraded"
+                          checked={editIsGraded}
+                          onChange={(e) => {
+                            setEditIsGraded(e.target.checked);
+                            if (!e.target.checked) {
+                              setEditGrade('');
+                              setEditGradingService('raw');
+                            }
+                          }}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                        <label htmlFor="isGraded" style={{ color: 'white', fontSize: '14px', fontWeight: '500' }}>
+                          This card is graded
+                        </label>
+                      </div>
+
+                      {/* Grade and Grading Service (only show if graded) */}
+                      {editIsGraded && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          <div>
+                            <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                              Grade
+                            </label>
+                            <input
+                              type="text"
+                              value={editGrade}
+                              onChange={(e) => setEditGrade(e.target.value)}
+                              placeholder="e.g., 10, 9.5"
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                backgroundColor: '#444',
+                                border: '1px solid #666',
+                                borderRadius: '8px',
+                                color: 'white',
+                                fontSize: '14px'
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                              Grading Service
+                            </label>
+                            <select
+                              value={editGradingService}
+                              onChange={(e) => setEditGradingService(e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                backgroundColor: '#444',
+                                border: '1px solid #666',
+                                borderRadius: '8px',
+                                color: 'white',
+                                fontSize: '14px'
+                              }}
+                            >
+                              <option value="PSA">PSA</option>
+                              <option value="BGS">BGS</option>
+                              <option value="CGC">CGC</option>
+                              <option value="SGC">SGC</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price Paid */}
+                      <div>
+                        <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                          Price Paid (optional)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editPricePaid}
+                          onChange={(e) => setEditPricePaid(e.target.value)}
+                          placeholder="0.00"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#444',
+                            border: '1px solid #666',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label style={{ color: 'white', fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                          Notes (optional)
+                        </label>
+                        <textarea
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          placeholder="Add any notes about this card..."
+                          rows="3"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            backgroundColor: '#444',
+                            border: '1px solid #666',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px',
+                            resize: 'vertical',
+                            fontFamily: 'inherit'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                      <button 
+                        onClick={() => setShowEditCardModal(false)}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          backgroundColor: '#444',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={handleSaveEdit}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          backgroundColor: '#6865E7',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Card Modal */}
+              {showEditCardModal && editingCard && (
+                <div 
+                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+                  onClick={() => setShowEditCardModal(false)}
+                >
+                  <div 
+                    className="bg-gray-800 rounded-xl p-6 mx-4 max-w-md w-full edit-card-modal"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-center mb-6">
+                      <h3 className="text-white text-lg font-semibold mb-2">Edit Card</h3>
+                      <p className="text-gray-400 text-sm">
+                        {editingCard.name} - {editingCard.set}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4 mb-6">
+                      {/* Quantity */}
+                      <div>
+                        <label className="block text-white text-sm font-medium mb-2">Quantity</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editQuantity}
+                          onChange={(e) => setEditQuantity(parseInt(e.target.value) || 1)}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#8871FF]"
+                        />
+                      </div>
+
+                      {/* Condition */}
+                      <div className="relative">
+                        <label className="block text-white text-sm font-medium mb-2">Condition</label>
+                        <button
+                          onClick={() => setShowEditConditionDropdown(!showEditConditionDropdown)}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-[#8871FF] flex items-center justify-between"
+                        >
+                          <span>{editCondition}</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showEditConditionDropdown && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                            {['Near Mint', 'Lightly Played', 'Moderately Played', 'Heavily Played', 'Damaged'].map((condition) => (
+                              <button
+                                key={condition}
+                                onClick={() => {
+                                  setEditCondition(condition);
+                                  setShowEditConditionDropdown(false);
+                                }}
+                                className="w-full px-3 py-2 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
+                              >
+                                {condition}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Variant */}
+                      <div className="relative">
+                        <label className="block text-white text-sm font-medium mb-2">Variant</label>
+                        <button
+                          onClick={() => setShowEditVariantDropdown(!showEditVariantDropdown)}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-[#8871FF] flex items-center justify-between"
+                        >
+                          <span>{editVariant}</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showEditVariantDropdown && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                            {['Normal', 'Holo', 'Reverse Holo', 'Foil'].map((variant) => (
+                              <button
+                                key={variant}
+                                onClick={() => {
+                                  setEditVariant(variant);
+                                  setShowEditVariantDropdown(false);
+                                }}
+                                className="w-full px-3 py-2 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
+                              >
+                                {variant}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Grading Toggle */}
+                      <div>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={editIsGraded}
+                            onChange={(e) => setEditIsGraded(e.target.checked)}
+                            className="w-4 h-4 text-[#8871FF] bg-gray-700 border-gray-600 rounded focus:ring-[#8871FF]"
+                          />
+                          <span className="text-white text-sm font-medium">This card is graded</span>
+                        </label>
+                      </div>
+
+                      {/* Grade and Grading Service - only show if graded */}
+                      {editIsGraded && (
+                        <>
+                          <div className="relative">
+                            <label className="block text-white text-sm font-medium mb-2">Grade</label>
+                            <button
+                              onClick={() => setShowEditGradeDropdown(!showEditGradeDropdown)}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-[#8871FF] flex items-center justify-between"
+                            >
+                              <span>{editGrade || 'Select Grade'}</span>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {showEditGradeDropdown && (
+                              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                                {['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1', '0.5'].map((grade) => (
+                                  <button
+                                    key={grade}
+                                    onClick={() => {
+                                      setEditGrade(grade);
+                                      setShowEditGradeDropdown(false);
+                                    }}
+                                    className="w-full px-3 py-2 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
+                                  >
+                                    {grade}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="relative">
+                            <label className="block text-white text-sm font-medium mb-2">Grading Service</label>
+                            <button
+                              onClick={() => setShowEditGradingServiceDropdown(!showEditGradingServiceDropdown)}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-left focus:outline-none focus:ring-2 focus:ring-[#8871FF] flex items-center justify-between"
+                            >
+                              <span>{editGradingService === 'raw' ? 'Raw' : editGradingService}</span>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {showEditGradingServiceDropdown && (
+                              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                                {['raw', 'PSA', 'BGS', 'CGC', 'SGC'].map((service) => (
+                                  <button
+                                    key={service}
+                                    onClick={() => {
+                                      setEditGradingService(service);
+                                      setShowEditGradingServiceDropdown(false);
+                                    }}
+                                    className="w-full px-3 py-2 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
+                                  >
+                                    {service === 'raw' ? 'Raw' : service}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {/* Price Paid */}
+                      <div>
+                        <label className="block text-white text-sm font-medium mb-2">Price Paid ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editPricePaid}
+                          onChange={(e) => setEditPricePaid(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#8871FF]"
+                        />
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="block text-white text-sm font-medium mb-2">Notes</label>
+                        <textarea
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          placeholder="Add any notes about this card..."
+                          rows="3"
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#8871FF] resize-none"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button 
+                        className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                        onClick={() => {
+                          setShowEditCardModal(false);
+                          setEditingCard(null);
+                          setEditQuantity(1);
+                          setEditCondition('Near Mint');
+                          setEditVariant('Normal');
+                          setEditGrade('');
+                          setEditGradingService('raw');
+                          setEditPricePaid('');
+                          setEditNotes('');
+                          setEditIsGraded(false);
+                          setShowEditConditionDropdown(false);
+                          setShowEditVariantDropdown(false);
+                          setShowEditGradeDropdown(false);
+                          setShowEditGradingServiceDropdown(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        className="flex-1 px-4 py-2 bg-[#8871FF] hover:bg-[#7A5FFF] text-white rounded-lg transition-colors"
+                        onClick={handleSaveEdit}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Add to Collection Modal - Card Profile */}
               {showCardProfileModal && cardToAddFromProfile && showCardProfile && (
                 <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -6483,7 +8414,10 @@ export default function App() {
                       <div className="mb-6 p-4 bg-gray-700 rounded-xl">
                         <div className="flex gap-4 items-center">
                           <img 
-                            src={cardToAddFromProfile.imageUrl || cardToAddFromProfile.images?.large || cardToAddFromProfile.images?.small || cardImages[cardToAddFromProfile.id]} 
+                            src={(() => {
+                              const imageSrc = cardToAddFromProfile.imageUrl || cardToAddFromProfile.images?.large || cardToAddFromProfile.images?.small || cardImages[cardToAddFromProfile.id];
+                              return typeof imageSrc === 'string' ? imageSrc : '';
+                            })()} 
                             alt={cardToAddFromProfile.name}
                             className="w-20 h-28 object-cover rounded-lg"
                           />
@@ -6518,7 +8452,7 @@ export default function App() {
                           onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
                           className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
-                          <span>{selectedCollectionForAdd ? mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
+                          <span>{selectedCollectionForAdd ? userData?.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
                           <svg className={`w-4 h-4 transition-transform ${showCollectionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
@@ -6526,7 +8460,7 @@ export default function App() {
                         {showCollectionDropdown && (
                           <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                             <div className="py-1">
-                              {mockUserData.collections.map(collection => (
+                              {userData?.collections.map(collection => (
                                 <button
                                   key={collection.id}
                                   onClick={() => {
@@ -7802,22 +9736,25 @@ export default function App() {
               </button>
             </div>
 
-          {/* Search Bar Component */}
-          <SearchBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSearch={handleSearch}
-            onSearchInputClick={handleSearchTabClick}
-            onClearSearch={handleClearSearch}
-            onScanClick={() => {
-              setShowScanner(true);
-            }}
-            placeholder="Search cards, sets, attacks, abilities..."
-            isMenuOpen={showSlidingMenu}
-            isModalOpen={showSearchResultsModal || showCardProfileModal}
-          />
           </div>
 
+          {/* Search Bar Component - Hidden on Collection Tab */}
+          {activeTab !== 'collection' && activeTab !== 'marketplace' && (
+            <SearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSearch={handleSearch}
+              onSearchInputClick={handleSearchTabClick}
+              onClearSearch={handleClearSearch}
+              onScanClick={() => {
+                setShowScanner(true);
+              }}
+              placeholder="Search cards, sets, attacks, abilities..."
+              isMenuOpen={showSlidingMenu}
+              isModalOpen={showSearchResultsModal || showCardProfileModal}
+              showScanButton={true}
+            />
+          )}
 
         {/* Tab Content */}
         {activeTab === 'home' && (
@@ -7833,7 +9770,7 @@ export default function App() {
                       className="flex items-center gap-2 hover:bg-gray-700 rounded px-2 py-1 transition-colors"
                     >
                       <h3 className="text-white font-bold text-sm">
-                        {mockUserData.collections.find(c => c.id === selectedCollection)?.name || 'Select Collection'}
+                        {userData?.collections.find(c => c.id === selectedCollection)?.name || 'Select Collection'}
                       </h3>
                       <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
@@ -7843,7 +9780,7 @@ export default function App() {
                     {/* Collection Dropdown */}
                     {showCollectionDropdown && (
                       <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-48">
-                        {mockUserData.collections.map((collection) => (
+                        {userData?.collections.map((collection) => (
                 <button 
                             key={collection.id}
                 onClick={() => {
@@ -7914,23 +9851,23 @@ export default function App() {
             
                 {/* Portfolio Value */}
                 <div className="text-white text-2xl font-bold mb-2">
-                  {formatCurrency(mockUserData.collections.find(c => c.id === selectedCollection)?.totalValue || 0)}
+                  {formatCurrency(userData?.collections.find(c => c.id === selectedCollection)?.totalValue || 0)}
                 </div>
 
                 {/* Price Change */}
                 <div className={`flex items-center gap-1 text-sm mb-1 ${
-                  (mockUserData.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0 
+                  (userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0 
                     ? 'text-green-400' 
                     : 'text-red-400'
                 }`}>
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={
-                        (mockUserData.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0
+                        (userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0
                           ? "M7 11l5-5m0 0l5 5m-5-5v12"
                           : "M17 13l-5 5m0 0l-5-5m5 5V6"
                       }></path>
                 </svg>
-                    <span>{formatCurrency(Math.abs(mockUserData.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0))}</span>
+                    <span>{formatCurrency(Math.abs(userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0))}</span>
                     <span>past 6 months</span>
               </div>
 
@@ -7970,36 +9907,29 @@ export default function App() {
                 <div className="flex-1 bg-[#2b2b2b] rounded-lg p-2">
                   <div className="text-white font-bold text-sm mb-2">Total Cards</div>
                   <div className="bg-[#202020] rounded p-1 mb-2">
-                    <div className="text-white text-xl font-bold">8,456</div>
+                    <div className="text-white text-xl font-bold">{userDatabase.getTotalCards().toLocaleString()}</div>
                     <div className="flex items-center gap-1 text-green-400 text-xs">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                      <span>150</span>
+                      <span>{userDatabase.getCardsAddedThisMonth()}</span>
                       <span>this month</span>
                       </div>
           </div>
 
                   {/* Portfolio Items */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between px-2 py-1">
-                      <span className="text-white text-xs">My Portfolio</span>
-                      <div className="flex items-center gap-1 text-green-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>175</span>
+                    {userData?.collections?.slice(0, 2).map((collection, index) => (
+                      <div key={collection.id} className="flex items-center justify-between px-2 py-1">
+                        <span className="text-white text-xs">{collection.name}</span>
+                        <div className="flex items-center gap-1 text-green-400 text-xs">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span>{collection.totalCards || 0}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between px-2 py-1">
-                      <span className="text-white text-xs">Trade Binder</span>
-                      <div className="flex items-center gap-1 text-red-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12L18 12" />
-                  </svg>
-                        <span>25</span>
-                </div>
-              </div>
+                    ))}
 
                   <button 
                   onClick={() => setShowCollectionsModal(true)}
@@ -8015,26 +9945,33 @@ export default function App() {
                 <div className="flex-1 bg-[#2b2b2b] rounded-lg p-2">
                   <div className="text-white font-bold text-sm mb-2">Recent Activity</div>
                   <div className="space-y-1">
-                    {displayedActivity.map((activity) => (
-                      <div key={activity.id} className="bg-[#202020] rounded p-1 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-white text-xs">{activity.cardName}</span>
-                          <span className="text-gray-400 text-xs">{activity.time}</span>
+                    {displayedActivity.length > 0 ? (
+                      displayedActivity.map((activity) => (
+                        <div key={activity.id} className="bg-[#202020] rounded p-1 flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-white text-xs">{activity.cardName}</span>
+                            <span className="text-gray-400 text-xs">{activity.time}</span>
                           </div>
-                        <div className={`flex items-center gap-1 text-xs ${
-                          activity.type === 'add' ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {activity.type === 'add' ? (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            ) : (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12L18 12" />
-                            )}
-                      </svg>
-                          <span>{activity.action}</span>
-                    </div>
-                    </div>
-                ))}
+                          <div className={`flex items-center gap-1 text-xs ${
+                            activity.type === 'add' ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              {activity.type === 'add' ? (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              ) : (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 12L18 12" />
+                              )}
+                            </svg>
+                            <span>{activity.action}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-[#202020] rounded p-3 text-center">
+                        <div className="text-gray-400 text-xs mb-1">No activity yet</div>
+                        <div className="text-gray-500 text-xs">Add cards to see activity</div>
+                      </div>
+                    )}
               </div>
 
                 <button 
@@ -8059,70 +9996,43 @@ export default function App() {
                       </div>
                     <h3 className="text-white font-bold text-lg">My Top Movers</h3>
                   </div>
-                  <div className="text-xs text-gray-400">Last 24h</div>
+                  <div className="text-xs text-gray-400">Highest Value</div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Top Gainer */}
-                  <div 
-                    onClick={() => handleCardClick(topMoversData[0])}
-                    className="relative bg-gradient-to-r from-green-500/10 to-transparent rounded-xl p-4 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-16 h-20 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={topMoversData[0].imageUrl} 
-                            alt={topMoversData[0].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">#1</span>
-                      </div>
-                  </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                      </div>
-                  </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors">Charizard ex</h4>
-                        <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white text-xs font-medium">#004/102</span>
-                          <span className="text-gray-500 text-xs">•</span>
-                          <span className="text-gray-400 text-xs">Qty: 2</span>
-                </div>
+                {myTopMovers.length === 0 ? (
+                  // Empty State
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                      <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
                     </div>
-                      <div className="text-right">
-                        <div className="text-green-400 font-bold text-lg">$1,250</div>
-                        <div className="flex items-center gap-1 text-green-400 text-sm">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                          <span className="font-semibold">+24.5%</span>
-                      </div>
-                        <div className="text-gray-400 text-xs">+$245 today</div>
+                    <h4 className="text-white font-semibold text-lg mb-2">No Cards Yet</h4>
+                    <p className="text-gray-400 text-sm text-center max-w-xs mb-6">
+                      Start building your collection to see your highest valued cards here
+                    </p>
+                    <button 
+                      onClick={() => setCurrentView('search')}
+                      className="px-6 py-3 bg-gradient-to-r from-[#6865E7] to-[#5A57D1] hover:from-[#5A57D1] hover:to-[#4C49BB] rounded-xl text-white text-sm font-medium transition-all duration-300 shadow-lg shadow-[#6865E7]/25"
+                    >
+                      Browse Cards
+                    </button>
                   </div>
-                </div>
-              </div>
-              
-                  {/* Second Gainer */}
+                ) : (
+                  <>
+                  <div className="grid grid-cols-1 gap-4">
+                  {myTopMovers.map((card, index) => (
                   <div 
-                    onClick={() => handleCardClick(topMoversData[1])}
+                    key={card.id}
+                    onClick={() => handleCardClick(card)}
                     className="relative bg-gradient-to-r from-blue-500/10 to-transparent rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 group cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="w-16 h-20 rounded-lg shadow-lg overflow-hidden bg-gray-800">
                           <img 
-                            src={topMoversData[1]?.imageUrl || ''} 
-                            alt={topMoversData[1]?.name || 'Card'}
+                            src={card.imageUrl} 
+                            alt={card.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.style.display = 'none'
@@ -8130,96 +10040,34 @@ export default function App() {
                             }}
                           />
                           <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">#2</span>
+                            <span className="text-white font-bold text-xs">#{index + 1}</span>
+                      </div>
+                  </div>
+                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">#{index + 1}</span>
+                      </div>
+                  </div>
+                      <div className="flex-1">
+                        <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">{card.name}</h4>
+                        <p className="text-gray-400 text-xs">{card.set} • {card.rarity}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-white text-xs font-medium">{card.number}</span>
+                          <span className="text-gray-500 text-xs">•</span>
+                          <span className="text-gray-400 text-xs">Qty: {getCardQuantityInCollection(card.cardId || card.id)}</span>
+                </div>
+                    </div>
+                      <div className="text-right">
+                        <div className="text-blue-400 font-bold text-lg">{formatCurrency(card.totalValue)}</div>
+                        <div className="text-gray-400 text-xs mt-1">
+                          {formatCurrency(card.currentValue)} each
+                        </div>
+                  </div>
+                </div>
               </div>
-                    </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                      </div>
+                  ))}
                   </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">Blastoise ex</h4>
-                        <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white text-xs font-medium">#009/102</span>
-                          <span className="text-gray-500 text-xs">•</span>
-                          <span className="text-gray-400 text-xs">Qty: 1</span>
-                </div>
-                    </div>
-                      <div className="text-right">
-                        <div className="text-green-400 font-bold text-lg">$890</div>
-                        <div className="flex items-center gap-1 text-green-400 text-sm">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                          <span className="font-semibold">+18.2%</span>
-                      </div>
-                        <div className="text-gray-400 text-xs">+$137 today</div>
-                  </div>
-                </div>
-                    </div>
-
-                  {/* Top Loser */}
-                  <div 
-                    onClick={() => handleCardClick(topMoversData[2])}
-                    className="relative bg-gradient-to-r from-red-500/10 to-transparent rounded-xl p-4 border border-red-500/20 hover:border-red-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-16 h-20 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={topMoversData[2].imageUrl} 
-                            alt={topMoversData[2].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">#3</span>
-                      </div>
-                  </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        </svg>
-                      </div>
-                  </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-bold text-sm group-hover:text-red-400 transition-colors">Venusaur ex</h4>
-                        <p className="text-gray-400 text-xs">Base Set • Ultra Rare</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white text-xs font-medium">#015/102</span>
-                          <span className="text-gray-500 text-xs">•</span>
-                          <span className="text-gray-400 text-xs">Qty: 3</span>
-                </div>
-                    </div>
-                      <div className="text-right">
-                        <div className="text-red-400 font-bold text-lg">$650</div>
-                        <div className="flex items-center gap-1 text-red-400 text-sm">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        </svg>
-                          <span className="font-semibold">-12.8%</span>
-                      </div>
-                        <div className="text-gray-400 text-xs">-$95 today</div>
-                  </div>
-                </div>
-                    </div>
-                  </div>
-
-                <button 
-                  onClick={() => setShowTopMoversModal(true)}
-                  className="w-full mt-6 py-3 bg-gradient-to-r from-[#6865E7] to-[#5A57D1] hover:from-[#5A57D1] hover:to-[#4C49BB] rounded-xl text-white text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#6865E7]/25"
-                >
-                  <span>View All Movers</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                </button>
+                  </>
+                )}
                   </div>
                 </div>
 
@@ -8265,14 +10113,14 @@ export default function App() {
                           <span className="text-white text-xs font-bold">1</span>
                 </div>
               </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors mb-1">Pikachu VMAX</h4>
-                      <p className="text-gray-400 text-xs mb-2">Vivid Voltage</p>
-                      <div className="text-orange-400 font-bold text-lg">$89</div>
+                      <h4 className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors mb-1">{trendingCardsData[0].name}</h4>
+                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[0].set}</p>
+                      <div className="text-orange-400 font-bold text-lg">{formatCurrency(trendingCardsData[0].current_value || trendingCardsData[0].price || 0)}</div>
                       <div className="flex items-center gap-1 text-orange-400 text-xs">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span className="font-semibold">+15.2%</span>
+                        <span className="font-semibold">+{(Math.abs(trendingCardsData[0].percentChange || 0)).toFixed(1)}%</span>
               </div>
               </div>
             </div>
@@ -8302,14 +10150,14 @@ export default function App() {
                           <span className="text-white text-xs font-bold">2</span>
                   </div>
                       </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors mb-1">Lugia V</h4>
-                      <p className="text-gray-400 text-xs mb-2">Silver Tempest</p>
-                      <div className="text-blue-400 font-bold text-lg">$156</div>
+                      <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors mb-1">{trendingCardsData[1].name}</h4>
+                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[1].set}</p>
+                      <div className="text-blue-400 font-bold text-lg">{formatCurrency(trendingCardsData[1].current_value || trendingCardsData[1].price || 0)}</div>
                       <div className="flex items-center gap-1 text-blue-400 text-xs">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span className="font-semibold">+22.8%</span>
+                        <span className="font-semibold">+{(Math.abs(trendingCardsData[1].percentChange || 0)).toFixed(1)}%</span>
                       </div>
                   </div>
                 </div>
@@ -8339,14 +10187,14 @@ export default function App() {
                           <span className="text-white text-xs font-bold">3</span>
                 </div>
                     </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors mb-1">Rayquaza VMAX</h4>
-                      <p className="text-gray-400 text-xs mb-2">Evolving Skies</p>
-                      <div className="text-green-400 font-bold text-lg">$234</div>
+                      <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors mb-1">{trendingCardsData[2].name}</h4>
+                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[2].set}</p>
+                      <div className="text-green-400 font-bold text-lg">{formatCurrency(trendingCardsData[2].current_value || trendingCardsData[2].price || 0)}</div>
                       <div className="flex items-center gap-1 text-green-400 text-xs">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span className="font-semibold">+8.4%</span>
+                        <span className="font-semibold">+{(Math.abs(trendingCardsData[2].percentChange || 0)).toFixed(1)}%</span>
                       </div>
                   </div>
                 </div>
@@ -8376,14 +10224,14 @@ export default function App() {
                           <span className="text-white text-xs font-bold">4</span>
                 </div>
                     </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors mb-1">Mewtwo V</h4>
-                      <p className="text-gray-400 text-xs mb-2">Pokemon GO</p>
-                      <div className="text-purple-400 font-bold text-lg">$67</div>
+                      <h4 className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors mb-1">{trendingCardsData[3].name}</h4>
+                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[3].set}</p>
+                      <div className="text-purple-400 font-bold text-lg">{formatCurrency(trendingCardsData[3].current_value || trendingCardsData[3].price || 0)}</div>
                       <div className="flex items-center gap-1 text-purple-400 text-xs">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
                         </svg>
-                        <span className="font-semibold">+12.1%</span>
+                        <span className="font-semibold">+{(Math.abs(trendingCardsData[3].percentChange || 0)).toFixed(1)}%</span>
                       </div>
                   </div>
                 </div>
@@ -8406,10 +10254,10 @@ export default function App() {
         {activeTab === 'search' && (
           <div 
             data-search-section
-            className="px-4 mb-6"
+            className="px-4 pb-20"
             onScroll={handleScroll}
             style={{ 
-              height: 'calc(100vh - 200px)',
+              height: 'calc(100vh - 120px)',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch'
             }}
@@ -8592,28 +10440,678 @@ export default function App() {
 
         {activeTab === 'collection' && (
           <div className="px-4 mb-6">
-            <div className="bg-[#2b2b2b] rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-4">My Collection</h3>
-              <div className="space-y-4">
-                <div className="text-gray-400 text-center py-8">
-                  Collection view coming soon...
-                    </div>
-                  </div>
+            {/* Collection Header with Dropdown */}
+              <div className="space-y-4 mb-6">
+                {/* Collection Dropdown and Sort - Top Row */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="relative flex-1 min-w-0">
+                    <button 
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
+                      onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
+                    >
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="text-white text-xs font-bold flex-shrink-0">Collection:</span>
+                        <span className="text-[#605DEC] text-xs font-bold truncate">
+                          {userData?.collections?.find(c => c.id === selectedCollection)?.name || 'My Personal Collection'}
+                        </span>
                       </div>
+                      <svg 
+                        className={`w-3 h-3 text-white transition-transform flex-shrink-0 ${showCollectionDropdown ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Collection Dropdown */}
+                    {showCollectionDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                        <div className="py-2">
+                          {userData?.collections?.map((collection) => (
+                            <button
+                              key={collection.id}
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                                selectedCollection === collection.id ? 'bg-gray-700 text-[#605DEC]' : 'text-white'
+                              }`}
+                              onClick={() => {
+                                setSelectedCollection(collection.id)
+                                setShowCollectionDropdown(false)
+                              }}
+                            >
+                              {collection.name}
+                            </button>
+                          ))}
+                          <div className="border-t border-gray-600 my-1"></div>
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+                            onClick={() => {
+                              setShowCreateCollectionModal(true)
+                              setShowCollectionDropdown(false)
+                            }}
+                          >
+                            + Create New Collection
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Sort Dropdown */}
+                  <div className="relative flex-1 min-w-0">
+                    <button 
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
+                      onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    >
+                      <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                      </svg>
+                      <span className="text-white text-xs font-bold flex-shrink-0">Sort:</span>
+                      <span className="text-[#605DEC] text-xs font-bold truncate">
+                        {collectionSortOption === 'name' ? 'Name' : 
+                         collectionSortOption === 'name-desc' ? 'Name Z-A' :
+                         collectionSortOption === 'price' ? 'Price Low' : 
+                         collectionSortOption === 'price-desc' ? 'Price High' :
+                         collectionSortOption === 'rarity' ? 'Rarity' : 
+                         collectionSortOption === 'set' ? 'Set' : 'Name'}
+                      </span>
+                      <svg 
+                        className={`w-3 h-3 text-white transition-transform flex-shrink-0 ${showSortDropdown ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {showSortDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                        <div className="py-2">
+                          {[
+                            { value: 'name', label: 'Name A-Z' },
+                            { value: 'name-desc', label: 'Name Z-A' },
+                            { value: 'price', label: 'Price Low-High' },
+                            { value: 'price-desc', label: 'Price High-Low' },
+                            { value: 'rarity', label: 'Rarity' },
+                            { value: 'set', label: 'Set' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                                collectionSortOption === option.value ? 'bg-gray-700 text-[#605DEC]' : 'text-white'
+                              }`}
+                              onClick={() => {
+                                setCollectionSortOption(option.value)
+                                setShowSortDropdown(false)
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collection Stats - Bottom Row */}
+                <div className="flex items-center justify-between w-full">
+                  <div className="text-white text-lg font-bold">
+                    {formatCurrency(userData?.collections?.find(c => c.id === selectedCollection)?.totalValue || 0)}
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    {userData?.collections?.find(c => c.id === selectedCollection)?.totalCards || 0} cards
+                  </div>
+                </div>
+              </div>
+
+              {/* Collection Search Bar */}
+              <div className="mb-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search collection..."
+                    value={collectionSearchQuery}
+                    onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#605DEC] focus:border-transparent"
+                  />
+                  {collectionSearchQuery && (
+                    <button
+                      onClick={() => setCollectionSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Collection Cards Grid - 2 Columns */}
+              <div className="grid grid-cols-2 gap-2">
+                {(() => {
+                  try {
+                    const collection = userData?.collections?.find(c => c.id === selectedCollection)
+                    if (!collection || !collection.cards || collection.cards.length === 0) {
+                      return (
+                        <div className="col-span-2 text-center py-12">
+                          <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                          </div>
+                          <h3 className="text-white text-lg font-semibold mb-2">No Cards in Collection</h3>
+                          <p className="text-gray-400 mb-4">Start building your collection by adding cards from the marketplace.</p>
+                          <button 
+                            onClick={() => setActiveTab('marketplace')}
+                            className="px-6 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg font-medium transition-colors"
+                          >
+                            Browse Marketplace
+                          </button>
+                        </div>
+                      )
+                    }
+
+                    // Filter cards based on search query
+                    const filteredCards = collection.cards.filter(card => {
+                      if (!collectionSearchQuery.trim()) return true
+                      
+                      const searchTerm = collectionSearchQuery.toLowerCase()
+                      return (
+                        (card.name || '').toLowerCase().includes(searchTerm) ||
+                        (card.set || '').toLowerCase().includes(searchTerm) ||
+                        (card.rarity || '').toLowerCase().includes(searchTerm) ||
+                        (card.number || '').toLowerCase().includes(searchTerm)
+                      )
+                    })
+
+                    // Sort cards based on selected option
+                    const sortedCards = [...filteredCards].sort((a, b) => {
+                      switch (collectionSortOption) {
+                        case 'name':
+                          return (a.name || '').localeCompare(b.name || '')
+                        case 'name-desc':
+                          return (b.name || '').localeCompare(a.name || '')
+                        case 'price':
+                          return (a.currentValue || a.current_value || a.price || 0) - (b.currentValue || b.current_value || b.price || 0)
+                        case 'price-desc':
+                          return (b.currentValue || b.current_value || b.price || 0) - (a.currentValue || a.current_value || a.price || 0)
+                        case 'rarity':
+                          return (a.rarity || '').localeCompare(b.rarity || '')
+                        case 'set':
+                          return (a.set || '').localeCompare(b.set || '')
+                        default:
+                          return 0
+                      }
+                    })
+
+                    // Show no results message if search returns no cards
+                    if (sortedCards.length === 0 && collectionSearchQuery.trim()) {
+                      return (
+                        <div className="col-span-2 text-center py-12">
+                          <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-white text-lg font-semibold mb-2">No Cards Found</h3>
+                          <p className="text-gray-400 mb-4">No cards match your search for "{collectionSearchQuery}"</p>
+                          <button 
+                            onClick={() => setCollectionSearchQuery('')}
+                            className="px-6 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg font-medium transition-colors"
+                          >
+                            Clear Search
+                          </button>
+                        </div>
+                      )
+                    }
+
+                    return sortedCards.map((card, index) => {
+                      const isSelected = selectedCollectionCards.has(card.id)
+                      return (
+                        <MarketplaceCard
+                          key={card.id || index}
+                          platform="Collection"
+                          cardName={card.name}
+                          setName={card.set || 'Unknown Set'}
+                          rarity={card.rarity}
+                          cardNumber={`#${card.number}`}
+                          price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
+                          isCollection={true}
+                          isSelected={isSelected}
+                          cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                          onClick={() => {
+                            setSelectedCard(card)
+                            setShowCardProfile(true)
+                          }}
+                          onPressStart={(e) => handleCollectionCardPressStart(e, card)}
+                          onPressEnd={handleCollectionCardPressEnd}
+                          onTouchStart={(e) => handleCollectionCardPressStart(e, card)}
+                          onTouchEnd={(e) => handleCollectionCardTouchEnd(e, card)}
+                          onTouchMove={handleCollectionCardTouchMove}
+                        />
+                      )
+                    })
+                  } catch (error) {
+                    console.error('Error rendering collection:', error)
+                    return (
+                      <div className="col-span-2 text-center py-12">
+                        <div className="w-16 h-16 bg-red-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-red-400 text-lg font-semibold mb-2">Error Loading Collection</h3>
+                        <p className="text-gray-400 mb-4">There was an error loading your collection. Please try again.</p>
+                        <button 
+                          onClick={() => window.location.reload()}
+                          className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium transition-colors"
+                        >
+                          Reload Page
+                        </button>
+                      </div>
+                    )
+                  }
+                })()}
+              </div>
+
+            {/* Collection Multi-Select Action Bar */}
+            {isCollectionMultiSelectMode && selectedCollectionCards.size > 0 && (
+              <div className="fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm border-t border-gray-600 z-[100] collection-multi-select-bar">
+                <div className="px-4 py-4">
+                  {/* Top Row - Selected count and Cancel */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-white text-base font-semibold">
+                        {selectedCollectionCards.size} selected
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsCollectionMultiSelectMode(false)
+                        setSelectedCollectionCards(new Set())
+                      }}
+                      className="text-gray-400 hover:text-white text-sm font-medium px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  
+                  {/* Bottom Row - Action Buttons */}
+                  <div className="flex items-center justify-center gap-3">
+                    <button 
+                      className="flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors min-w-[80px] justify-center"
+                      onClick={handleMoveToFolder}
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      <span className="text-white text-sm font-medium">Move</span>
+                    </button>
+                    
+                    <button 
+                      className="flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors min-w-[80px] justify-center"
+                      onClick={handleAddToDeck}
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span className="text-white text-sm font-medium">Deck</span>
+                    </button>
+                    
+                    <button 
+                      className="flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors min-w-[80px] justify-center"
+                      onClick={handleAddToBinder}
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                      </svg>
+                      <span className="text-white text-sm font-medium">Binder</span>
+                    </button>
+                    
+                    <button 
+                      className="flex items-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-lg transition-colors min-w-[80px] justify-center"
+                      onClick={() => {
+                        console.log('Remove from collection:', Array.from(selectedCollectionCards))
+                        // TODO: Implement remove from collection functionality
+                      }}
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span className="text-white text-sm font-medium">Remove</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Move to Folder Modal */}
+            {showMoveToFolderModal && (
+              <div 
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                onClick={() => setShowMoveToFolderModal(false)}
+              >
+                <div 
+                  className="bg-gray-800 rounded-xl p-6 mx-4 max-w-md w-full move-to-folder-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center mb-6">
+                    <h3 className="text-white text-lg font-semibold mb-2">Move to Folder</h3>
+                    <p className="text-gray-400 text-sm">
+                      Select a folder to move {selectedCollectionCards.size} card{selectedCollectionCards.size !== 1 ? 's' : ''} to
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+                    {availableFolders.length > 0 ? (
+                      availableFolders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          className="w-full flex items-center gap-3 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-left"
+                          onClick={() => handleFolderSelection(folder.id)}
+                        >
+                          <div 
+                            className="w-4 h-4 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: folder.color }}
+                          ></div>
+                          <span className="text-white font-medium">{folder.name}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-white text-lg font-semibold mb-2">No Other Collections</h4>
+                        <p className="text-gray-400 text-sm">Create another collection to move cards to.</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                      onClick={() => setShowMoveToFolderModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="flex-1 px-4 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg transition-colors"
+                      onClick={() => {
+                        // TODO: Implement create new folder functionality
+                        console.log('Create new folder')
+                      }}
+                    >
+                      + New Folder
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add to Deck Modal */}
+            {showAddToDeckModal && (
+              <div 
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                onClick={() => setShowAddToDeckModal(false)}
+              >
+                <div 
+                  className="bg-gray-800 rounded-xl p-6 mx-4 max-w-md w-full add-to-deck-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center mb-6">
+                    <h3 className="text-white text-lg font-semibold mb-2">Add to Deck</h3>
+                    <p className="text-gray-400 text-sm">
+                      Select a deck to add {selectedCollectionCards.size} card{selectedCollectionCards.size !== 1 ? 's' : ''} to
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+                    {availableDecks.length > 0 ? (
+                      availableDecks.map((deck) => (
+                        <button
+                          key={deck.id}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-left"
+                          onClick={() => handleDeckSelection(deck.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-4 h-4 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: deck.color }}
+                            ></div>
+                            <span className="text-white font-medium">{deck.name}</span>
+                          </div>
+                          <span className="text-gray-400 text-sm">{deck.cardCount} cards</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <h4 className="text-white text-lg font-semibold mb-2">No Decks Available</h4>
+                        <p className="text-gray-400 text-sm">Create a deck to add cards to.</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                      onClick={() => setShowAddToDeckModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="flex-1 px-4 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg transition-colors"
+                      onClick={() => {
+                        // TODO: Implement create new deck functionality
+                        console.log('Create new deck')
+                      }}
+                    >
+                      + New Deck
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add to Binder Modal */}
+            {showAddToBinderModal && (
+              <div 
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                onClick={() => setShowAddToBinderModal(false)}
+              >
+                <div 
+                  className="bg-gray-800 rounded-xl p-6 mx-4 max-w-md w-full add-to-binder-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center mb-6">
+                    <h3 className="text-white text-lg font-semibold mb-2">Add to Binder</h3>
+                    <p className="text-gray-400 text-sm">
+                      Select a binder to add {selectedCollectionCards.size} card{selectedCollectionCards.size !== 1 ? 's' : ''} to
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+                    {availableBinders.length > 0 ? (
+                      availableBinders.map((binder) => (
+                        <button
+                          key={binder.id}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-left"
+                          onClick={() => handleBinderSelection(binder.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-4 h-4 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: binder.color }}
+                            ></div>
+                            <span className="text-white font-medium">{binder.name}</span>
+                          </div>
+                          <span className="text-gray-400 text-sm">{binder.cardCount} cards</span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-white text-lg font-semibold mb-2">No Binders Available</h4>
+                        <p className="text-gray-400 text-sm">Create a binder to add cards to.</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                      onClick={() => setShowAddToBinderModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="flex-1 px-4 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg transition-colors"
+                      onClick={() => {
+                        // TODO: Implement create new binder functionality
+                        console.log('Create new binder')
+                      }}
+                    >
+                      + New Binder
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {activeTab === 'marketplace' && (
-          <div className="px-4 mb-6">
-            <div className="bg-[#2b2b2b] rounded-lg p-6">
-              <h3 className="text-white text-lg font-semibold mb-4">Marketplace</h3>
-              <div className="space-y-4">
-                <div className="text-gray-400 text-center py-8">
-                  Marketplace view coming soon...
-                    </div>
-                  </div>
-                      </div>
-                  </div>
+          <div className="pb-20" style={{ height: 'calc(100vh - 120px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            {/* Search Section */}
+            <div className="flex items-center gap-2 mb-4 px-4">
+              <div className="flex-1 bg-[#2b2b2b] rounded-lg px-4 py-3 flex items-center gap-3">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search marketplace..."
+                  value={marketplaceSearchQuery}
+                  onChange={(e) => setMarketplaceSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+                />
+                {marketplaceSearchQuery && (
+                  <button
+                    onClick={() => setMarketplaceSearchQuery('')}
+                    className="hover:bg-gray-700 rounded p-0.5 transition-colors"
+                  >
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Trending Products Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4 px-4">
+                <h2 className="text-white text-lg font-bold">Trending Products</h2>
+                <button className="text-gray-400 text-sm">View all</button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {[
+                  { platform: 'TCGPlayer', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
+                  { platform: 'eBay', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
+                  { platform: 'Whatnot', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
+                  { platform: 'Drip', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
+                  { platform: 'Fanatics', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
+                  { platform: 'TCGPlayer', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` }
+                ].map((card, index) => (
+                  <MarketplaceCard
+                    key={index}
+                    platform={card.platform}
+                    cardName={card.cardName}
+                    setName={card.setName}
+                    rarity={card.rarity}
+                    cardNumber={card.cardNumber}
+                    price={card.price}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Searches Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4 px-4">
+                <h2 className="text-white text-lg font-bold">Recent Searches</h2>
+                <button className="text-gray-400 text-sm">View all</button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {[
+                  { platform: 'eBay', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
+                  { platform: 'Whatnot', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
+                  { platform: 'TCGPlayer', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
+                  { platform: 'Fanatics', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
+                  { platform: 'Drip', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
+                  { platform: 'eBay', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` }
+                ].map((card, index) => (
+                  <MarketplaceCard
+                    key={index}
+                    platform={card.platform}
+                    cardName={card.cardName}
+                    setName={card.setName}
+                    rarity={card.rarity}
+                    cardNumber={card.cardNumber}
+                    price={card.price}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Wishlist Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4 px-4">
+                <h2 className="text-white text-lg font-bold">Wishlist</h2>
+                <button className="text-gray-400 text-sm">View all</button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {[
+                  { platform: 'Fanatics', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
+                  { platform: 'Drip', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
+                  { platform: 'eBay', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
+                  { platform: 'TCGPlayer', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
+                  { platform: 'Whatnot', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
+                  { platform: 'Fanatics', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` }
+                ].map((card, index) => (
+                  <MarketplaceCard
+                    key={index}
+                    platform={card.platform}
+                    cardName={card.cardName}
+                    setName={card.setName}
+                    rarity={card.rarity}
+                    cardNumber={card.cardNumber}
+                    price={card.price}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'profile' && (
@@ -8720,7 +11218,7 @@ export default function App() {
                 </div>
 
               <div className="space-y-3">
-                {mockUserData.collections.map((collection) => (
+                {userData?.collections.map((collection) => (
                   <div 
                     key={collection.id}
                     className={`p-4 rounded-lg border cursor-pointer transition-all ${
@@ -8847,6 +11345,7 @@ export default function App() {
               onClick={() => {
                 setActiveTab('home')
                 setNavigationMode('home')
+                setSelectedCard(null) // Close card profile modal
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -8874,8 +11373,11 @@ export default function App() {
             {/* Collection Button */}
                 <button
               onClick={() => {
-                setActiveTab('collection')
-                setNavigationMode('collection')
+                setSelectedCard(null) // Close card profile modal first
+                setTimeout(() => {
+                  setActiveTab('collection')
+                  setNavigationMode('collection')
+                }, 100) // Small delay to ensure modal closes first
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -8963,6 +11465,7 @@ export default function App() {
               onClick={() => {
                 setActiveTab('profile')
                 setNavigationMode('profile')
+                setSelectedCard(null) // Close card profile modal
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -9094,7 +11597,7 @@ export default function App() {
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-white text-xs font-medium">{mover.number}</span>
                           <span className="text-gray-500 text-xs">•</span>
-                          <span className="text-gray-400 text-xs">Qty: {mover.quantity}</span>
+                          <span className="text-gray-400 text-xs">Qty: {getCardQuantityInCollection(mover.cardId || mover.id)}</span>
                     </div>
                       </div>
                       <div className="text-right">
@@ -9506,7 +12009,10 @@ export default function App() {
                   <div className="mb-6 p-4 bg-gray-700 rounded-xl">
                     <div className="flex gap-4 items-center">
                       <img 
-                        src={cardToAddFromSearch.imageUrl || cardToAddFromSearch.images?.large || cardToAddFromSearch.images?.small || cardImages[cardToAddFromSearch.id]} 
+                        src={(() => {
+                          const imageSrc = cardToAddFromSearch.imageUrl || cardToAddFromSearch.images?.large || cardToAddFromSearch.images?.small || cardImages[cardToAddFromSearch.id];
+                          return typeof imageSrc === 'string' ? imageSrc : '';
+                        })()} 
                         alt={cardToAddFromSearch.name}
                         className="w-20 h-28 object-cover rounded-lg"
                       />
@@ -9541,7 +12047,7 @@ export default function App() {
                       onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                      <span>{selectedCollectionForAdd ? mockUserData.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
+                      <span>{selectedCollectionForAdd ? userData?.collections.find(c => c.id === selectedCollectionForAdd)?.name : 'Select Collection'}</span>
                       <svg className={`w-4 h-4 transition-transform ${showCollectionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -9549,7 +12055,7 @@ export default function App() {
                     {showCollectionDropdown && (
                       <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
                         <div className="py-1">
-                          {mockUserData.collections.map(collection => (
+                          {userData?.collections.map(collection => (
                 <button
                               key={collection.id}
                               onClick={() => {
@@ -9843,12 +12349,24 @@ export default function App() {
               </div>
             )}
 
+      {/* Collection Added Notification - Global */}
+      {showCollectionNotification && (
+        <div className="fixed bottom-24 left-0 right-0 z-[100] animate-slide-up-notification">
+          <div className="bg-gray-800/95 backdrop-blur-sm border border-gray-600/50 rounded-xl px-4 py-3 shadow-2xl mx-auto w-fit">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="text-white text-sm font-medium">{collectionNotificationMessage}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>
   )
 }
-
-  // Default return (should never reach here)
-  return null
 }
