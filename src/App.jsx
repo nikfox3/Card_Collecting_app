@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 
 // Marketplace Card Component
-const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, price, onClick, isCollection = false, isSelected = false, onPressStart, onPressEnd, onTouchStart, onTouchEnd, onTouchMove, cardImage }) => {
+const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, price, onClick, isCollection = false, isSelected = false, onPressStart, onPressEnd, onTouchStart, onTouchEnd, onTouchMove, cardImage, quantity = 1, onAddToCollection }) => {
   const affiliateLinks = {
     'TCGPlayer': 'https://www.tcgplayer.com',
     'eBay': 'https://www.ebay.com',
@@ -12,15 +12,19 @@ const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, pric
 
   const handleClick = (e) => {
     e.preventDefault()
+    e.stopPropagation() // Prevent event bubbling
+    
     if (isCollection) {
-      if (onClick) onClick()
+      // Collection mode - only trigger onClick (no external links)
+      if (onClick) onClick(e)
     } else {
+      // Marketplace mode - open affiliate link
       window.open(affiliateLinks[platform] || '#', '_blank')
-      if (onClick) onClick()
+      if (onClick) onClick(e)
     }
   }
 
-  const cardClasses = `flex-shrink-0 ${isCollection ? 'w-[190px]' : 'w-[160px]'} cursor-pointer hover:transform hover:scale-105 transition-transform ${
+  const cardClasses = `flex-shrink-0 w-[125px] sm:w-[140px] md:w-[155px] lg:w-[170px] xl:w-[185px] cursor-pointer hover:transform hover:scale-105 transition-transform ${
     isCollection && isSelected ? 'ring-2 ring-[#8871FF] bg-[#8871FF]/10' : ''
   }`
 
@@ -35,43 +39,82 @@ const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, pric
       onTouchEnd={isCollection ? onTouchEnd : undefined}
       onTouchMove={isCollection ? onTouchMove : undefined}
     >
-      <div className="bg-[#202020] rounded-lg p-3 shadow-lg">
-        <div className="aspect-[3/4] bg-gray-700 rounded mb-4 flex items-center justify-center overflow-hidden relative">
-          {cardImage ? (
+      <div className="bg-[#202020] rounded-[4px] p-[6px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        {/* Card Image */}
+        <div className="aspect-[3/4] bg-gray-700 rounded mb-1 flex items-center justify-center overflow-hidden relative">
+          {cardImage && cardImage !== '/placeholder-card.png' ? (
             <img 
               src={cardImage} 
               alt={cardName} 
               className="w-full h-full object-cover"
               onError={(e) => {
+                console.log(`Image failed to load for ${cardName}:`, cardImage)
                 e.target.style.display = 'none'
                 e.target.nextSibling.style.display = 'flex'
               }}
+              onLoad={() => {
+                console.log(`Image loaded successfully for ${cardName}:`, cardImage)
+              }}
             />
           ) : null}
-          <span className="text-gray-400 text-sm" style={{ display: cardImage ? 'none' : 'flex' }}>
-            Card Image
+          <span className="text-gray-400 text-xs" style={{ display: (cardImage && cardImage !== '/placeholder-card.png') ? 'none' : 'flex' }}>
+            {cardImage === '/placeholder-card.png' ? 'No Image' : 'Card Image'}
           </span>
           {isCollection && isSelected && (
-            <div className="absolute top-2 right-2 w-6 h-6 bg-[#8871FF] rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="absolute top-1 right-1 w-5 h-5 bg-[#8871FF] rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
           )}
         </div>
-        <div className="px-1">
-          <h3 className="text-white text-sm font-bold mb-3 truncate">{cardName}</h3>
-          <div className="text-gray-400 text-xs space-y-1">
+        
+        {/* Card Info */}
+        <div className="space-y-3">
+          {/* Card Name */}
+          <div className="text-white text-[14px] sm:text-[15px] md:text-[16px] font-bold leading-[normal]">
+            <p className="truncate">{cardName}</p>
+          </div>
+          
+          {/* Card Details */}
+          <div className="text-white text-[12px] sm:text-[13px] md:text-[14px] space-y-1">
             <p className="truncate">{setName}</p>
             <p className="truncate">{rarity}</p>
-            <p>{cardNumber}</p>
+            <p className="whitespace-pre">{cardNumber}</p>
           </div>
-          <div className="flex items-center justify-between mt-4">
-            <span className="text-[#8871FF] text-base font-bold">{price}</span>
-            {!isCollection && (
-              <div className="h-4 px-2 bg-gray-600 rounded flex items-center justify-center">
-                <span className="text-[10px] text-white whitespace-nowrap">{platform}</span>
-              </div>
+          
+          {/* Price and Quantity */}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[#8871FF] text-[14px] sm:text-[15px] md:text-[16px] font-black" title={`Raw price data: ${price}`}>
+                {price}
+              </span>
+              {isCollection && (
+                <div className="flex items-center gap-1 text-white text-[12px] sm:text-[13px] md:text-[14px]">
+                  <span>Qty:</span>
+                  <span>{quantity}</span>
+                </div>
+              )}
+            </div>
+            {!isCollection && onAddToCollection && (
+              <svg 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToCollection();
+                }}
+                className="h-6 w-6 cursor-pointer hover:opacity-80 transition-opacity"
+                viewBox="0 0 31 31" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <mask id="mask0_253_3934" style={{maskType:'luminance'}} maskUnits="userSpaceOnUse" x="2" y="1" width="28" height="28">
+                  <path d="M25.9542 2.85913H5.27307C4.13088 2.85913 3.20496 3.78506 3.20496 4.92724V25.6084C3.20496 26.7506 4.13088 27.6765 5.27307 27.6765H25.9542C27.0964 27.6765 28.0223 26.7506 28.0223 25.6084V4.92724C28.0223 3.78506 27.0964 2.85913 25.9542 2.85913Z" fill="white" stroke="white" strokeWidth="2.14869" strokeLinejoin="round"/>
+                  <path d="M15.6138 9.75293V20.7829M10.0989 15.2679H21.1288" stroke="black" strokeWidth="2.14869" strokeLinecap="round" strokeLinejoin="round"/>
+                </mask>
+                <g mask="url(#mask0_253_3934)">
+                  <path d="M-0.931274 -1.2771H32.1586V31.8127H-0.931274V-1.2771Z" fill="#605DEC"/>
+                </g>
+              </svg>
             )}
           </div>
         </div>
@@ -83,6 +126,7 @@ import cardService from './services/cardService'
 import priceService from './services/priceService'
 import tcgplayerService from './services/tcgplayerService'
 import userDatabase from './services/userDatabase'
+import cardDataMigration from './services/cardDataMigration.js'
 import './styles/holographic.css'
 import './styles/card-rarities.css'
 import HolographicCard from './components/HolographicCard'
@@ -154,15 +198,32 @@ export default function App() {
   const [showCollectionDropdown, setShowCollectionDropdown] = useState(false)
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [collectionSortOption, setCollectionSortOption] = useState('name')
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [defaultLanguage, setDefaultLanguage] = useState('english')
+  const [filterSettings, setFilterSettings] = useState({
+    cardStatus: 'all', // all, duplicates, wishlisted
+    languages: [], // array of selected languages - empty means show all
+    products: [], // cards, sealed - empty means show all
+    energies: [], // array of selected energies - empty means show all
+    supertype: [], // pokemon, trainer, energy - empty means show all
+    rarityType: 'international', // international, japanese
+    rarities: [], // array of selected rarities - empty means show all
+    variants: [], // normal, holos, reverse_holos, first_editions - empty means show all
+    formats: [], // unlimited, expanded, standard - empty means show all
+    regulationMarkings: [], // A, B, C, D, E, F, G, H, I - empty means show all
+    conditions: [] // near_mint, lightly_played, moderately_played, heavily_played, damaged - empty means show all
+  })
   const [showCollectionCardActions, setShowCollectionCardActions] = useState(false)
   const [selectedCollectionCard, setSelectedCollectionCard] = useState(null)
   const [collectionCardActionsPosition, setCollectionCardActionsPosition] = useState({ x: 0, y: 0 })
   const [selectedCollectionCards, setSelectedCollectionCards] = useState(new Set())
   const [isCollectionMultiSelectMode, setIsCollectionMultiSelectMode] = useState(false)
+
   const [longPressTimer, setLongPressTimer] = useState(null)
   const [isScrolling, setIsScrolling] = useState(false)
   const [touchStartPosition, setTouchStartPosition] = useState(null)
   const [scrollTimeout, setScrollTimeout] = useState(null)
+  const [lastTapTime, setLastTapTime] = useState(0)
   const [showMoveToFolderModal, setShowMoveToFolderModal] = useState(false)
   const [availableFolders, setAvailableFolders] = useState([])
   const [showAddToDeckModal, setShowAddToDeckModal] = useState(false)
@@ -193,19 +254,53 @@ export default function App() {
     const loadUserData = () => {
       const data = userDatabase.getUserData()
       if (data) {
-        setUserData(data)
-        setRecentActivityData(data.recentActivity || [])
-        setDisplayedActivity((data.recentActivity || []).slice(0, 3))
+        // Clean up duplicates in all collections automatically
+        data.collections?.forEach(collection => {
+          userDatabase.cleanupDuplicates(collection.id)
+        })
+        
+        // Get the cleaned data
+        const cleanedData = userDatabase.getUserData()
+        setUserData(cleanedData)
+        setRecentActivityData(cleanedData.recentActivity || [])
+        setDisplayedActivity((cleanedData.recentActivity || []).slice(0, 3))
+        
+        // Fetch missing data for the selected collection
+        if (selectedCollection) {
+          userDatabase.fetchMissingCardData(selectedCollection).then(success => {
+            if (success) {
+              const updatedData = userDatabase.getUserData()
+              setUserData(updatedData)
+              console.log('Missing card data fetched automatically')
+            }
+          })
+        }
       }
     }
     loadUserData()
   }, [])
+
+  // Fetch missing data when selected collection changes
+  useEffect(() => {
+    if (selectedCollection && userData) {
+      userDatabase.fetchMissingCardData(selectedCollection).then(success => {
+        if (success) {
+          const updatedData = userDatabase.getUserData()
+          setUserData(updatedData)
+          console.log('Missing card data fetched for collection:', selectedCollection)
+        }
+      })
+    }
+  }, [selectedCollection])
 
   // Load real data from API
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoadingData(true)
+        
+        // Initialize card data migration service
+        await cardDataMigration.initialize()
         
         // Load real data from database
         const [topMovers, trending] = await Promise.all([
@@ -827,6 +922,7 @@ export default function App() {
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
   const [showSetPage, setShowSetPage] = useState(false)
   const [selectedSet, setSelectedSet] = useState(null)
+  const [setCardsData, setSetCardsData] = useState([])
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [cardNote, setCardNote] = useState('')
   
@@ -2195,10 +2291,10 @@ export default function App() {
     return moreCards
   }
   
-  // Combine original trending cards with generated ones
+  // Use real trending cards data from database
   const allTrendingCards = useMemo(() => {
-    return [...mockUserData.trendingCards, ...generateMoreTrendingCards()]
-  }, [])
+    return trendingCardsData.length > 0 ? trendingCardsData : generateMoreTrendingCards()
+  }, [trendingCardsData])
   
   // Load more cards function
   const loadMoreCards = () => {
@@ -2240,18 +2336,11 @@ export default function App() {
         isUserCreated: true
       }
       
-      // Add to collections array
-      mockUserData.collections.push(newCollection)
-      
-      // Add empty portfolio history for the new collection
-      mockUserData.collectionPortfolioHistory[newCollection.id] = {
-        '1D': [{ date: new Date().toISOString(), value: 0 }],
-        '7D': [{ date: new Date().toISOString(), value: 0 }],
-        '1M': [{ date: new Date().toISOString(), value: 0 }],
-        '3M': [{ date: new Date().toISOString(), value: 0 }],
-        '6M': [{ date: new Date().toISOString(), value: 0 }],
-        '1Y': [{ date: new Date().toISOString(), value: 0 }],
-        'MAX': [{ date: new Date().toISOString(), value: 0 }]
+      // Add to collections using userDatabase
+      const success = userDatabase.createCollection(newCollection.name, newCollection.description)
+      if (!success) {
+        console.error('Failed to create collection')
+        return
       }
       
       // Select the new collection
@@ -2261,6 +2350,12 @@ export default function App() {
       setShowCollectionDropdown(false)
     }
   }
+
+  // Reset scroll position when navigating between tabs
+  useEffect(() => {
+    // Scroll to top when activeTab changes
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  }, [activeTab])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -2312,6 +2407,18 @@ export default function App() {
     return `${currency?.symbol || '$'}${convertedValue.toFixed(2)}`
   }
 
+  // Helper function to scroll to top
+  const scrollToTop = () => {
+    // Scroll the main container to top
+    const mainContainer = document.querySelector('[data-main-container]')
+    if (mainContainer) {
+      mainContainer.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    
+    // Also scroll window to top as fallback
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // Search functions using database API
   const handleSearch = async () => {
     // Don't trigger search if we're on the collection tab (use collection search instead)
@@ -2322,9 +2429,13 @@ export default function App() {
     try {
       setLoading(true);
         
-        // Use real API search
-        const searchResults = await cardService.searchCards(searchQuery, 50);
-        const transformedResults = searchResults.map(card => cardService.transformCard(card));
+        // Use database migration service for search
+        const searchResults = await cardDataMigration.searchCards(searchQuery, {
+          limit: 200,
+          exactMatch: false
+        });
+        
+        // Search results loaded successfully
         
         // Apply filters to the API results
         
@@ -2400,42 +2511,47 @@ export default function App() {
           });
 
         // Apply filters to the API results
-        let filtered = transformedResults;
+        let filtered = searchResults;
         
-        // Apply language filter
-        if (activeLanguages.length > 0) {
-          filtered = filtered.filter(card => 
-            activeLanguages.includes(card.language)
-          );
-        }
+        // Apply filters to search results
+        
+        // Apply language filter - skip for now as cards don't have language property
+        // if (activeLanguages.length > 0) {
+        //   filtered = filtered.filter(card => 
+        //     activeLanguages.includes(card.language)
+        //   );
+        //   console.log('After language filter:', filtered.length, 'cards');
+        // }
         
         // Apply energy type filter
         if (activeEnergies.length > 0) {
           filtered = filtered.filter(card => 
-            activeEnergies.includes(card.type)
+            card.types && card.types.some(type => activeEnergies.includes(type))
           );
         }
         
-        // Apply variant filter
-        if (activeVariants.length > 0) {
-          filtered = filtered.filter(card => 
-            activeVariants.includes(card.variant)
-          );
-        }
+        // Apply variant filter - skip for now as cards don't have variant property
+        // if (activeVariants.length > 0) {
+        //   filtered = filtered.filter(card => 
+        //     activeVariants.includes(card.variant)
+        //   );
+        //   console.log('After variant filter:', filtered.length, 'cards');
+        // }
         
         // Apply regulation filter
         if (activeRegulations.length > 0) {
           filtered = filtered.filter(card => 
-            activeRegulations.includes(card.regulation)
+            card.regulationMark && activeRegulations.includes(card.regulationMark)
           );
         }
         
-        // Apply format filter
-        if (activeFormats.length > 0) {
-          filtered = filtered.filter(card => 
-            activeFormats.includes(card.format)
-          );
-        }
+        // Apply format filter - skip for now as cards don't have format property
+        // if (activeFormats.length > 0) {
+        //   filtered = filtered.filter(card => 
+        //     activeFormats.includes(card.format)
+        //   );
+        //   console.log('After format filter:', filtered.length, 'cards');
+        // }
         
         setOriginalSearchResults(filtered);
         setFilteredSearchResults(filtered);
@@ -2444,34 +2560,28 @@ export default function App() {
         
       } catch (error) {
         console.error('Search error:', error);
-        // Fall back to mock data if API fails
-        const filtered = mockUserData.searchResults.filter(card => 
-          !searchQuery.trim() || 
-          card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          card.set?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setOriginalSearchResults(filtered);
-        setFilteredSearchResults(filtered);
+        // Show error message instead of fallback data
+        setOriginalSearchResults([]);
+        setFilteredSearchResults([]);
         setShowSearchResults(true);
+        alert('Search failed. Please try again.');
       } finally {
         setLoading(false);
       }
   }
 
   // Load images for search results - now using database API structure
-  const loadSearchResultImages = async (searchCards = mockUserData.searchResults) => {
+  const loadSearchResultImages = async (searchCards = []) => {
 
     const imageMap = {}
     searchCards.forEach((card) => {
-      // Parse the images JSON string from database
-      let images = {};
-      try {
-        images = typeof card.images === 'string' ? JSON.parse(card.images) : card.images;
-      } catch (e) {
-      }
-
-      if (images?.small) {
-        imageMap[card.id] = images.small
+      // Use the imageUrl or images object directly (already formatted with extensions)
+      if (card.imageUrl) {
+        imageMap[card.id] = card.imageUrl
+      } else if (card.images?.small) {
+        imageMap[card.id] = card.images.small
+      } else if (card.images?.large) {
+        imageMap[card.id] = card.images.large
       }
     })
     
@@ -3048,16 +3158,7 @@ export default function App() {
   const handleSearchTabClick = () => {
     setActiveTab('search')
     setNavigationMode('none')
-    // Scroll to search section after a brief delay to ensure tab content is rendered
-    setTimeout(() => {
-      const searchSection = document.querySelector('[data-search-section]')
-      if (searchSection) {
-        searchSection.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        })
-      }
-    }, 100)
+    scrollToTop() // Scroll to top when navigating
   }
 
 
@@ -3079,8 +3180,6 @@ export default function App() {
     console.log('API returned:', imageUrl)
   }
 
-  // Make test function available globally for debugging
-  window.testImageLoading = testImageLoading
 
   // Pokémon TCG API integration
   const fetchCardImage = async (cardName, setName) => {
@@ -3155,6 +3254,12 @@ export default function App() {
     if (showCurrencyDropdown && !e.target.closest('.currency-dropdown')) {
       setShowCurrencyDropdown(false)
     }
+    if (showSortDropdown && !e.target.closest('.sort-dropdown')) {
+      setShowSortDropdown(false)
+    }
+    if (showFilterModal && !e.target.closest('.filter-modal')) {
+      setShowFilterModal(false)
+    }
     if (showCollectionCardActions && !e.target.closest('.collection-card-actions')) {
       setShowCollectionCardActions(false)
     }
@@ -3191,7 +3296,10 @@ export default function App() {
     }
     e.stopPropagation()
     
-    console.log('Press start on card:', card.name)
+    console.log('Press start on card:', card.name, 'isScrolling:', isScrolling)
+    
+    // Reset scrolling state when starting a new press
+    setIsScrolling(false)
     
     // Clear any existing timer
     if (longPressTimer) {
@@ -3254,8 +3362,11 @@ export default function App() {
     const deltaX = Math.abs(touch.clientX - touchStartPosition.x)
     const deltaY = Math.abs(touch.clientY - touchStartPosition.y)
     
-    // If user moved more than 10px, consider it scrolling
-    if (deltaX > 10 || deltaY > 10) {
+    console.log('Touch move - deltaX:', deltaX, 'deltaY:', deltaY, 'isScrolling:', isScrolling)
+    
+    // If user moved more than 15px, consider it scrolling (increased threshold)
+    if (deltaX > 15 || deltaY > 15) {
+      console.log('Scrolling detected - cancelling long press')
       setIsScrolling(true)
       // Cancel the long press timer if scrolling
       if (longPressTimer) {
@@ -3268,11 +3379,12 @@ export default function App() {
         clearTimeout(scrollTimeout)
       }
       
-      // Set a timeout to reset scrolling state after 200ms of no movement
+      // Set a timeout to reset scrolling state after 300ms of no movement (increased timeout)
       const timeout = setTimeout(() => {
+        console.log('Resetting scroll state')
         setIsScrolling(false)
         setScrollTimeout(null)
-      }, 200)
+      }, 300)
       
       setScrollTimeout(timeout)
     }
@@ -3316,9 +3428,22 @@ export default function App() {
         setIsCollectionMultiSelectMode(false)
       }
     } else {
-      // Normal click - open card profile
-      console.log('Normal click - opening card profile:', card.name)
-      handleCardClick(card)
+      // Check for double-tap to enter multi-select mode
+      const currentTime = Date.now()
+      const timeDiff = currentTime - lastTapTime
+      
+      if (timeDiff < 500 && timeDiff > 0) {
+        // Double tap detected - enter multi-select mode
+        console.log('Double tap detected - entering multi-select mode with card:', card.name)
+        setIsCollectionMultiSelectMode(true)
+        setSelectedCollectionCards(new Set([card.id]))
+        setLastTapTime(0) // Reset to prevent triple-tap issues
+      } else {
+        // Single tap - open card profile
+        console.log('Single tap - opening card profile:', card.name)
+        handleCardClick(card)
+        setLastTapTime(currentTime)
+      }
     }
   }
 
@@ -3593,7 +3718,7 @@ export default function App() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showCountryDropdown, showCurrencyDropdown, showCollectionCardActions, isCollectionMultiSelectMode, showMoveToFolderModal, showAddToDeckModal, showAddToBinderModal, showEditCardModal, showEditConditionDropdown, showEditVariantDropdown, showEditGradeDropdown, showEditGradingServiceDropdown])
+  }, [showCountryDropdown, showCurrencyDropdown, showSortDropdown, showFilterModal, showCollectionCardActions, isCollectionMultiSelectMode, showMoveToFolderModal, showAddToDeckModal, showAddToBinderModal, showEditCardModal, showEditConditionDropdown, showEditVariantDropdown, showEditGradeDropdown, showEditGradingServiceDropdown])
 
   // Cleanup long press timer on unmount
   React.useEffect(() => {
@@ -3695,30 +3820,25 @@ export default function App() {
         quantity: 1
       }
       
-      // Update mock user data to include the new card
-      const targetCollection = mockUserData.collections.find(c => c.id === 1)
-      if (!targetCollection) {
-        console.error('Collection not found')
-        // Still show confirmation even if collection update fails
-        setScannedCard(newCard)
+      // Add card to collection using userDatabase
+      const success = userDatabase.addCardToCollection(
+        selectedCollection || 'pokemon-tcg-collection',
+        newCard,
+        1,
+        'Near Mint',
+        'Normal',
+        null,
+        null,
+        newCard.price,
+        'Scanned card'
+      )
+      
+      if (success) {
+        // Update user data
+        const updatedData = userDatabase.getUserData()
+        setUserData(updatedData)
       } else {
-        if (!targetCollection.cards) {
-          targetCollection.cards = []
-        }
-        targetCollection.cards.push(newCard)
-        
-        // Update collection stats
-        targetCollection.totalCards = (targetCollection.totalCards || 0) + 1
-        targetCollection.totalValue = (targetCollection.totalValue || 0) + newCard.price
-        
-        // Add to recent activity
-        recentActivityData.unshift({
-          id: Date.now(),
-          cardName: newCard.name,
-          action: "Added",
-          type: "add",
-          time: "Just now"
-        })
+        console.error('Failed to add card to collection')
       }
       
       // Set the scanned card and show confirmation ONLY after card is identified
@@ -3856,7 +3976,6 @@ export default function App() {
       
       // Combine all available card data sources
       const allCards = [
-        ...mockUserData.searchResults,
         ...topMoversData,
         ...trendingCardsData
       ];
@@ -3884,14 +4003,7 @@ export default function App() {
       setShowCardProfile(false);
       setActiveTab('search');
       setNavigationMode('search');
-      
-      // Scroll to search section
-      setTimeout(() => {
-        const searchSection = document.querySelector('[data-section="search"]');
-        if (searchSection) {
-          searchSection.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
+      scrollToTop() // Scroll to top when navigating
       
     } catch (error) {
       console.error('Error searching for artist:', error);
@@ -4304,15 +4416,6 @@ export default function App() {
       }
     });
     
-    // Debug logging
-    if (cardId && cardId.includes('det1-7')) {
-      console.log('getCardQuantityInCollection debug (using fresh data):', {
-        cardId,
-        totalQuantity,
-        userDataUpdated: freshUserData.lastUpdated,
-        collectionsCount: freshUserData.collections.length
-      });
-    }
     
     return totalQuantity;
   };
@@ -4538,9 +4641,14 @@ export default function App() {
       note: addNote
     });
     
+    // Create a consistent card ID based on card properties
+    // This ensures the same card always gets the same ID regardless of when it's added
+    const cardId = card.id || card.cardId || `${card.name}-${card.set?.name || card.set || card.set_name || 'Unknown'}-${card.number || '001'}`.replace(/[^a-zA-Z0-9-]/g, '-');
+    
+    
     // Prepare card data for database
     const cardData = {
-      id: card.id || card.cardId || Date.now().toString(),
+      id: cardId,
       name: card.name,
       set: card.set?.name || card.set || card.set_name || 'Unknown Set',
       set_name: card.set?.name || card.set || card.set_name || 'Unknown Set',
@@ -4567,6 +4675,9 @@ export default function App() {
     );
     
     if (success) {
+      // Clean up any duplicates that might have been created
+      userDatabase.cleanupDuplicates(selectedCollectionForAdd);
+      
       // Reload user data to reflect changes
       const updatedUserData = userDatabase.getUserData();
       
@@ -4994,6 +5105,29 @@ export default function App() {
 
     loadChartData()
   }, [selectedCard, cardChartTimeRange, selectedCardVariant])
+
+  // Load set cards when selectedSet changes
+  useEffect(() => {
+    const loadSetCards = async () => {
+      if (!selectedSet) {
+        setSetCardsData([])
+        return
+      }
+
+      try {
+        const cards = await cardDataMigration.searchCards('', {
+          setFilter: selectedSet,
+          limit: 1000
+        })
+        setSetCardsData(cards)
+      } catch (error) {
+        console.error('Error loading set cards:', error)
+        setSetCardsData([])
+      }
+    }
+
+    loadSetCards()
+  }, [selectedSet])
 
   // Load market value data when selectedCard changes
   useEffect(() => {
@@ -5501,6 +5635,35 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Default Language Selection */}
+                <div className="mb-6">
+                  <h3 className="text-white text-sm font-medium mb-2">Default Language</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'english', label: 'English' },
+                      { value: 'japanese', label: 'Japanese' },
+                      { value: 'chinese', label: 'Chinese' },
+                      { value: 'korean', label: 'Korean' },
+                      { value: 'german', label: 'German' },
+                      { value: 'spanish', label: 'Spanish' },
+                      { value: 'french', label: 'French' },
+                      { value: 'italian', label: 'Italian' }
+                    ].map((lang) => (
+                      <button
+                        key={lang.value}
+                        onClick={() => setDefaultLanguage(lang.value)}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                          defaultLanguage === lang.value
+                            ? 'bg-[#6865E7] text-white'
+                            : 'bg-gray-700 text-white/70 hover:bg-gray-600'
+                        }`}
+                      >
+                        {lang.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Save Button */}
                 <button
                   onClick={handleEditModalClose}
@@ -5585,10 +5748,8 @@ export default function App() {
 
         // Set Page Component (takes priority over card profile)
         if (showSetPage && selectedSet) {
-          // Get all cards from the selected set
-          const setCards = mockUserData.searchResults.filter(card => 
-            card.set_name === selectedSet || card.set?.name === selectedSet || card.set === selectedSet
-          );
+          // Get all cards from the selected set - will be loaded via useEffect
+          const setCards = setCardsData || [];
 
           return (
             <div className="fixed inset-0 z-[60] bg-background overflow-y-auto">
@@ -6074,15 +6235,6 @@ export default function App() {
                         const startPrice = history[0]
                         const absoluteChange = currentPrice - startPrice
                         
-                        console.log('Market Value Price Change Debug (using chart data):', {
-                          chartData,
-                          history,
-                          currentPrice,
-                          startPrice,
-                          absoluteChange,
-                          isPositive: absoluteChange >= 0,
-                          colorClass: absoluteChange >= 0 ? 'text-green-400' : 'text-red-400'
-                        })
                         
                         return absoluteChange >= 0 ? 'text-green-400' : 'text-red-400'
                       })()}`}>
@@ -6105,13 +6257,6 @@ export default function App() {
                               const startPrice = history[0]
                               const absoluteChange = currentPrice - startPrice
                               
-                              console.log('Arrow Direction Debug (using chart data):', {
-                                currentPrice,
-                                startPrice,
-                                absoluteChange,
-                                isPositive: absoluteChange >= 0,
-                                arrowPath: absoluteChange >= 0 ? 'up' : 'down'
-                              })
                               
                               // Return correct arrow based on price change direction
                               if (absoluteChange >= 0) {
@@ -6139,12 +6284,6 @@ export default function App() {
                           const startPrice = history[0]
                           const absoluteChange = currentPrice - startPrice
                           
-                          console.log('Price Display Debug (using chart data):', {
-                            currentPrice,
-                            startPrice,
-                            absoluteChange,
-                            displayValue: `$${absoluteChange >= 0 ? '+' : ''}${Math.abs(absoluteChange).toFixed(2)}`
-                          })
                           
                           return `$${absoluteChange >= 0 ? '+' : '-'}${Math.abs(absoluteChange).toFixed(2)}`
                         })()}</span>
@@ -9705,7 +9844,8 @@ export default function App() {
   if (currentScreen === 'main-app') {
     return (
       <div 
-        className="min-h-screen bg-background text-accent pb-20"
+        data-main-container
+        className="min-h-screen bg-background text-accent transition-all duration-300 ease-in-out"
         style={{ 
           height: '100vh',
           overflowY: 'auto',
@@ -10012,7 +10152,11 @@ export default function App() {
                       Start building your collection to see your highest valued cards here
                     </p>
                     <button 
-                      onClick={() => setCurrentView('search')}
+                      onClick={() => {
+                        setActiveTab('search')
+                        setNavigationMode('search') // Update navigation bar to show search as active
+                        scrollToTop() // Scroll to top when navigating
+                      }}
                       className="px-6 py-3 bg-gradient-to-r from-[#6865E7] to-[#5A57D1] hover:from-[#5A57D1] hover:to-[#4C49BB] rounded-xl text-white text-sm font-medium transition-all duration-300 shadow-lg shadow-[#6865E7]/25"
                     >
                       Browse Cards
@@ -10072,7 +10216,7 @@ export default function App() {
                 </div>
 
             {/* Trending Cards */}
-            <div className="px-4 mb-6">
+            <div className="px-4 mb-6 pb-20">
               <div className="bg-gradient-to-br from-[#2b2b2b] to-[#1a1a1a] rounded-2xl p-6 border border-gray-700/50">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -10238,7 +10382,12 @@ export default function App() {
               </div>
               
                 <button 
-                  onClick={() => setShowTrendingModal(true)}
+                  onClick={() => {
+                    setActiveTab('search');
+                    setNavigationMode('search'); // Update navigation bar to show search as active
+                    setShowSearchResults(false); // Show trending cards instead of search results
+                    scrollToTop() // Scroll to top when navigating
+                  }}
                   className="w-full mt-6 py-3 bg-gradient-to-r from-[#6865E7] to-[#8B5CF6] hover:from-[#5A57D1] hover:to-[#7C3AED] rounded-xl text-white text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#6865E7]/25"
                 >
                   <span>Explore All Trending</span>
@@ -10254,18 +10403,12 @@ export default function App() {
         {activeTab === 'search' && (
           <div 
             data-search-section
-            className="px-4 pb-20"
-            onScroll={handleScroll}
-            style={{ 
-              height: 'calc(100vh - 120px)',
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch'
-            }}
+            className="flex flex-col px-4 pb-20 transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-4"
           >
-            {/* Search Header */}
-            <div className="flex items-center justify-between mb-6">
+            {/* Search Header - Fixed */}
+            <div className="flex items-center justify-between mb-6 flex-shrink-0">
               <h2 className="text-white text-lg font-semibold">
-                {showSearchResults ? `Search Results (${filteredSearchResults.length})` : 'Popular Cards Today'}
+                {showSearchResults ? `Search Results (${filteredSearchResults.length})` : ''}
               </h2>
               {showSearchResults && (
                 <button
@@ -10280,123 +10423,67 @@ export default function App() {
                     )}
               </div>
               
-            {/* Search Results */}
-            {showSearchResults && (
-              <div className="mb-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {filteredSearchResults.map((card, index) => (
-                    <div
-                      key={`search-${card.id}-${index}`}
-                      className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition-colors"
-                    >
-                      <div 
-                        className="aspect-[3/4] bg-gray-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden cursor-pointer"
+            {/* Content Area - Scrollable */}
+            <div className="flex-1 overflow-y-auto" onScroll={handleScroll} style={{ WebkitOverflowScrolling: 'touch' }}>
+              {/* Search Results */}
+              {showSearchResults && (
+                <div className="mb-6">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
+                    {filteredSearchResults.map((card, index) => (
+                      <MarketplaceCard
+                        key={`search-${card.id}-${index}`}
+                        platform="Search"
+                        cardName={card.name}
+                        setName={card.set?.name || card.set || 'Unknown Set'}
+                        rarity={card.rarity}
+                        cardNumber={`#${card.number || ''}`}
+                        price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
+                        isCollection={true}
+                        cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
                         onClick={() => {
                           setSelectedCard(card);
                           setShowCardProfile(true);
                         }}
-                      >
-                        {(card.images?.small || card.imageUrl) ? (
-                          <img 
-                            src={card.images?.small || card.imageUrl} 
-                            alt={card.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
-                          <span className="text-gray-400 text-sm">Card Image</span>
-                      </div>
+                        onAddToCollection={() => handleAddToCollection(card)}
+                      />
+                    ))}
                   </div>
-                      <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
-                      <p className="text-gray-400 text-xs mb-2">{card.set?.name || card.set || 'Unknown Set'}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-primary font-bold text-sm">${(() => {
-                          if (card.currentValue) return card.currentValue.toFixed(2);
-                          if (card.price) return card.price.toFixed(2);
-                          if (card.tcgplayer?.prices?.holofoil?.market) return card.tcgplayer.prices.holofoil.market.toFixed(2);
-                          if (card.tcgplayer?.prices?.normal?.market) return card.tcgplayer.prices.normal.market.toFixed(2);
-                          return 'N/A';
-                        })()}</p>
-                <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCollection(card);
-                          }}
-                          className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
-                        >
-                          Add
-                </button>
-              </div>
-              </div>
-                  ))}
-            </div>
-                
-                {filteredSearchResults.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 text-sm">No cards found matching your search.</p>
-          </div>
-        )}
-          </div>
-        )}
+                  
+                  {filteredSearchResults.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 text-sm">No cards found matching your search.</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-
-            {/* Trending Cards Section - Only show when no search results */}
-            {!showSearchResults && (
-              <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4">
+              {/* Trending Cards Section - Only show when no search results */}
+              {!showSearchResults && (
+                <div className="mb-6 pb-20">
+                  <div className="flex items-center gap-2 mb-4">
                 <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                 <h3 className="text-white font-medium">Trending Now</h3>
-                <span className="text-gray-400 text-sm ml-2">({visibleCardsCount} of {allTrendingCards.length})</span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
-                  <div
+                  <MarketplaceCard
                     key={`trending-${card.id}`}
-                    className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition-colors"
-                  >
-                    <div 
-                      className="aspect-[3/4] bg-gray-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden cursor-pointer"
-                      onClick={() => {
-                        setSelectedCard(card);
-                        setShowCardProfile(true);
-                      }}
-                    >
-                        {(card.images?.small || card.imageUrl) ? (
-                          <img 
-                            src={card.images?.small || card.imageUrl} 
-                            alt={card.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ display: (card.images?.small || card.imageUrl) ? 'none' : 'flex' }}>
-                          <span className="text-gray-400 text-sm">Card Image</span>
-                      </div>
-                  </div>
-                    <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
-                    <p className="text-gray-400 text-xs mb-2">{card.set?.name || 'Unknown Set'}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-primary font-bold text-sm">${card.currentValue?.toFixed(2) || 'N/A'}</p>
-                <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCollection(card);
-                        }}
-                        className="bg-primary text-accent px-3 py-1 rounded-lg text-xs font-medium hover:bg-primary/80 transition-colors"
-                      >
-                        Add
-                </button>
-                      </div>
-                  </div>
+                    platform="Trending"
+                    cardName={card.name}
+                    setName={card.set?.name || 'Unknown Set'}
+                    rarity={card.rarity}
+                    cardNumber={`#${card.number || ''}`}
+                    price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
+                    isCollection={true}
+                    cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                    onClick={() => {
+                      setSelectedCard(card);
+                      setShowCardProfile(true);
+                    }}
+                    onAddToCollection={() => handleAddToCollection(card)}
+                  />
                 ))}
                 </div>
 
@@ -10414,11 +10501,12 @@ export default function App() {
               {visibleCardsCount >= allTrendingCards.length && (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">You've reached the end of trending cards!</p>
-                    </div>
-                    )}
-                  </div>
-                    )}
-                  </div>
+                </div>
+              )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'scan' && (
@@ -10439,31 +10527,39 @@ export default function App() {
         )}
 
         {activeTab === 'collection' && (
-          <div className="px-4 mb-6">
+          <div className="px-4 mb-6 pb-20 transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-4">
             {/* Collection Header with Dropdown */}
               <div className="space-y-4 mb-6">
-                {/* Collection Dropdown and Sort - Top Row */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="relative flex-1 min-w-0">
+                {/* Collection Dropdown - Top Row */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
                     <button 
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
+                      className="flex items-center gap-[7px] px-3 py-2 hover:bg-gray-600/20 rounded-lg transition-colors"
                       onClick={() => setShowCollectionDropdown(!showCollectionDropdown)}
                     >
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="text-white text-xs font-bold flex-shrink-0">Collection:</span>
-                        <span className="text-[#605DEC] text-xs font-bold truncate">
-                          {userData?.collections?.find(c => c.id === selectedCollection)?.name || 'My Personal Collection'}
-                        </span>
+                      <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5 shrink-0 text-white">
+                          <span className="text-[14px] font-bold">Collection</span>
+                          <span className="text-[12px] font-bold">:</span>
+                        </div>
+                        <div className="shrink-0 text-[#605DEC] text-[14px] font-bold">
+                          <span className="truncate">
+                            {userData?.collections?.find(c => c.id === selectedCollection)?.name || 'My Personal Collection'}
+                          </span>
+                        </div>
+                        <div className="relative shrink-0">
+                          <svg 
+                            className={`w-4 h-4 text-white transition-transform flex-shrink-0 ${showCollectionDropdown ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
-                      <svg 
-                        className={`w-3 h-3 text-white transition-transform flex-shrink-0 ${showCollectionDropdown ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
                     </button>
+                    
                     
                     {/* Collection Dropdown */}
                     {showCollectionDropdown && (
@@ -10498,62 +10594,6 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Sort Dropdown */}
-                  <div className="relative flex-1 min-w-0">
-                    <button 
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
-                      onClick={() => setShowSortDropdown(!showSortDropdown)}
-                    >
-                      <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                      </svg>
-                      <span className="text-white text-xs font-bold flex-shrink-0">Sort:</span>
-                      <span className="text-[#605DEC] text-xs font-bold truncate">
-                        {collectionSortOption === 'name' ? 'Name' : 
-                         collectionSortOption === 'name-desc' ? 'Name Z-A' :
-                         collectionSortOption === 'price' ? 'Price Low' : 
-                         collectionSortOption === 'price-desc' ? 'Price High' :
-                         collectionSortOption === 'rarity' ? 'Rarity' : 
-                         collectionSortOption === 'set' ? 'Set' : 'Name'}
-                      </span>
-                      <svg 
-                        className={`w-3 h-3 text-white transition-transform flex-shrink-0 ${showSortDropdown ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    
-                    {showSortDropdown && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
-                        <div className="py-2">
-                          {[
-                            { value: 'name', label: 'Name A-Z' },
-                            { value: 'name-desc', label: 'Name Z-A' },
-                            { value: 'price', label: 'Price Low-High' },
-                            { value: 'price-desc', label: 'Price High-Low' },
-                            { value: 'rarity', label: 'Rarity' },
-                            { value: 'set', label: 'Set' }
-                          ].map((option) => (
-                            <button
-                              key={option.value}
-                              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
-                                collectionSortOption === option.value ? 'bg-gray-700 text-[#605DEC]' : 'text-white'
-                              }`}
-                              onClick={() => {
-                                setCollectionSortOption(option.value)
-                                setShowSortDropdown(false)
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 {/* Collection Stats - Bottom Row */}
@@ -10595,42 +10635,196 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Collection Cards Grid - 2 Columns */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* Sort and Filter Dropdowns */}
+              <div className="flex items-center gap-2 mb-4">
+                {/* Sort Dropdown */}
+                <div className="relative flex-1 sort-dropdown">
+                  <button 
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  >
+                    <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                    </svg>
+                    <span className="text-white text-xs font-bold flex-shrink-0">Sort:</span>
+                    <span className="text-[#605DEC] text-xs font-bold truncate">
+                      {collectionSortOption === 'name' ? 'Name' : 
+                       collectionSortOption === 'name-desc' ? 'Name Z-A' :
+                       collectionSortOption === 'price' ? 'Price Low' : 
+                       collectionSortOption === 'price-desc' ? 'Price High' :
+                       collectionSortOption === 'rarity' ? 'Rarity' : 
+                       collectionSortOption === 'set' ? 'Set' : 'Name'}
+                    </span>
+                    <svg 
+                      className={`w-3 h-3 text-white transition-transform flex-shrink-0 ${showSortDropdown ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {showSortDropdown && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                      <div className="py-2">
+                        {[
+                          { value: 'name', label: 'Name A-Z' },
+                          { value: 'name-desc', label: 'Name Z-A' },
+                          { value: 'price', label: 'Price Low-High' },
+                          { value: 'price-desc', label: 'Price High-Low' },
+                          { value: 'rarity', label: 'Rarity' },
+                          { value: 'set', label: 'Set' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-700 transition-colors ${
+                              collectionSortOption === option.value ? 'bg-gray-700 text-[#605DEC]' : 'text-white'
+                            }`}
+                            onClick={() => {
+                              setCollectionSortOption(option.value)
+                              setShowSortDropdown(false)
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Filter Button */}
+                <div className="relative flex-1">
+                  <button 
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors w-full"
+                    onClick={() => setShowFilterModal(true)}
+                  >
+                    <svg className="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    <span className="text-white text-xs font-bold flex-shrink-0">Filter:</span>
+                    <span className="text-[#605DEC] text-xs font-bold truncate">
+                      {Object.values(filterSettings).some(arr => Array.isArray(arr) ? arr.length > 0 : arr !== 'all' && arr !== 'international') ? 'Active Filters' : 'All Cards'}
+                    </span>
+                    <svg className="w-3 h-3 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Collection Cards Grid - Responsive */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
                 {(() => {
                   try {
                     const collection = userData?.collections?.find(c => c.id === selectedCollection)
                     if (!collection || !collection.cards || collection.cards.length === 0) {
                       return (
-                        <div className="col-span-2 text-center py-12">
+                        <div className="col-span-3 flex flex-col items-center justify-center py-12 min-h-[400px]">
                           <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                           </div>
                           <h3 className="text-white text-lg font-semibold mb-2">No Cards in Collection</h3>
-                          <p className="text-gray-400 mb-4">Start building your collection by adding cards from the marketplace.</p>
+                          <p className="text-gray-400 mb-4 text-center max-w-md">Start building your collection by scanning cards or adding them from the marketplace.</p>
                           <button 
-                            onClick={() => setActiveTab('marketplace')}
+                            onClick={() => setShowScanner(true)}
                             className="px-6 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg font-medium transition-colors"
                           >
-                            Browse Marketplace
+                            Scan Cards
                           </button>
                         </div>
                       )
                     }
 
-                    // Filter cards based on search query
+                    // Filter cards based on search query and filter settings
                     const filteredCards = collection.cards.filter(card => {
-                      if (!collectionSearchQuery.trim()) return true
-                      
-                      const searchTerm = collectionSearchQuery.toLowerCase()
-                      return (
-                        (card.name || '').toLowerCase().includes(searchTerm) ||
-                        (card.set || '').toLowerCase().includes(searchTerm) ||
-                        (card.rarity || '').toLowerCase().includes(searchTerm) ||
-                        (card.number || '').toLowerCase().includes(searchTerm)
-                      )
+                      // Search query filter
+                      if (collectionSearchQuery.trim()) {
+                        const searchTerm = collectionSearchQuery.toLowerCase()
+                        const matchesSearch = (
+                          (card.name || '').toLowerCase().includes(searchTerm) ||
+                          (card.set || '').toLowerCase().includes(searchTerm) ||
+                          (card.rarity || '').toLowerCase().includes(searchTerm) ||
+                          (card.number || '').toLowerCase().includes(searchTerm)
+                        )
+                        if (!matchesSearch) return false
+                      }
+
+                      // Card Status filter
+                      if (filterSettings.cardStatus === 'duplicates') {
+                        // Show only cards with quantity > 1
+                        const quantity = card.quantity || 1
+                        if (quantity <= 1) return false
+                      } else if (filterSettings.cardStatus === 'wishlisted') {
+                        // Show only wishlisted cards (this would need to be implemented in the card data structure)
+                        // For now, we'll skip this filter as it's not in the current data structure
+                      }
+                      // If cardStatus is 'all', show all cards (no filtering)
+
+                      // Languages filter
+                      if (filterSettings.languages.length > 0) {
+                        const cardLanguage = (card.language || 'english').toLowerCase()
+                        if (!filterSettings.languages.includes(cardLanguage)) return false
+                      }
+
+                      // Products filter
+                      if (filterSettings.products.length > 0) {
+                        // For now, all cards are considered 'cards' type
+                        // This would need to be implemented based on your data structure
+                        if (!filterSettings.products.includes('cards')) return false
+                      }
+
+                      // Energies filter
+                      if (filterSettings.energies.length > 0) {
+                        const cardTypes = card.types || []
+                        const hasMatchingEnergy = filterSettings.energies.some(energy => 
+                          cardTypes.some(type => type.toLowerCase() === energy.toLowerCase())
+                        )
+                        if (!hasMatchingEnergy) return false
+                      }
+
+                      // Supertype filter
+                      if (filterSettings.supertype.length > 0) {
+                        const cardSupertype = (card.supertype || 'pokemon').toLowerCase()
+                        if (!filterSettings.supertype.includes(cardSupertype)) return false
+                      }
+
+                      // Rarities filter
+                      if (filterSettings.rarities.length > 0) {
+                        const cardRarity = (card.rarity || '').toLowerCase().replace(/\s+/g, '_')
+                        if (!filterSettings.rarities.includes(cardRarity)) return false
+                      }
+
+                      // Variants filter
+                      if (filterSettings.variants.length > 0) {
+                        // This would need to be implemented based on your card data structure
+                        // For now, we'll assume all cards are 'normal' variant
+                        if (!filterSettings.variants.includes('normal')) return false
+                      }
+
+                      // Formats filter
+                      if (filterSettings.formats.length > 0) {
+                        // This would need to be implemented based on your card data structure
+                        // For now, we'll assume all cards are 'unlimited' format
+                        if (!filterSettings.formats.includes('unlimited')) return false
+                      }
+
+                      // Regulation Markings filter
+                      if (filterSettings.regulationMarkings.length > 0) {
+                        // This would need to be implemented based on your card data structure
+                        // For now, we'll skip this filter
+                      }
+
+                      // Conditions filter
+                      if (filterSettings.conditions.length > 0) {
+                        // This would need to be implemented based on your card data structure
+                        // For now, we'll skip this filter
+                      }
+
+                      return true
                     })
 
                     // Sort cards based on selected option
@@ -10653,8 +10847,8 @@ export default function App() {
                       }
                     })
 
-                    // Show no results message if search returns no cards
-                    if (sortedCards.length === 0 && collectionSearchQuery.trim()) {
+                    // Show no results message if search or filters return no cards
+                    if (sortedCards.length === 0 && (collectionSearchQuery.trim() || Object.values(filterSettings).some(arr => Array.isArray(arr) ? arr.length > 0 : arr !== 'all' && arr !== 'international'))) {
                       return (
                         <div className="col-span-2 text-center py-12">
                           <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -10663,19 +10857,50 @@ export default function App() {
                             </svg>
                           </div>
                           <h3 className="text-white text-lg font-semibold mb-2">No Cards Found</h3>
-                          <p className="text-gray-400 mb-4">No cards match your search for "{collectionSearchQuery}"</p>
-                          <button 
-                            onClick={() => setCollectionSearchQuery('')}
-                            className="px-6 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg font-medium transition-colors"
-                          >
-                            Clear Search
-                          </button>
+                          <p className="text-gray-400 mb-4">
+                            {collectionSearchQuery.trim() 
+                              ? `No cards match your search for "${collectionSearchQuery}"`
+                              : "No cards match your current filter settings"
+                            }
+                          </p>
+                          <div className="flex gap-2 justify-center">
+                            {collectionSearchQuery.trim() && (
+                              <button 
+                                onClick={() => setCollectionSearchQuery('')}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                              >
+                                Clear Search
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => {
+                                setCollectionSearchQuery('')
+                                setFilterSettings({
+                                  cardStatus: 'all',
+                                  languages: [],
+                                  products: [],
+                                  energies: [],
+                                  supertype: [],
+                                  rarityType: 'international',
+                                  rarities: [],
+                                  variants: [],
+                                  formats: [],
+                                  regulationMarkings: [],
+                                  conditions: []
+                                })
+                              }}
+                              className="px-4 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg font-medium transition-colors"
+                            >
+                              Clear All Filters
+                            </button>
+                          </div>
                         </div>
                       )
                     }
 
                     return sortedCards.map((card, index) => {
                       const isSelected = selectedCollectionCards.has(card.id)
+                      
                       return (
                         <MarketplaceCard
                           key={card.id || index}
@@ -10687,11 +10912,9 @@ export default function App() {
                           price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
                           isCollection={true}
                           isSelected={isSelected}
+                          quantity={card.quantity || 1}
                           cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
-                          onClick={() => {
-                            setSelectedCard(card)
-                            setShowCardProfile(true)
-                          }}
+                          onClick={(e) => handleCollectionCardClick(e, card)}
                           onPressStart={(e) => handleCollectionCardPressStart(e, card)}
                           onPressEnd={handleCollectionCardPressEnd}
                           onTouchStart={(e) => handleCollectionCardPressStart(e, card)}
@@ -10779,9 +11002,43 @@ export default function App() {
                     
                     <button 
                       className="flex items-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-lg transition-colors min-w-[80px] justify-center"
-                      onClick={() => {
-                        console.log('Remove from collection:', Array.from(selectedCollectionCards))
-                        // TODO: Implement remove from collection functionality
+                      onClick={async () => {
+                        const cardIds = Array.from(selectedCollectionCards)
+                        if (cardIds.length === 0) return
+                        
+                        const totalQuantity = cardIds.reduce((sum, cardId) => {
+                          const card = myCardEntries.find(entry => entry.id === cardId)
+                          return sum + (card?.quantity || 1)
+                        }, 0)
+                        
+                        if (confirm(`Remove ${cardIds.length} card${cardIds.length !== 1 ? 's' : ''} (${totalQuantity} total) from your collection?`)) {
+                          let successCount = 0
+                          
+                          for (const cardId of cardIds) {
+                            const success = userDatabase.removeCardFromCollection(selectedCollection, cardId)
+                            if (success) successCount++
+                          }
+                          
+                          if (successCount > 0) {
+                            // Clear selection and exit multi-select mode
+                            setSelectedCollectionCards(new Set())
+                            setIsCollectionMultiSelectMode(false)
+                            
+                            // Refresh the collection data
+                            const updatedUserData = userDatabase.getUserData()
+                            setUserData(updatedUserData)
+                            
+                            // Update myCardEntries
+                            const updatedCollection = updatedUserData?.collections?.find(c => c.id === selectedCollection)
+                            if (updatedCollection) {
+                              setMyCardEntries(updatedCollection.cards || [])
+                            }
+                            
+                            console.log(`Successfully removed ${successCount} card${successCount !== 1 ? 's' : ''} from collection`)
+                          } else {
+                            alert('Failed to remove cards. Please try again.')
+                          }
+                        }
                       }}
                     >
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -10797,7 +11054,7 @@ export default function App() {
             {/* Move to Folder Modal */}
             {showMoveToFolderModal && (
               <div 
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
                 onClick={() => setShowMoveToFolderModal(false)}
               >
                 <div 
@@ -10863,7 +11120,7 @@ export default function App() {
             {/* Add to Deck Modal */}
             {showAddToDeckModal && (
               <div 
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
                 onClick={() => setShowAddToDeckModal(false)}
               >
                 <div 
@@ -10932,7 +11189,7 @@ export default function App() {
             {/* Add to Binder Modal */}
             {showAddToBinderModal && (
               <div 
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
                 onClick={() => setShowAddToBinderModal(false)}
               >
                 <div 
@@ -11001,7 +11258,7 @@ export default function App() {
         )}
 
         {activeTab === 'marketplace' && (
-          <div className="pb-20" style={{ height: 'calc(100vh - 120px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div className="transition-all duration-300 ease-in-out animate-in fade-in-0 slide-in-from-bottom-4" style={{ height: 'calc(100vh - 120px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
             {/* Search Section */}
             <div className="flex items-center gap-2 mb-4 px-4">
               <div className="flex-1 bg-[#2b2b2b] rounded-lg px-4 py-3 flex items-center gap-3">
@@ -11034,7 +11291,7 @@ export default function App() {
                 <h2 className="text-white text-lg font-bold">Trending Products</h2>
                 <button className="text-gray-400 text-sm">View all</button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-x-visible md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {[
                   { platform: 'TCGPlayer', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
                   { platform: 'eBay', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
@@ -11062,7 +11319,7 @@ export default function App() {
                 <h2 className="text-white text-lg font-bold">Recent Searches</h2>
                 <button className="text-gray-400 text-sm">View all</button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-x-visible md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {[
                   { platform: 'eBay', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
                   { platform: 'Whatnot', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
@@ -11338,14 +11595,28 @@ export default function App() {
         )}
 
         {/* Bottom Navigation Bar - Glass Effect Design */}
-        <div className="fixed bottom-4 left-0 right-0 px-[19px] py-0 shadow-[0px_24px_7px_0px_rgba(0,0,0,0.01),0px_16px_6px_0px_rgba(0,0,0,0.04),0px_9px_5px_0px_rgba(0,0,0,0.15),0px_4px_4px_0px_rgba(0,0,0,0.25),0px_1px_2px_0px_rgba(0,0,0,0.29)]">
-          <div className="bg-[rgba(43,43,43,0.2)] backdrop-blur-md flex items-center justify-between px-[30px] py-0 rounded-[16px] relative border border-white/10 h-[75px]">
+        <div 
+          className="fixed bottom-4 left-0 right-0 px-[19px] py-0 rounded-[16px]"
+          style={{
+            filter: 'drop-shadow(0px 24px 7px rgba(0,0,0,0.01)) drop-shadow(16px 16px 16px rgba(0,0,0,0.04)) drop-shadow(0px 9px 5px rgba(0,0,0,0.15)) drop-shadow(0px 4px 4px rgba(0,0,0,0.25)) drop-shadow(0px 1px 2px rgba(0,0,0,0.29))'
+          }}
+        >
+          <div 
+            className="flex items-center justify-between px-[30px] py-0 rounded-[16px] relative border border-white/50 h-[75px] overflow-hidden"
+            style={{
+              background: 'rgba(43,43,43,0.9)',
+              backdropFilter: 'blur(60px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(60px) saturate(200%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)'
+            }}
+          >
             {/* Home Button */}
             <button 
               onClick={() => {
                 setActiveTab('home')
                 setNavigationMode('home')
                 setSelectedCard(null) // Close card profile modal
+                scrollToTop() // Scroll to top when navigating
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -11357,16 +11628,15 @@ export default function App() {
                             </svg>
                         ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9.02 2.84004L3.63 7.04004C2.73 7.74004 2 9.23004 2 10.36V17.77C2 20.09 3.89 21.99 6.21 21.99H17.79C20.11 21.99 22 20.09 22 17.78V10.5C22 9.29004 21.19 7.74004 20.2 7.05004L14.02 2.72004C12.62 1.74004 10.37 1.79004 9.02 2.84004Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 17.99V14.99" stroke="#8F8F94" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20.04 6.82006L14.28 2.79006C12.71 1.69006 10.3 1.75006 8.78999 2.92006L3.77999 6.83006C2.77999 7.61006 1.98999 9.21006 1.98999 10.4701V17.3701C1.98999 19.9201 4.05999 22.0001 6.60999 22.0001H17.39C19.94 22.0001 22.01 19.9301 22.01 17.3801V10.6001C22.01 9.25006 21.14 7.59006 20.04 6.82006ZM12.75 18.0001C12.75 18.4101 12.41 18.7501 12 18.7501C11.59 18.7501 11.25 18.4101 11.25 18.0001V15.0001C11.25 14.5901 11.59 14.2501 12 14.2501C12.41 14.2501 12.75 14.5901 12.75 15.0001V18.0001Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         )}
                       </div>
                 {navigationMode === 'home' && (
                   <div className="text-white text-[11px] font-normal leading-[0]">
                     Home
-                    </div>
-                        )}
+                  </div>
+                )}
                       </div>
                 </button>
 
@@ -11377,6 +11647,7 @@ export default function App() {
                 setTimeout(() => {
                   setActiveTab('collection')
                   setNavigationMode('collection')
+                  scrollToTop() // Scroll to top when navigating
                 }, 100) // Small delay to ensure modal closes first
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
@@ -11421,6 +11692,7 @@ export default function App() {
               onClick={() => {
                 setActiveTab('marketplace')
                 setNavigationMode('marketplace')
+                scrollToTop() // Scroll to top when navigating
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'marketplace' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -11466,6 +11738,7 @@ export default function App() {
                 setActiveTab('profile')
                 setNavigationMode('profile')
                 setSelectedCard(null) // Close card profile modal
+                scrollToTop() // Scroll to top when navigating
               }}
               className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
@@ -11493,26 +11766,28 @@ export default function App() {
 
             {/* Active Indicator */}
             <div className={`absolute bottom-0 transition-all duration-500 ease-in-out ${
-              navigationMode === 'none' ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
+              navigationMode === 'none' ? 'transform -translate-x-[200px] opacity-0' : 'transform translate-x-0 opacity-100'
             }`}
                  style={{
                    left: navigationMode === 'home' ? '41px' : 
                          navigationMode === 'collection' ? '125px' :
                          navigationMode === 'marketplace' ? '209px' : 
-                         navigationMode === 'profile' ? '293px' : '-84px'
+                         navigationMode === 'profile' ? '293px' : '-200px'
                  }}>
               <div className="relative flex justify-center">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-[#6865E7] blur-sm opacity-30 scale-110" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
-                <div className="absolute inset-0 bg-[#6865E7] blur-md opacity-20 scale-125" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
+                {/* Glow Effect with rounded corners */}
+                <div className="absolute inset-0 bg-[#6865E7] blur-sm opacity-30 scale-110 rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
+                <div className="absolute inset-0 bg-[#6865E7] blur-md opacity-20 scale-125 rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
                 
-                {/* Main Indicator */}
-                <svg width="64" height="8" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
-                  <path d="M59.9277 3.92798C62.1768 3.92798 64 5.75121 64 8.00024H0C0 5.75121 1.82324 3.92798 4.07227 3.92798H25L31.1387 0.802979C31.9937 0.367721 33.0063 0.367721 33.8613 0.802979L40 3.92798H59.9277Z" fill="#6865E7"/>
-                            </svg>
+                {/* Main Indicator with rounded corners */}
+                <div className="relative z-10 rounded-t-[16px] overflow-hidden">
+                  <svg width="64" height="8" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M59.9277 3.92798C62.1768 3.92798 64 5.75121 64 8.00024H0C0 5.75121 1.82324 3.92798 4.07227 3.92798H25L31.1387 0.802979C31.9937 0.367721 33.0063 0.367721 33.8613 0.802979L40 3.92798H59.9277Z" fill="#6865E7"/>
+                  </svg>
+                </div>
                 
-                {/* Subtle Glass Diffusion Effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
+                {/* Subtle Glass Diffusion Effect with rounded corners */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
                       </div>
                       </div>
                     </div>
@@ -12365,8 +12640,465 @@ export default function App() {
         </div>
       )}
 
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 filter-modal">
+          <div className="bg-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h2 className="text-white text-xl font-bold">Filter Collection</h2>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Filter Content */}
+            <div className="p-6 space-y-6">
+              {/* Card Status */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Card Status</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'all', label: 'All Cards' },
+                    { value: 'duplicates', label: 'Duplicates' },
+                    { value: 'wishlisted', label: 'Wishlisted' }
+                  ].map((status) => (
+                    <button
+                      key={status.value}
+                      onClick={() => setFilterSettings(prev => ({ ...prev, cardStatus: status.value }))}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.cardStatus === status.value
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Languages */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Languages</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'english', label: 'English' },
+                    { value: 'japanese', label: 'Japanese' },
+                    { value: 'chinese', label: 'Chinese' },
+                    { value: 'korean', label: 'Korean' },
+                    { value: 'german', label: 'German' },
+                    { value: 'spanish', label: 'Spanish' },
+                    { value: 'french', label: 'French' },
+                    { value: 'italian', label: 'Italian' }
+                  ].map((lang) => (
+                    <button
+                      key={lang.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          languages: prev.languages.includes(lang.value)
+                            ? prev.languages.filter(l => l !== lang.value)
+                            : [...prev.languages, lang.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.languages.includes(lang.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Products */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Products</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'cards', label: 'Cards' },
+                    { value: 'sealed', label: 'Sealed' }
+                  ].map((product) => (
+                    <button
+                      key={product.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          products: prev.products.includes(product.value)
+                            ? prev.products.filter(p => p !== product.value)
+                            : [...prev.products, product.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.products.includes(product.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {product.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Energies */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Energies</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'colorless', label: 'Colorless' },
+                    { value: 'darkness', label: 'Darkness' },
+                    { value: 'dragon', label: 'Dragon' },
+                    { value: 'electric', label: 'Electric' },
+                    { value: 'fairy', label: 'Fairy' },
+                    { value: 'fighting', label: 'Fighting' },
+                    { value: 'fire', label: 'Fire' },
+                    { value: 'grass', label: 'Grass' },
+                    { value: 'metal', label: 'Metal' },
+                    { value: 'psychic', label: 'Psychic' },
+                    { value: 'water', label: 'Water' }
+                  ].map((energy) => (
+                    <button
+                      key={energy.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          energies: prev.energies.includes(energy.value)
+                            ? prev.energies.filter(e => e !== energy.value)
+                            : [...prev.energies, energy.value]
+                        }))
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.energies.includes(energy.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {energy.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Supertype */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Supertype</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'pokemon', label: 'Pokemon' },
+                    { value: 'trainer', label: 'Trainer' },
+                    { value: 'energy', label: 'Energy' }
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          supertype: prev.supertype.includes(type.value)
+                            ? prev.supertype.filter(t => t !== type.value)
+                            : [...prev.supertype, type.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.supertype.includes(type.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rarities */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Rarities</h3>
+                
+                {/* Rarity Type Toggle */}
+                <div className="flex bg-gray-700 rounded-lg p-1 mb-4">
+                  <button
+                    onClick={() => setFilterSettings(prev => ({ ...prev, rarityType: 'international' }))}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      filterSettings.rarityType === 'international'
+                        ? 'bg-[#605DEC] text-white'
+                        : 'text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    International
+                  </button>
+                  <button
+                    onClick={() => setFilterSettings(prev => ({ ...prev, rarityType: 'japanese' }))}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      filterSettings.rarityType === 'japanese'
+                        ? 'bg-[#605DEC] text-white'
+                        : 'text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    Japanese
+                  </button>
+                </div>
+
+                {/* Rarity Options */}
+                <div className="grid grid-cols-2 gap-2">
+                  {(filterSettings.rarityType === 'international' ? [
+                    { value: 'common', label: 'Common' },
+                    { value: 'uncommon', label: 'Uncommon' },
+                    { value: 'rare', label: 'Rare' },
+                    { value: 'double_rare', label: 'Double Rare' },
+                    { value: 'ace_spec_rare', label: 'ACE Spec Rare' },
+                    { value: 'illustration_rare', label: 'Illustration Rare' },
+                    { value: 'ultra_rare', label: 'Ultra Rare' },
+                    { value: 'special_illustration_rare', label: 'Special Illustration Rare' },
+                    { value: 'hyper_rare', label: 'Hyper Rare' },
+                    { value: 'shiny_rare', label: 'Shiny Rare' },
+                    { value: 'shiny_ultra_rare', label: 'Shiny Ultra Rare' },
+                    { value: 'black_star_promo', label: 'Black Star Promo' }
+                  ] : [
+                    { value: 'common', label: 'Common' },
+                    { value: 'uncommon', label: 'Uncommon' },
+                    { value: 'rare', label: 'Rare' },
+                    { value: 'double_rare', label: 'Double Rare' },
+                    { value: 'ace_spec_rare', label: 'Ace Spec Rare' },
+                    { value: 'art_rare', label: 'Art Rare' },
+                    { value: 'super_rare', label: 'Super Rare' },
+                    { value: 'special_art_rare', label: 'Special Art Rare' },
+                    { value: 'ultra_rare', label: 'Ultra Rare' },
+                    { value: 'shiny_rare', label: 'Shiny Rare' },
+                    { value: 'shiny_super_rare', label: 'Shiny Super Rare' },
+                    { value: 'black_star_promo', label: 'Black Star Promo' }
+                  ]).map((rarity) => (
+                    <button
+                      key={rarity.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          rarities: prev.rarities.includes(rarity.value)
+                            ? prev.rarities.filter(r => r !== rarity.value)
+                            : [...prev.rarities, rarity.value]
+                        }))
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.rarities.includes(rarity.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {rarity.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Variants */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Variants</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'holos', label: 'Holos' },
+                    { value: 'reverse_holos', label: 'Reverse Holos' },
+                    { value: 'first_editions', label: '1st Editions' }
+                  ].map((variant) => (
+                    <button
+                      key={variant.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          variants: prev.variants.includes(variant.value)
+                            ? prev.variants.filter(v => v !== variant.value)
+                            : [...prev.variants, variant.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.variants.includes(variant.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {variant.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Formats */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Formats</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'unlimited', label: 'Unlimited' },
+                    { value: 'expanded', label: 'Expanded' },
+                    { value: 'standard', label: 'Standard' }
+                  ].map((format) => (
+                    <button
+                      key={format.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          formats: prev.formats.includes(format.value)
+                            ? prev.formats.filter(f => f !== format.value)
+                            : [...prev.formats, format.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.formats.includes(format.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {format.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regulation Markings */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Regulation Markings</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map((marking) => (
+                    <button
+                      key={marking}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          regulationMarkings: prev.regulationMarkings.includes(marking)
+                            ? prev.regulationMarkings.filter(m => m !== marking)
+                            : [...prev.regulationMarkings, marking]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.regulationMarkings.includes(marking)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {marking}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Conditions */}
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-3">Conditions</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'near_mint', label: 'Near Mint' },
+                    { value: 'lightly_played', label: 'Lightly Played' },
+                    { value: 'moderately_played', label: 'Moderately Played' },
+                    { value: 'heavily_played', label: 'Heavily Played' },
+                    { value: 'damaged', label: 'Damaged' }
+                  ].map((condition) => (
+                    <button
+                      key={condition.value}
+                      onClick={() => {
+                        setFilterSettings(prev => ({
+                          ...prev,
+                          conditions: prev.conditions.includes(condition.value)
+                            ? prev.conditions.filter(c => c !== condition.value)
+                            : [...prev.conditions, condition.value]
+                        }))
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        filterSettings.conditions.includes(condition.value)
+                          ? 'bg-[#605DEC] text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {condition.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-700">
+              <button
+                onClick={() => {
+                  setFilterSettings({
+                    cardStatus: 'all',
+                    languages: [],
+                    products: [],
+                    energies: [],
+                    supertype: [],
+                    rarityType: 'international',
+                    rarities: [],
+                    variants: [],
+                    formats: [],
+                    regulationMarkings: [],
+                    conditions: []
+                  })
+                }}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Clear All
+              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFilterModal(false)}
+                  className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowFilterModal(false)}
+                  className="px-6 py-2 bg-[#605DEC] hover:bg-[#4F46E5] text-white rounded-lg transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       </div>
     </div>
   )
-}
+  }
+
+  // Default return for main dashboard
+  return (
+    <div 
+      className="min-h-screen bg-background text-accent transition-all duration-300 ease-in-out"
+      style={{ 
+        height: '100vh',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
+        position: 'relative'
+      }}
+    >
+      {/* Header */}
+      <div className="px-4 py-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-white">Card Collector</h1>
+          <div className="flex items-center gap-4">
+            <button className="text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 1 0-15 0v5h5l-5 5-5-5h5v-5a7.5 7.5 0 1 1 15 0v5z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div className="px-4">
+        <p className="text-white text-center py-8">Welcome to Card Collector!</p>
+      </div>
+    </div>
+  )
 }
