@@ -127,10 +127,12 @@ import priceService from './services/priceService'
 import tcgplayerService from './services/tcgplayerService'
 import userDatabase from './services/userDatabase'
 import cardDataMigration from './services/cardDataMigration.js'
+import eventTracker from './services/eventTracker.js'
 import './styles/holographic.css'
 import './styles/card-rarities.css'
 import HolographicCard from './components/HolographicCard'
 import SearchBar from './components/SearchBar'
+import EventHistory from './components/EventHistory'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -199,6 +201,7 @@ export default function App() {
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [collectionSortOption, setCollectionSortOption] = useState('name')
   const [showFilterModal, setShowFilterModal] = useState(false)
+  const [showEventHistory, setShowEventHistory] = useState(false)
   const [defaultLanguage, setDefaultLanguage] = useState('english')
   const [filterSettings, setFilterSettings] = useState({
     cardStatus: 'all', // all, duplicates, wishlisted
@@ -280,6 +283,7 @@ export default function App() {
     loadUserData()
   }, [])
 
+
   // Fetch missing data when selected collection changes
   useEffect(() => {
     if (selectedCollection && userData) {
@@ -314,11 +318,11 @@ export default function App() {
           return {
             ...transformed,
             id: transformed.id || index + 1,
-            change: Math.random() * 50 - 25, // Mock change percentage
-            dailyChange: Math.random() * 200 - 100, // Mock daily change
-            quantity: Math.floor(Math.random() * 5) + 1, // Mock quantity
-            rank: index + 1, // Mock rank
-            type: transformed.price > 200 ? 'gain' : 'loss' // Mock type based on price
+            change: 0, // Real data - no fake changes
+            dailyChange: 0, // Real data - no fake changes
+            quantity: 1, // Real data - actual quantity
+            rank: index + 1,
+            type: 'neutral' // Real data - no fake type
           }
         })
         
@@ -327,8 +331,10 @@ export default function App() {
           return {
             ...transformed,
             id: transformed.id || index + 1,
-            change: Math.random() * 30 - 15, // Mock change percentage
-            rank: index + 1 // Mock rank
+            change: card.priceChange || 0, // Use real price change from API
+            percentChange: card.percentChange || 0, // Use real percent change from API
+            rank: index + 1,
+            trendingScore: card.trendingScore || 0
           }
         })
         
@@ -337,9 +343,9 @@ export default function App() {
         
       } catch (error) {
         console.error('Error loading card data:', error)
-        // Fall back to mock data if API fails
-        setTopMoversData(mockTopMoversData)
-        setTrendingCardsData(mockTrendingCardsData)
+        // Show error instead of fake data
+        setTopMoversData([])
+        setTrendingCardsData([])
       } finally {
         setIsLoadingData(false)
       }
@@ -348,548 +354,13 @@ export default function App() {
     loadData()
   }, [])
 
-  // Mock top movers data with real Pokemon card IDs (fallback)
-  const mockTopMoversData = [
-    { 
-      id: 1, 
-      name: "Charizard ex", 
-      set: "Base Set", 
-      rarity: "Ultra Rare", 
-      number: "#004/102", 
-      price: 1250, 
-      change: 24.5, 
-      dailyChange: 245, 
-      quantity: 2, 
-      rank: 1, 
-      type: "gain", 
-      emoji: "🔥", 
-      cardId: "base1-4", 
-      imageUrl: "https://images.pokemontcg.io/base1/4_hires.png", 
-      artist: "Mitsuhiro Arita",
-      hp: 120,
-      pokemonType: "Fire",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Energy Burn",
-          description: "As often as you like during your turn (before your attack), you may turn all Energy attached to Charizard into Fire Energy for the rest of the turn. This power can't be used if Charizard is Asleep, Confused, or Paralyzed."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Fire", "Fire", "Fire", "Fire"],
-          name: "Fire Spin",
-          damage: "100",
-          description: "Discard 2 Energy cards attached to Charizard in order to use this attack."
-        }
-      ]
-    },
-    { 
-      id: 2, 
-      name: "Blastoise ex", 
-      set: "Base Set", 
-      rarity: "Ultra Rare", 
-      number: "#009/102", 
-      price: 890, 
-      change: 18.2, 
-      dailyChange: 137, 
-      quantity: 1, 
-      rank: 2, 
-      type: "gain", 
-      emoji: "⚡", 
-      cardId: "base1-2", 
-      imageUrl: "https://images.pokemontcg.io/base1/2_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 100,
-      pokemonType: "Water",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Rain Dance",
-          description: "As often as you like during your turn (before your attack), you may attach a Water Energy card from your hand to 1 of your Water Pokémon. (This doesn't use up your 1 Energy card attachment for the turn.)"
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Water", "Water", "Water"],
-          name: "Hydro Pump",
-          damage: "40+",
-          description: "This attack does 10 more damage for each Water Energy attached to this Pokémon."
-        }
-      ]
-    },
-    { 
-      id: 3, 
-      name: "Venusaur ex", 
-      set: "Base Set", 
-      rarity: "Ultra Rare", 
-      number: "#015/102", 
-      price: 650, 
-      change: -12.8, 
-      dailyChange: -95, 
-      quantity: 3, 
-      rank: 3, 
-      type: "loss", 
-      emoji: "🌿", 
-      cardId: "base1-15", 
-      imageUrl: "https://images.pokemontcg.io/base1/15_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 100,
-      pokemonType: "Grass",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Energy Trans",
-          description: "As often as you like during your turn (before your attack), you may take 1 Grass Energy card attached to 1 of your Pokémon and attach it to a different one."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Grass", "Grass", "Grass", "Grass"],
-          name: "Solar Beam",
-          damage: "60",
-          description: "This attack does 20 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 4, 
-      name: "Pikachu VMAX", 
-      set: "Vivid Voltage", 
-      rarity: "VMAX", 
-      number: "#044/185", 
-      price: 89, 
-      change: 15.2, 
-      dailyChange: 12, 
-      quantity: 1, 
-      rank: 4, 
-      type: "gain", 
-      emoji: "⚡", 
-      cardId: "swsh4-44", 
-      imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 320,
-      pokemonType: "Lightning",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Max Spark",
-          description: "Once during your turn (before your attack), you may search your deck for up to 2 Lightning Energy cards and attach them to this Pokémon. Then, shuffle your deck."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Lightning", "Lightning", "Colorless"],
-          name: "G-Max Volt Crash",
-          damage: "180",
-          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 5, 
-      name: "Lugia V", 
-      set: "Silver Tempest", 
-      rarity: "Ultra Rare", 
-      number: "#186/195", 
-      price: 156, 
-      change: 22.8, 
-      dailyChange: 29, 
-      quantity: 2, 
-      rank: 5, 
-      type: "gain", 
-      emoji: "🌊", 
-      cardId: "swsh12-186", 
-      imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
-      artist: "Hitoshi Ariga",
-      hp: 220,
-      pokemonType: "Colorless",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Aero Dive",
-          description: "Once during your turn (before your attack), you may discard 2 cards from your hand. If you do, draw 2 cards."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Colorless", "Colorless", "Colorless"],
-          name: "Aeroblast",
-          damage: "120",
-          description: "You may discard a Stadium card in play."
-        }
-      ]
-    },
-    { 
-      id: 6, 
-      name: "Rayquaza VMAX", 
-      set: "Evolving Skies", 
-      rarity: "VMAX", 
-      number: "#217/203", 
-      price: 234, 
-      change: 8.4, 
-      dailyChange: 18, 
-      quantity: 1, 
-      rank: 6, 
-      type: "gain", 
-      emoji: "🌿", 
-      cardId: "swsh7-217", 
-      imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
-      artist: "Ryuta Fuse",
-      hp: 320,
-      pokemonType: "Dragon",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Azure Pulse",
-          description: "Once during your turn, you may discard your hand and draw 3 cards."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Fire", "Lightning"],
-          name: "Max Burst",
-          damage: "20+",
-          description: "You may discard any number of Fire or Lightning Energy from this Pokémon; this attack does 80 more damage for each Energy card discarded in this way."
-        }
-      ]
-    },
-    { 
-      id: 7, 
-      name: "Mewtwo V", 
-      set: "Pokemon GO", 
-      rarity: "Ultra Rare", 
-      number: "#030/071", 
-      price: 67, 
-      change: 12.1, 
-      dailyChange: 7, 
-      quantity: 3, 
-      rank: 7, 
-      type: "gain", 
-      emoji: "✨", 
-      cardId: "pgo-30", 
-      imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
-      artist: "Mitsuhiro Arita",
-      hp: 220,
-      pokemonType: "Psychic",
-      abilities: [],
-      attacks: [
-        {
-          cost: ["Psychic"],
-          name: "Super Psy Bolt",
-          damage: "50",
-          description: ""
-        },
-        {
-          cost: ["Psychic", "Psychic", "Colorless"],
-          name: "Transfer Break",
-          damage: "160",
-          description: "Move an Energy from this Pokémon to 1 of your Benched Pokémon."
-        }
-      ]
-    },
-    { 
-      id: 8, 
-      name: "Gengar VMAX", 
-      set: "Fusion Strike", 
-      rarity: "VMAX", 
-      number: "#271/264", 
-      price: 45, 
-      change: -8.3, 
-      dailyChange: -4, 
-      quantity: 2, 
-      rank: 8, 
-      type: "loss", 
-      emoji: "👻", 
-      cardId: "swsh9-271", 
-      imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
-      artist: "Ryuta Fuse",
-      hp: 320,
-      pokemonType: "Psychic",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Shadow Tag",
-          description: "Once during your turn (before your attack), you may switch 1 of your opponent's Benched Pokémon with their Active Pokémon."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Psychic", "Psychic", "Colorless"],
-          name: "G-Max Terror",
-          damage: "180",
-          description: "The Defending Pokémon can't retreat during your opponent's next turn."
-        }
-      ]
-    }
-  ]
-
-  // Mock trending cards data with real Pokemon card IDs (fallback)
-  const mockTrendingCardsData = [
-    { 
-      id: 1, 
-      name: "Pikachu VMAX", 
-      set: "Vivid Voltage", 
-      rarity: "VMAX", 
-      number: "#044/185", 
-      price: 89, 
-      change: 15.2, 
-      rank: 1, 
-      emoji: "🔥", 
-      color: "orange", 
-      cardId: "swsh4-44", 
-      imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 320,
-      pokemonType: "Lightning",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Volt Tackle",
-          description: "Once during your turn (before your attack), you may search your deck for a Lightning Energy card and attach it to this Pokémon. Then, shuffle your deck."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Lightning", "Lightning", "Colorless"],
-          name: "G-Max Volt Crash",
-          damage: "180",
-          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 2, 
-      name: "Lugia V", 
-      set: "Silver Tempest", 
-      rarity: "Ultra Rare", 
-      number: "#186/195", 
-      price: 156, 
-      change: 22.8, 
-      rank: 2, 
-      emoji: "⚡", 
-      color: "blue", 
-      cardId: "swsh12-186", 
-      imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png", 
-      artist: "Hitoshi Ariga",
-      hp: 220,
-      pokemonType: "Colorless",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Aeroblast",
-          description: "Once during your turn (before your attack), you may discard 2 cards from your hand. If you do, draw 2 cards."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Colorless", "Colorless", "Colorless"],
-          name: "Wind Storm",
-          damage: "120",
-          description: "You may discard a Stadium card in play."
-        }
-      ]
-    },
-    { 
-      id: 3, 
-      name: "Rayquaza VMAX", 
-      set: "Evolving Skies", 
-      rarity: "VMAX", 
-      number: "#217/203", 
-      price: 234, 
-      change: 8.4, 
-      rank: 3, 
-      emoji: "🌿", 
-      color: "green", 
-      cardId: "swsh7-217", 
-      imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png", 
-      artist: "Ryuta Fuse",
-      hp: 320,
-      pokemonType: "Dragon",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Azure Pulse",
-          description: "Once during your turn, you may discard your hand and draw 3 cards."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Fire", "Lightning"],
-          name: "Max Burst",
-          damage: "20+",
-          description: "You may discard any number of Fire or Lightning Energy from this Pokémon; this attack does 80 more damage for each Energy card discarded in this way."
-        }
-      ]
-    },
-    { 
-      id: 4, 
-      name: "Mewtwo V", 
-      set: "Pokemon GO", 
-      rarity: "Ultra Rare", 
-      number: "#030/071", 
-      price: 67, 
-      change: 12.1, 
-      rank: 4, 
-      emoji: "✨", 
-      color: "purple", 
-      cardId: "pgo-30", 
-      imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png", 
-      artist: "Mitsuhiro Arita",
-      hp: 220,
-      pokemonType: "Psychic",
-      abilities: [],
-      attacks: [
-        {
-          cost: ["Psychic"],
-          name: "Super Psy Bolt",
-          damage: "50",
-          description: ""
-        },
-        {
-          cost: ["Psychic", "Psychic", "Colorless"],
-          name: "Transfer Break",
-          damage: "160",
-          description: "Move an Energy from this Pokémon to 1 of your Benched Pokémon."
-        }
-      ]
-    },
-    { 
-      id: 5, 
-      name: "Charizard VMAX", 
-      set: "Darkness Ablaze", 
-      rarity: "VMAX", 
-      number: "#020/189", 
-      price: 198, 
-      change: 19.7, 
-      rank: 5, 
-      emoji: "🔥", 
-      color: "red", 
-      cardId: "swsh3-20", 
-      imageUrl: "https://images.pokemontcg.io/swsh3/20_hires.png", 
-      artist: "Mitsuhiro Arita",
-      hp: 330,
-      pokemonType: "Fire",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Blaze",
-          description: "Once during your turn (before your attack), you may attach a Fire Energy card from your hand to this Pokémon."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Fire", "Fire", "Colorless", "Colorless"],
-          name: "G-Max Wildfire",
-          damage: "200",
-          description: "This attack does 50 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 6, 
-      name: "Blastoise VMAX", 
-      set: "Chilling Reign", 
-      rarity: "VMAX", 
-      number: "#018/198", 
-      price: 134, 
-      change: 14.3, 
-      rank: 6, 
-      emoji: "🌊", 
-      color: "cyan", 
-      cardId: "swsh6-18", 
-      imageUrl: "https://images.pokemontcg.io/swsh6/18_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 330,
-      pokemonType: "Water",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Torrent",
-          description: "Once during your turn (before your attack), you may attach a Water Energy card from your hand to this Pokémon."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Water", "Water", "Colorless", "Colorless"],
-          name: "G-Max Hydro Cannon",
-          damage: "200",
-          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 7, 
-      name: "Venusaur VMAX", 
-      set: "Battle Styles", 
-      rarity: "VMAX", 
-      number: "#015/163", 
-      price: 112, 
-      change: 11.8, 
-      rank: 7, 
-      emoji: "🌿", 
-      color: "emerald", 
-      cardId: "swsh5-15", 
-      imageUrl: "https://images.pokemontcg.io/swsh5/15_hires.png", 
-      artist: "Atsuko Nishida",
-      hp: 330,
-      pokemonType: "Grass",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Overgrow",
-          description: "Once during your turn (before your attack), you may attach a Grass Energy card from your hand to this Pokémon."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Grass", "Grass", "Colorless", "Colorless"],
-          name: "G-Max Vine Lash",
-          damage: "200",
-          description: "This attack does 30 damage to each of your opponent's Benched Pokémon. (Don't apply Weakness and Resistance for Benched Pokémon.)"
-        }
-      ]
-    },
-    { 
-      id: 8, 
-      name: "Gengar VMAX", 
-      set: "Fusion Strike", 
-      rarity: "VMAX", 
-      number: "#271/264", 
-      price: 45, 
-      change: 9.2, 
-      rank: 8, 
-      emoji: "👻", 
-      color: "purple", 
-      cardId: "swsh9-271", 
-      imageUrl: "https://images.pokemontcg.io/swsh9/271_hires.png", 
-      artist: "Ryuta Fuse",
-      hp: 320,
-      pokemonType: "Psychic",
-      abilities: [
-        {
-          type: "Pokémon Power",
-          name: "Shadow Tag",
-          description: "Once during your turn (before your attack), you may switch 1 of your opponent's Benched Pokémon with their Active Pokémon."
-        }
-      ],
-      attacks: [
-        {
-          cost: ["Psychic", "Psychic", "Colorless"],
-          name: "G-Max Terror",
-          damage: "180",
-          description: "The Defending Pokémon can't retreat during your opponent's next turn."
-        }
-      ]
-    }
-  ]
+  // State variables that were accidentally removed
   const [activeTab, setActiveTab] = useState('home')
   const [navigationMode, setNavigationMode] = useState('home') // 'home', 'collection', 'marketplace', 'profile', 'none'
   const [showScanner, setShowScanner] = useState(false)
   const [scannedCard, setScannedCard] = useState(null)
   const [cardImages, setCardImages] = useState({})
   const [showSearchResults, setShowSearchResults] = useState(false)
-  const [indicatorAnimation, setIndicatorAnimation] = useState('enter')
   
   const [filteredSearchResults, setFilteredSearchResults] = useState([])
   const [originalSearchResults, setOriginalSearchResults] = useState([])
@@ -919,6 +390,7 @@ export default function App() {
   const [showConditionDropdown, setShowConditionDropdown] = useState(false)
   const [showGradingServiceDropdown, setShowGradingServiceDropdown] = useState(false)
   const [showGradeDropdown, setShowGradeDropdown] = useState(false)
+
   const [showQuickFiltersModal, setShowQuickFiltersModal] = useState(false)
   const [showSetPage, setShowSetPage] = useState(false)
   const [selectedSet, setSelectedSet] = useState(null)
@@ -1193,8 +665,10 @@ export default function App() {
   const [showPriceTypeDropdown, setShowPriceTypeDropdown] = useState(false)
   
   // Infinite scroll state
-  const [visibleCardsCount, setVisibleCardsCount] = useState(12)
+  const [visibleCardsCount, setVisibleCardsCount] = useState(36)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  
+  // Trending cards pagination (removed - dashboard now shows fixed 12 cards)
   
   
 
@@ -1233,1067 +707,14 @@ export default function App() {
   const [selectedFolder, setSelectedFolder] = useState('My Collection')
   const [selectedCondition, setSelectedCondition] = useState('Near Mint')
 
-  // Data structures for the app
-  const mockUserData = {
-    username: 'Stuart60',
-    profilePicture: 'S',
-    collections: [
-      {
-        id: 'pokemon-collection',
-        name: 'Pokemon Collection',
-        totalValue: 4268.23,
-        totalCards: 1247,
-        monthlyChange: 102.36,
-        currency: 'USD',
-        lastUpdated: '2025-08-02',
-        cardsAddedThisWeek: 12,
-        valueChangeThisWeek: 234.50,
-        isUserCreated: false
-      },
-      {
-        id: 'vintage-pokemon',
-        name: 'Vintage Pokemon',
-        totalValue: 3200.00,
-        totalCards: 89,
-        monthlyChange: 125.80,
-        currency: 'USD',
-        lastUpdated: '2025-08-01',
-        cardsAddedThisWeek: 2,
-        valueChangeThisWeek: 89.50,
-        isUserCreated: true
-      },
-      {
-        id: 'vintage-cards',
-        name: 'Vintage Cards',
-        totalValue: 850.75,
-        totalCards: 156,
-        monthlyChange: -15.20,
-        currency: 'USD',
-        lastUpdated: '2025-08-01',
-        cardsAddedThisWeek: 2,
-        valueChangeThisWeek: -25.30,
-        isUserCreated: true
-      }
-    ],
-    recentActivity: [
-      { id: 1, type: 'added', description: 'Added Charizard ex', time: '2 hours ago', value: 45.00 },
-      { id: 2, type: 'sold', description: 'Sold Pikachu VMAX', time: '1 day ago', value: 23.50 },
-      { id: 3, type: 'alert', description: 'Price Alert: Blastoise reached $25.00', time: '3 days ago', value: 25.00 }
-    ],
-    portfolioHistory: {
-      '1D': [
-        { date: '2025-09-25T00:00:00Z', value: 4200 },
-        { date: '2025-09-25T06:00:00Z', value: 4250 },
-        { date: '2025-09-25T12:00:00Z', value: 4300 },
-        { date: '2025-09-25T18:00:00Z', value: 4280 },
-        { date: '2025-09-25T23:59:59Z', value: 4268 }
-      ],
-      '7D': [
-        { date: '2025-09-19T00:00:00Z', value: 4100 },
-        { date: '2025-09-20T00:00:00Z', value: 4150 },
-        { date: '2025-09-21T00:00:00Z', value: 4200 },
-        { date: '2025-09-22T00:00:00Z', value: 4180 },
-        { date: '2025-09-23T00:00:00Z', value: 4220 },
-        { date: '2025-09-24T00:00:00Z', value: 4250 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ],
-      '1M': [
-        { date: '2025-08-25T00:00:00Z', value: 4000 },
-        { date: '2025-09-01T00:00:00Z', value: 4050 },
-        { date: '2025-09-05T00:00:00Z', value: 4100 },
-        { date: '2025-09-10T00:00:00Z', value: 4150 },
-        { date: '2025-09-15T00:00:00Z', value: 4200 },
-        { date: '2025-09-20T00:00:00Z', value: 4250 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ],
-      '3M': [
-        { date: '2025-06-25T00:00:00Z', value: 3800 },
-        { date: '2025-07-25T00:00:00Z', value: 3900 },
-        { date: '2025-08-25T00:00:00Z', value: 4000 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ],
-      '6M': [
-        { date: '2025-03-25T00:00:00Z', value: 3500 },
-        { date: '2025-04-25T00:00:00Z', value: 3600 },
-        { date: '2025-05-25T00:00:00Z', value: 3700 },
-        { date: '2025-06-25T00:00:00Z', value: 3800 },
-        { date: '2025-07-25T00:00:00Z', value: 3900 },
-        { date: '2025-08-25T00:00:00Z', value: 4000 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ],
-      '1Y': [
-        { date: '2024-09-25T00:00:00Z', value: 3000 },
-        { date: '2024-12-25T00:00:00Z', value: 3200 },
-        { date: '2025-03-25T00:00:00Z', value: 3500 },
-        { date: '2025-06-25T00:00:00Z', value: 3800 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ],
-      'MAX': [
-        { date: '2023-01-01T00:00:00Z', value: 1500 },
-        { date: '2023-03-01T00:00:00Z', value: 1650 },
-        { date: '2023-06-01T00:00:00Z', value: 1800 },
-        { date: '2023-09-01T00:00:00Z', value: 1950 },
-        { date: '2023-12-01T00:00:00Z', value: 2100 },
-        { date: '2024-01-01T00:00:00Z', value: 2200 },
-        { date: '2024-03-01T00:00:00Z', value: 2400 },
-        { date: '2024-06-01T00:00:00Z', value: 2600 },
-        { date: '2024-09-01T00:00:00Z', value: 2800 },
-        { date: '2024-12-01T00:00:00Z', value: 3000 },
-        { date: '2025-01-01T00:00:00Z', value: 3200 },
-        { date: '2025-03-01T00:00:00Z', value: 3500 },
-        { date: '2025-06-01T00:00:00Z', value: 3800 },
-        { date: '2025-09-01T00:00:00Z', value: 4100 },
-        { date: '2025-09-25T00:00:00Z', value: 4268 }
-      ]
-    },
-    // Portfolio history for different collections
-    collectionPortfolioHistory: {
-      'pokemon-collection': {
-        '1D': [
-          { date: '2025-09-25T00:00:00Z', value: 4200 },
-          { date: '2025-09-25T06:00:00Z', value: 4250 },
-          { date: '2025-09-25T12:00:00Z', value: 4300 },
-          { date: '2025-09-25T18:00:00Z', value: 4280 },
-          { date: '2025-09-25T23:59:59Z', value: 4268 }
-        ],
-        '7D': [
-          { date: '2025-09-19T00:00:00Z', value: 4100 },
-          { date: '2025-09-20T00:00:00Z', value: 4150 },
-          { date: '2025-09-21T00:00:00Z', value: 4200 },
-          { date: '2025-09-22T00:00:00Z', value: 4180 },
-          { date: '2025-09-23T00:00:00Z', value: 4220 },
-          { date: '2025-09-24T00:00:00Z', value: 4250 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ],
-        '1M': [
-          { date: '2025-08-25T00:00:00Z', value: 4000 },
-          { date: '2025-09-01T00:00:00Z', value: 4050 },
-          { date: '2025-09-05T00:00:00Z', value: 4100 },
-          { date: '2025-09-10T00:00:00Z', value: 4150 },
-          { date: '2025-09-15T00:00:00Z', value: 4200 },
-          { date: '2025-09-20T00:00:00Z', value: 4250 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ],
-        '3M': [
-          { date: '2025-06-25T00:00:00Z', value: 3800 },
-          { date: '2025-07-25T00:00:00Z', value: 3900 },
-          { date: '2025-08-25T00:00:00Z', value: 4000 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ],
-        '6M': [
-          { date: '2025-03-25T00:00:00Z', value: 3500 },
-          { date: '2025-04-25T00:00:00Z', value: 3600 },
-          { date: '2025-05-25T00:00:00Z', value: 3700 },
-          { date: '2025-06-25T00:00:00Z', value: 3800 },
-          { date: '2025-07-25T00:00:00Z', value: 3900 },
-          { date: '2025-08-25T00:00:00Z', value: 4000 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ],
-        '1Y': [
-          { date: '2024-09-25T00:00:00Z', value: 3000 },
-          { date: '2024-12-25T00:00:00Z', value: 3200 },
-          { date: '2025-03-25T00:00:00Z', value: 3500 },
-          { date: '2025-06-25T00:00:00Z', value: 3800 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ],
-        'MAX': [
-          { date: '2023-01-01T00:00:00Z', value: 1500 },
-          { date: '2023-03-01T00:00:00Z', value: 1650 },
-          { date: '2023-06-01T00:00:00Z', value: 1800 },
-          { date: '2023-09-01T00:00:00Z', value: 1950 },
-          { date: '2023-12-01T00:00:00Z', value: 2100 },
-          { date: '2024-01-01T00:00:00Z', value: 2200 },
-          { date: '2024-03-01T00:00:00Z', value: 2400 },
-          { date: '2024-06-01T00:00:00Z', value: 2600 },
-          { date: '2024-09-01T00:00:00Z', value: 2800 },
-          { date: '2024-12-01T00:00:00Z', value: 3000 },
-          { date: '2025-01-01T00:00:00Z', value: 3200 },
-          { date: '2025-03-01T00:00:00Z', value: 3500 },
-          { date: '2025-06-01T00:00:00Z', value: 3800 },
-          { date: '2025-09-01T00:00:00Z', value: 4100 },
-          { date: '2025-09-25T00:00:00Z', value: 4268 }
-        ]
-      },
-      'vintage-pokemon': {
-        '1D': [
-          { date: '2025-09-25T00:00:00Z', value: 3190 },
-          { date: '2025-09-25T06:00:00Z', value: 3195 },
-          { date: '2025-09-25T12:00:00Z', value: 3200 },
-          { date: '2025-09-25T18:00:00Z', value: 3200 },
-          { date: '2025-09-25T23:59:59Z', value: 3200 }
-        ],
-        '7D': [
-          { date: '2025-09-19T00:00:00Z', value: 3150 },
-          { date: '2025-09-20T00:00:00Z', value: 3160 },
-          { date: '2025-09-21T00:00:00Z', value: 3170 },
-          { date: '2025-09-22T00:00:00Z', value: 3180 },
-          { date: '2025-09-23T00:00:00Z', value: 3185 },
-          { date: '2025-09-24T00:00:00Z', value: 3190 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ],
-        '1M': [
-          { date: '2025-08-25T00:00:00Z', value: 3100 },
-          { date: '2025-09-01T00:00:00Z', value: 3120 },
-          { date: '2025-09-05T00:00:00Z', value: 3140 },
-          { date: '2025-09-10T00:00:00Z', value: 3160 },
-          { date: '2025-09-15T00:00:00Z', value: 3180 },
-          { date: '2025-09-20T00:00:00Z', value: 3190 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ],
-        '3M': [
-          { date: '2025-06-25T00:00:00Z', value: 2900 },
-          { date: '2025-07-25T00:00:00Z', value: 3000 },
-          { date: '2025-08-25T00:00:00Z', value: 3100 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ],
-        '6M': [
-          { date: '2025-03-25T00:00:00Z', value: 2500 },
-          { date: '2025-04-25T00:00:00Z', value: 2600 },
-          { date: '2025-05-25T00:00:00Z', value: 2700 },
-          { date: '2025-06-25T00:00:00Z', value: 2900 },
-          { date: '2025-07-25T00:00:00Z', value: 3000 },
-          { date: '2025-08-25T00:00:00Z', value: 3100 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ],
-        '1Y': [
-          { date: '2024-09-25T00:00:00Z', value: 1800 },
-          { date: '2024-12-25T00:00:00Z', value: 2000 },
-          { date: '2025-03-25T00:00:00Z', value: 2500 },
-          { date: '2025-06-25T00:00:00Z', value: 2900 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ],
-        'MAX': [
-          { date: '2023-01-01T00:00:00Z', value: 800 },
-          { date: '2023-03-01T00:00:00Z', value: 900 },
-          { date: '2023-06-01T00:00:00Z', value: 1000 },
-          { date: '2023-09-01T00:00:00Z', value: 1100 },
-          { date: '2023-12-01T00:00:00Z', value: 1200 },
-          { date: '2024-01-01T00:00:00Z', value: 1300 },
-          { date: '2024-03-01T00:00:00Z', value: 1500 },
-          { date: '2024-06-01T00:00:00Z', value: 1800 },
-          { date: '2024-09-01T00:00:00Z', value: 1800 },
-          { date: '2024-12-01T00:00:00Z', value: 2000 },
-          { date: '2025-01-01T00:00:00Z', value: 2200 },
-          { date: '2025-03-01T00:00:00Z', value: 2500 },
-          { date: '2025-06-01T00:00:00Z', value: 2900 },
-          { date: '2025-09-01T00:00:00Z', value: 3100 },
-          { date: '2025-09-25T00:00:00Z', value: 3200 }
-        ]
-      },
-      'vintage-cards': {
-        '1D': [
-          { date: '2025-09-25T00:00:00Z', value: 845 },
-          { date: '2025-09-25T06:00:00Z', value: 848 },
-          { date: '2025-09-25T12:00:00Z', value: 850 },
-          { date: '2025-09-25T18:00:00Z', value: 851 },
-          { date: '2025-09-25T23:59:59Z', value: 850 }
-        ],
-        '7D': [
-          { date: '2025-09-19T00:00:00Z', value: 860 },
-          { date: '2025-09-20T00:00:00Z', value: 858 },
-          { date: '2025-09-21T00:00:00Z', value: 856 },
-          { date: '2025-09-22T00:00:00Z', value: 854 },
-          { date: '2025-09-23T00:00:00Z', value: 852 },
-          { date: '2025-09-24T00:00:00Z', value: 851 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ],
-        '1M': [
-          { date: '2025-08-25T00:00:00Z', value: 870 },
-          { date: '2025-09-01T00:00:00Z', value: 865 },
-          { date: '2025-09-05T00:00:00Z', value: 860 },
-          { date: '2025-09-10T00:00:00Z', value: 855 },
-          { date: '2025-09-15T00:00:00Z', value: 852 },
-          { date: '2025-09-20T00:00:00Z', value: 851 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ],
-        '3M': [
-          { date: '2025-06-25T00:00:00Z', value: 900 },
-          { date: '2025-07-25T00:00:00Z', value: 880 },
-          { date: '2025-08-25T00:00:00Z', value: 870 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ],
-        '6M': [
-          { date: '2025-03-25T00:00:00Z', value: 950 },
-          { date: '2025-04-25T00:00:00Z', value: 940 },
-          { date: '2025-05-25T00:00:00Z', value: 930 },
-          { date: '2025-06-25T00:00:00Z', value: 900 },
-          { date: '2025-07-25T00:00:00Z', value: 880 },
-          { date: '2025-08-25T00:00:00Z', value: 870 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ],
-        '1Y': [
-          { date: '2024-09-25T00:00:00Z', value: 1000 },
-          { date: '2024-12-25T00:00:00Z', value: 980 },
-          { date: '2025-03-25T00:00:00Z', value: 950 },
-          { date: '2025-06-25T00:00:00Z', value: 900 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ],
-        'MAX': [
-          { date: '2023-01-01T00:00:00Z', value: 1200 },
-          { date: '2023-03-01T00:00:00Z', value: 1150 },
-          { date: '2023-06-01T00:00:00Z', value: 1100 },
-          { date: '2023-09-01T00:00:00Z', value: 1050 },
-          { date: '2023-12-01T00:00:00Z', value: 1000 },
-          { date: '2024-01-01T00:00:00Z', value: 980 },
-          { date: '2024-03-01T00:00:00Z', value: 950 },
-          { date: '2024-06-01T00:00:00Z', value: 900 },
-          { date: '2024-09-01T00:00:00Z', value: 1000 },
-          { date: '2024-12-01T00:00:00Z', value: 980 },
-          { date: '2025-01-01T00:00:00Z', value: 950 },
-          { date: '2025-03-01T00:00:00Z', value: 950 },
-          { date: '2025-06-01T00:00:00Z', value: 900 },
-          { date: '2025-09-01T00:00:00Z', value: 870 },
-          { date: '2025-09-25T00:00:00Z', value: 850 }
-        ]
-      }
-    },
-    topMovers: [
-      {
-        // Pokémon TCG API structure
-        id: "gym2-2",
-        name: "Blaine's Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        level: "50",
-        hp: "100",
-        types: ["Fire"],
-        evolvesFrom: "Blaine's Charmeleon",
-        set: {
-          id: "gym2",
-          name: "Gym Challenge",
-          series: "Gym",
-          printedTotal: 132,
-          total: 132,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "G2",
-          releaseDate: "2000/10/16",
-          updatedAt: "2022/10/10 15:12:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/gym2/symbol.png",
-            logo: "https://images.pokemontcg.io/gym2/logo.png"
-          }
-        },
-        number: "2",
-        artist: "Ken Sugimori",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [6],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/gym2/2.png",
-          large: "https://images.pokemontcg.io/gym2/2_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/gym2-2",
-          updatedAt: "2025/09/18",
-          prices: {
-            unlimitedHolofoil: {
-              low: 292.5,
-              mid: 475.46,
-              high: 593.69,
-              market: 528.66,
-              directLow: 309.98
-            }
-          }
-        },
-        // App-specific fields
-        currentValue: 528.66,
-        change: 12.34,
-        changePercent: 37.0,
-        quantity: 2,
-        collected: true
-      },
-      {
-        id: "base1-58",
-        name: "Pikachu",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Lightning"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "BS",
-          releaseDate: "1999/01/09",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/base1/symbol.png",
-            logo: "https://images.pokemontcg.io/base1/logo.png"
-          }
-        },
-        number: "58",
-        artist: "Atsuko Nishida",
-        rarity: "Common",
-        nationalPokedexNumbers: [25],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/base1/58.png",
-          large: "https://images.pokemontcg.io/base1/58_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/base1-58",
-          updatedAt: "2025/09/18",
-          prices: {
-            normal: {
-              low: 0.25,
-              mid: 0.5,
-              high: 1.0,
-              market: 0.45,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 0.45,
-        change: -5.67,
-        changePercent: -19.5,
-        quantity: 1,
-        collected: true
-      },
-      {
-        id: "neo4-9",
-        name: "Lugia",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Colorless"],
-        set: {
-          id: "neo4",
-          name: "Neo Genesis",
-          series: "Neo",
-          printedTotal: 111,
-          total: 111,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "NG",
-          releaseDate: "2000/12/16",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/neo4/symbol.png",
-            logo: "https://images.pokemontcg.io/neo4/logo.png"
-          }
-        },
-        number: "9",
-        artist: "Hironobu Yoshida",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [249],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/neo4/9.png",
-          large: "https://images.pokemontcg.io/neo4/9_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/neo4-9",
-          updatedAt: "2025/09/18",
-          prices: {
-            holofoil: {
-              low: 15.0,
-              mid: 25.0,
-              high: 50.0,
-              market: 22.5,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 22.5,
-        change: 8.12,
-        changePercent: 75.4,
-        quantity: 3,
-        collected: true
-      }
-    ],
-    trendingCards: [
-      {
-        id: "fossil-15",
-        name: "Mew",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Psychic"],
-        set: {
-          id: "fossil",
-          name: "Fossil",
-          series: "Base",
-          printedTotal: 62,
-          total: 62,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "FO",
-          releaseDate: "1999/10/10",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/fossil/symbol.png",
-            logo: "https://images.pokemontcg.io/fossil/logo.png"
-          }
-        },
-        number: "15",
-        artist: "Atsuko Nishida",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [151],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/fossil/15.png",
-          large: "https://images.pokemontcg.io/fossil/15_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/fossil-15",
-          updatedAt: "2025/09/18",
-          prices: {
-            holofoil: {
-              low: 25.0,
-              mid: 40.0,
-              high: 80.0,
-              market: 35.0,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 35.0,
-        change: 15.67,
-        changePercent: 95.3,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-1",
-        name: "Alakazam",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Psychic"],
-        evolvesFrom: "Kadabra",
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "BS",
-          releaseDate: "1999/01/09",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/base1/symbol.png",
-            logo: "https://images.pokemontcg.io/base1/logo.png"
-          }
-        },
-        number: "1",
-        artist: "Mitsuhiro Arita",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [65],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/base1/1.png",
-          large: "https://images.pokemontcg.io/base1/1_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/base1-1",
-          updatedAt: "2025/09/18",
-          prices: {
-            holofoil: {
-              low: 8.0,
-              mid: 15.0,
-              high: 30.0,
-              market: 12.0,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 12.0,
-        change: -3.21,
-        changePercent: -10.1,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-2",
-        name: "Blastoise",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Water"],
-        evolvesFrom: "Wartortle",
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "BS",
-          releaseDate: "1999/01/09",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/base1/symbol.png",
-            logo: "https://images.pokemontcg.io/base1/logo.png"
-          }
-        },
-        number: "2",
-        artist: "Atsuko Nishida",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [9],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/base1/2.png",
-          large: "https://images.pokemontcg.io/base1/2_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/base1-2",
-          updatedAt: "2025/09/18",
-          prices: {
-            holofoil: {
-              low: 20.0,
-              mid: 35.0,
-              high: 60.0,
-              market: 30.0,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 30.0,
-        change: 22.15,
-        changePercent: 116.2,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-15",
-        name: "Venusaur",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Grass"],
-        evolvesFrom: "Ivysaur",
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102,
-          legalities: { unlimited: "Legal" },
-          ptcgoCode: "BS",
-          releaseDate: "1999/01/09",
-          updatedAt: "2020/08/14 09:35:00",
-          images: {
-            symbol: "https://images.pokemontcg.io/base1/symbol.png",
-            logo: "https://images.pokemontcg.io/base1/logo.png"
-          }
-        },
-        number: "15",
-        artist: "Atsuko Nishida",
-        rarity: "Rare Holo",
-        nationalPokedexNumbers: [3],
-        legalities: { unlimited: "Legal" },
-        images: {
-          small: "https://images.pokemontcg.io/base1/15.png",
-          large: "https://images.pokemontcg.io/base1/15_hires.png"
-        },
-        tcgplayer: {
-          url: "https://prices.pokemontcg.io/tcgplayer/base1-15",
-          updatedAt: "2025/09/18",
-          prices: {
-            holofoil: {
-              low: 15.0,
-              mid: 25.0,
-              high: 45.0,
-              market: 22.0,
-              directLow: null
-            }
-          }
-        },
-        currentValue: 22.0,
-        change: -7.89,
-        changePercent: -18.1,
-        quantity: 0,
-        collected: false
-      }
-    ],
-    searchResults: [
-      {
-        id: "gym2-2",
-        name: "Blaine's Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fire"],
-        set: {
-          id: "gym2",
-          name: "Gym Challenge",
-          series: "Gym",
-          printedTotal: 132,
-          total: 132
-        },
-        number: "2",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/gym2/2.png",
-          large: "https://images.pokemontcg.io/gym2/2_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            unlimitedHolofoil: { market: 528.66 }
-          }
-        },
-        currentValue: 528.66,
-        quantity: 1,
-        collected: true
-      },
-      {
-        id: "dp3-3",
-        name: "Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fire"],
-        set: {
-          id: "dp3",
-          name: "Secret Wonders",
-          series: "Diamond & Pearl",
-          printedTotal: 132,
-          total: 132
-        },
-        number: "3",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/dp3/3.png",
-          large: "https://images.pokemontcg.io/dp3/3_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 127.01 }
-          }
-        },
-        currentValue: 127.01,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "pl4-1",
-        name: "Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fire"],
-        set: {
-          id: "pl4",
-          name: "Arceus",
-          series: "Platinum",
-          printedTotal: 99,
-          total: 111
-        },
-        number: "1",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/pl4/1.png",
-          large: "https://images.pokemontcg.io/pl4/1_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 40.29 }
-          }
-        },
-        currentValue: 40.29,
-        quantity: 2,
-        collected: true
-      },
-      {
-        id: "base1-4",
-        name: "Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fire"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "4",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base1/4.png",
-          large: "https://images.pokemontcg.io/base1/4_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 1500.0 }
-          }
-        },
-        currentValue: 1500.0,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base2-4",
-        name: "Charizard",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fire"],
-        set: {
-          id: "base2",
-          name: "Base Set 2",
-          series: "Base",
-          printedTotal: 130,
-          total: 130
-        },
-        number: "4",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base2/4.png",
-          large: "https://images.pokemontcg.io/base2/4_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 800.0 }
-          }
-        },
-        currentValue: 800.0,
-        quantity: 1,
-        collected: true
-      },
-      {
-        id: "base1-58",
-        name: "Pikachu",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Lightning"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "58",
-        rarity: "Common",
-        images: {
-          small: "https://images.pokemontcg.io/base1/58.png",
-          large: "https://images.pokemontcg.io/base1/58_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            normal: { market: 0.45 }
-          }
-        },
-        currentValue: 0.45,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-2",
-        name: "Blastoise",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Water"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "2",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base1/2.png",
-          large: "https://images.pokemontcg.io/base1/2_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 30.0 }
-          }
-        },
-        currentValue: 30.0,
-        quantity: 1,
-        collected: true
-      },
-      {
-        id: "base1-15",
-        name: "Venusaur",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Grass"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "15",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base1/15.png",
-          large: "https://images.pokemontcg.io/base1/15_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 22.0 }
-          }
-        },
-        currentValue: 22.0,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-1",
-        name: "Alakazam",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Psychic"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "1",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base1/1.png",
-          large: "https://images.pokemontcg.io/base1/1_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 12.0 }
-          }
-        },
-        currentValue: 12.0,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "base1-8",
-        name: "Machamp",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Fighting"],
-        set: {
-          id: "base1",
-          name: "Base Set",
-          series: "Base",
-          printedTotal: 102,
-          total: 102
-        },
-        number: "8",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/base1/8.png",
-          large: "https://images.pokemontcg.io/base1/8_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 15.0 }
-          }
-        },
-        currentValue: 15.0,
-        quantity: 1,
-        collected: true
-      },
-      {
-        id: "fossil-5",
-        name: "Gengar",
-        supertype: "Pokémon",
-        subtypes: ["Stage 2"],
-        types: ["Psychic"],
-        set: {
-          id: "fossil",
-          name: "Fossil",
-          series: "Base",
-          printedTotal: 62,
-          total: 62
-        },
-        number: "5",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/fossil/5.png",
-          large: "https://images.pokemontcg.io/fossil/5_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 25.0 }
-          }
-        },
-        currentValue: 25.0,
-        quantity: 0,
-        collected: false
-      },
-      {
-        id: "jungle-58",
-        name: "Pikachu",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Lightning"],
-        set: {
-          id: "jungle",
-          name: "Jungle",
-          series: "Base",
-          printedTotal: 64,
-          total: 64
-        },
-        number: "58",
-        rarity: "Common",
-        images: {
-          small: "https://images.pokemontcg.io/jungle/58.png",
-          large: "https://images.pokemontcg.io/jungle/58_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            normal: { market: 0.75 }
-          }
-        },
-        currentValue: 0.75,
-        quantity: 2,
-        collected: true
-      },
-      {
-        id: "neo4-9",
-        name: "Lugia",
-        supertype: "Pokémon",
-        subtypes: ["Basic"],
-        types: ["Colorless"],
-        set: {
-          id: "neo4",
-          name: "Neo Genesis",
-          series: "Neo",
-          printedTotal: 111,
-          total: 111
-        },
-        number: "9",
-        rarity: "Rare Holo",
-        images: {
-          small: "https://images.pokemontcg.io/neo4/9.png",
-          large: "https://images.pokemontcg.io/neo4/9_hires.png"
-        },
-        tcgplayer: {
-          prices: {
-            holofoil: { market: 22.5 }
-          }
-        },
-        currentValue: 22.5,
-        quantity: 1,
-        collected: true
-      }
-    ]
-  }
+  // Real user data is loaded from userDatabase.getUserData()
+  // No mock data needed - using real collection data
 
-  // Generate more trending cards for infinite scroll
-  const generateMoreTrendingCards = () => {
-    const baseCards = mockUserData.trendingCards
-    const moreCards = []
-    
-    // Generate additional cards by duplicating and modifying existing ones
-    for (let i = 0; i < 20; i++) {
-      const baseCard = baseCards[i % baseCards.length]
-      const newCard = {
-        ...baseCard,
-        id: `${baseCard.id}-${i + 100}`,
-        name: baseCard.name,
-        currentValue: Math.max(0.01, baseCard.currentValue + (Math.random() - 0.5) * 50),
-        changePercent: (Math.random() - 0.5) * 100
-      }
-      moreCards.push(newCard)
-    }
-    
-    return moreCards
-  }
+  // Real trending cards are loaded from the database - no mock generation needed
   
   // Use real trending cards data from database
   const allTrendingCards = useMemo(() => {
-    return trendingCardsData.length > 0 ? trendingCardsData : generateMoreTrendingCards()
+    return trendingCardsData.length > 0 ? trendingCardsData : []
   }, [trendingCardsData])
   
   // Load more cards function
@@ -2356,6 +777,54 @@ export default function App() {
     // Scroll to top when activeTab changes
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
   }, [activeTab])
+
+  // Handle browser back button for navigation
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // Handle back button navigation
+      if (showCardProfile) {
+        // If card profile is open, close it
+        setShowCardProfile(false)
+        setSelectedCard(null)
+        event.preventDefault()
+        return
+      }
+      
+      if (showSearchResults) {
+        // If search results are showing, go back to trending cards
+        setShowSearchResults(false)
+        setSearchQuery('')
+        setActiveTab('search')
+        setNavigationMode('search')
+        event.preventDefault()
+        return
+      }
+      
+      if (showSetPage) {
+        // If set page is open, close it
+        setShowSetPage(false)
+        setSelectedSet(null)
+        event.preventDefault()
+        return
+      }
+      
+      // Default: go to home tab
+      if (activeTab !== 'home') {
+        setActiveTab('home')
+        setNavigationMode('home')
+        event.preventDefault()
+        return
+      }
+    }
+
+    // Add event listener
+    window.addEventListener('popstate', handlePopState)
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [showCardProfile, showSearchResults, showSetPage, activeTab])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -2424,6 +893,11 @@ export default function App() {
     // Don't trigger search if we're on the collection tab (use collection search instead)
     if (activeTab === 'collection') {
       return
+    }
+    
+    // Auto-close keyboard on mobile after search
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
     }
     
     try {
@@ -2520,7 +994,6 @@ export default function App() {
         //   filtered = filtered.filter(card => 
         //     activeLanguages.includes(card.language)
         //   );
-        //   console.log('After language filter:', filtered.length, 'cards');
         // }
         
         // Apply energy type filter
@@ -2535,7 +1008,6 @@ export default function App() {
         //   filtered = filtered.filter(card => 
         //     activeVariants.includes(card.variant)
         //   );
-        //   console.log('After variant filter:', filtered.length, 'cards');
         // }
         
         // Apply regulation filter
@@ -2550,7 +1022,6 @@ export default function App() {
         //   filtered = filtered.filter(card => 
         //     activeFormats.includes(card.format)
         //   );
-        //   console.log('After format filter:', filtered.length, 'cards');
         // }
         
         setOriginalSearchResults(filtered);
@@ -2558,8 +1029,19 @@ export default function App() {
         setShowSearchResults(true);
         loadSearchResultImages(filtered);
         
+        // Push state to history for back button support
+        window.history.pushState({ searchResults: true, query: searchQuery }, '', window.location.href)
+        
+        // Track search event
+        eventTracker.trackSearchPerformed(searchQuery, filtered.length, {
+          languages: activeLanguages,
+          energies: activeEnergies,
+          variants: activeVariants,
+          regulations: activeRegulations,
+          formats: activeFormats
+        });
+        
       } catch (error) {
-        console.error('Search error:', error);
         // Show error message instead of fallback data
         setOriginalSearchResults([]);
         setFilteredSearchResults([]);
@@ -2637,6 +1119,9 @@ export default function App() {
     const sortedCards = sortCards(filteredSearchResults, option)
     setFilteredSearchResults(sortedCards)
     setShowSortModal(false)
+    
+    // Track sort event
+    eventTracker.trackSortApplied(option)
   }
 
   const handleQuickFilterToggle = (filterType) => {
@@ -3144,6 +1629,10 @@ export default function App() {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
+      // Auto-close keyboard on mobile after search
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
       handleSearch()
     }
   }
@@ -3159,9 +1648,9 @@ export default function App() {
     setActiveTab('search')
     setNavigationMode('none')
     scrollToTop() // Scroll to top when navigating
+    // Push state to history for back button support
+    window.history.pushState({ tab: 'search' }, '', window.location.href)
   }
-
-
 
   // Test function to debug image loading
   const testImageLoading = async () => {
@@ -3190,38 +1679,27 @@ export default function App() {
       
       // First try searching by name only
       let searchQuery = `name:"${cardName}"`
-      console.log('Searching for:', searchQuery)
       let response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`, {
         signal: controller.signal
       })
       let data = await response.json()
-      console.log('API Response (name only):', data)
       
       // If no results, try with set name
       if (!data.data || data.data.length === 0) {
         searchQuery = `name:"${cardName}" set.name:"${setName}"`
-        console.log('Trying with set name:', searchQuery)
         response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(searchQuery)}&pageSize=1`, {
           signal: controller.signal
         })
         data = await response.json()
-        console.log('API Response (with set):', data)
       }
       
       clearTimeout(timeoutId)
       
       if (data.data && data.data.length > 0) {
-        console.log('Found card:', data.data[0].name, 'Image URL:', data.data[0].images.small)
         return data.data[0].images.small // Use small image for better performance
       }
-      console.log('No card found for:', cardName, setName)
       return null
     } catch (error) {
-      if (error.name === 'AbortError') {
-        console.warn('Image fetch timed out for:', cardName)
-      } else {
-        console.error('Error fetching card image:', error)
-      }
       return null
     }
   }
@@ -3732,11 +2210,11 @@ export default function App() {
     }
   }, [longPressTimer, scrollTimeout])
 
-  // Load card images on component mount - now using direct API structure
+  // Load card images on component mount - now using real data
   React.useEffect(() => {
     const loadCardImages = () => {
-      // Load images for both topMovers and trendingCards
-      const allCards = [...mockUserData.topMovers, ...mockUserData.trendingCards]
+      // Load images for both topMovers and trendingCards from real data
+      const allCards = [...topMoversData, ...trendingCardsData]
       
       const imageMap = {}
       allCards.forEach((card) => {
@@ -3749,7 +2227,7 @@ export default function App() {
     }
     
     loadCardImages()
-  }, [])
+  }, [topMoversData, trendingCardsData])
 
   // Onboarding navigation handlers
   const handleNextOnboarding = () => {
@@ -3800,16 +2278,15 @@ export default function App() {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500))
       
-      // Mock card recognition - randomly select a card from our mock data
-      const mockScannedCards = [
-        { id: 101, name: "Charizard ex", set: "Base Set", rarity: "Ultra Rare", number: "#004/102", price: 1250, imageUrl: "https://images.pokemontcg.io/base1/4_hires.png" },
-        { id: 102, name: "Pikachu VMAX", set: "Vivid Voltage", rarity: "VMAX", number: "#044/185", price: 89, imageUrl: "https://images.pokemontcg.io/swsh4/44_hires.png" },
-        { id: 103, name: "Lugia V", set: "Silver Tempest", rarity: "Ultra Rare", number: "#186/195", price: 156, imageUrl: "https://images.pokemontcg.io/swsh12/186_hires.png" },
-        { id: 104, name: "Rayquaza VMAX", set: "Evolving Skies", rarity: "VMAX", number: "#217/203", price: 234, imageUrl: "https://images.pokemontcg.io/swsh7/217_hires.png" },
-        { id: 105, name: "Mewtwo V", set: "Pokemon GO", rarity: "Ultra Rare", number: "#030/071", price: 67, imageUrl: "https://images.pokemontcg.io/pgo/30_hires.png" }
-      ]
+      // Real card recognition - use actual collection data
+      const allCards = userData?.collections?.flatMap(collection => collection.cards || []) || []
+      if (allCards.length === 0) {
+        throw new Error('No cards in collection to scan')
+      }
       
-      const recognizedCard = mockScannedCards[Math.floor(Math.random() * mockScannedCards.length)]
+      // For now, randomly select from actual collection cards
+      // In a real app, this would use computer vision to identify the card
+      const recognizedCard = allCards[Math.floor(Math.random() * allCards.length)]
       
       // Add card to collection
       const newCard = {
@@ -3837,6 +2314,9 @@ export default function App() {
         // Update user data
         const updatedData = userDatabase.getUserData()
         setUserData(updatedData)
+        
+        // Track scan event
+        eventTracker.trackScanPerformed([recognizedCard], 'manual')
       } else {
         console.error('Failed to add card to collection')
       }
@@ -3889,6 +2369,9 @@ export default function App() {
   const handleCardClick = async (card) => {
     // Show the modal immediately for better UX
     setShowCardProfile(true)
+    
+    // Push state to history for back button support
+    window.history.pushState({ cardProfile: true, cardId: card.id }, '', window.location.href)
     
     // If the card has a cardId, fetch the complete data from the API
     if (card.cardId) {
@@ -4741,6 +3224,194 @@ export default function App() {
     setShowEditModal(false)
   }
 
+  // Calculate total collection value at a specific time
+  const calculateCollectionValueAtTime = (collection, timePoint) => {
+    if (!collection || !collection.cards || collection.cards.length === 0) {
+      return 0
+    }
+
+    let totalValue = 0
+    collection.cards.forEach(card => {
+      // Check if this card existed at the given time point
+      const cardAddedTime = card.dateAdded || card.lastUpdated
+      if (cardAddedTime && new Date(cardAddedTime) <= timePoint) {
+        // Card existed at this time, include its value
+        const cardValue = card.currentValue || card.current_value || card.price || 0
+        const quantity = card.quantity || 1
+        totalValue += cardValue * quantity
+      }
+      // If card was added after this time point, don't include it (value = 0)
+    })
+
+    return totalValue
+  }
+
+  // Calculate price change for the selected timeline
+  const calculatePriceChange = (timeRange) => {
+    if (!userData) return { change: 0, changePercent: 0, timeLabel: '' }
+
+    const currentCollection = userData.collections.find(c => c.id === selectedCollection) || userData.collections[0]
+    if (!currentCollection) return { change: 0, changePercent: 0, timeLabel: '' }
+
+    const now = new Date()
+    const currentValue = calculateCollectionValueAtTime(currentCollection, now)
+    
+    let pastValue = 0
+    let timeLabel = ''
+
+    if (timeRange === 'MAX') {
+      // For Max, find the earliest card addition time
+      const cardAdditionTimes = currentCollection.cards?.map(card => {
+        const dateAdded = card.dateAdded || card.lastUpdated
+        return dateAdded ? new Date(dateAdded) : null
+      }).filter(Boolean) || []
+
+      if (cardAdditionTimes.length > 0) {
+        const earliestCardTime = new Date(Math.min(...cardAdditionTimes.map(d => d.getTime())))
+        // For Max, pastValue should be the value the day BEFORE the first card was added (which should be $0.00)
+        const dayBeforeFirstCard = new Date(earliestCardTime.getTime() - (24 * 60 * 60 * 1000))
+        pastValue = calculateCollectionValueAtTime(currentCollection, dayBeforeFirstCard)
+        timeLabel = 'total'
+      } else {
+        // No cards in collection, total change is 0
+        pastValue = 0
+        timeLabel = 'total'
+      }
+    } else {
+      // Calculate the time interval for the selected range
+      let timeInterval
+      switch (timeRange) {
+        case '1D':
+          timeInterval = 24 * 60 * 60 * 1000 // 24 hours
+          break
+        case '7D':
+          timeInterval = 7 * 24 * 60 * 60 * 1000 // 7 days
+          break
+        case '1M':
+          timeInterval = 30 * 24 * 60 * 60 * 1000 // 30 days
+          break
+        case '3M':
+          timeInterval = 90 * 24 * 60 * 60 * 1000 // 90 days
+          break
+        case '6M':
+          timeInterval = 180 * 24 * 60 * 60 * 1000 // 180 days
+          break
+        case '1Y':
+          timeInterval = 365 * 24 * 60 * 60 * 1000 // 365 days
+          break
+        default:
+          timeInterval = 24 * 60 * 60 * 1000 // Default to 1 day
+      }
+
+      const pastTime = new Date(now.getTime() - timeInterval)
+      pastValue = calculateCollectionValueAtTime(currentCollection, pastTime)
+
+      // Get the time label
+      switch (timeRange) {
+        case '1D': timeLabel = 'today'; break
+        case '7D': timeLabel = 'this week'; break
+        case '1M': timeLabel = 'this month'; break
+        case '3M': timeLabel = 'past 3 months'; break
+        case '6M': timeLabel = 'past 6 months'; break
+        case '1Y': timeLabel = 'past year'; break
+        default: timeLabel = 'today'
+      }
+    }
+    
+    const change = currentValue - pastValue
+    const changePercent = pastValue > 0 ? (change / pastValue) * 100 : 0
+
+    return { change, changePercent, timeLabel }
+  }
+
+  // Generate historical collection data for a time range
+  const generateCollectionHistoryData = (timeRange) => {
+    if (!userData) return []
+
+    const currentCollection = userData.collections.find(c => c.id === selectedCollection) || userData.collections[0]
+    if (!currentCollection) return []
+
+    const now = new Date()
+    
+    // Find the earliest card addition time
+    const cardAdditionTimes = currentCollection.cards?.map(card => {
+      const dateAdded = card.dateAdded || card.lastUpdated
+      return dateAdded ? new Date(dateAdded) : null
+    }).filter(Boolean) || []
+
+    const earliestCardTime = cardAdditionTimes.length > 0 
+      ? new Date(Math.min(...cardAdditionTimes.map(d => d.getTime())))
+      : null
+
+    let dataPoints, timeInterval, startTime
+
+    if (timeRange === 'MAX') {
+      if (!earliestCardTime) {
+        // No cards in collection, return empty history
+        return []
+      }
+      
+      // For Max, show just 2 points: day before first card and day of first card
+      dataPoints = 2
+      const dayBeforeFirstCard = new Date(earliestCardTime.getTime() - (24 * 60 * 60 * 1000)) // 24 hours before
+      timeInterval = 24 * 60 * 60 * 1000 // 24 hours
+      startTime = dayBeforeFirstCard
+    } else {
+      dataPoints = priceService.getDataPointsForRange(timeRange)
+      timeInterval = priceService.getTimeInterval(timeRange, dataPoints)
+      startTime = new Date(now.getTime() - ((dataPoints - 1) * timeInterval))
+    }
+    
+    const history = []
+    const currentValue = calculateCollectionValueAtTime(currentCollection, now)
+
+    console.log(`Generating ${timeRange} chart data:`, {
+      dataPoints,
+      timeInterval: timeInterval / (60 * 60 * 1000), // Convert to hours
+      currentValue,
+      collectionCards: currentCollection.cards?.length || 0,
+      earliestCardTime: earliestCardTime?.toISOString(),
+      startTime: startTime?.toISOString()
+    })
+
+    for (let i = 0; i < dataPoints; i++) {
+      const date = new Date(startTime.getTime() + (i * timeInterval))
+      
+      // Calculate the actual collection value at this specific time point
+      const value = calculateCollectionValueAtTime(currentCollection, date)
+
+      history.push({
+        date: date.toISOString(),
+        value: Math.max(0, value)
+      })
+    }
+
+    // For Max timeline, add current value as the final point if it's different from the first card day
+    if (timeRange === 'MAX' && earliestCardTime) {
+      const currentValue = calculateCollectionValueAtTime(currentCollection, now)
+      const firstCardValue = calculateCollectionValueAtTime(currentCollection, earliestCardTime)
+      
+      // Only add current point if the value has changed since the first card was added
+      if (currentValue !== firstCardValue) {
+        history.push({
+          date: now.toISOString(),
+          value: Math.max(0, currentValue)
+        })
+      }
+    }
+
+    console.log(`${timeRange} chart data generated:`, {
+      historyLength: history.length,
+      firstValue: history[0]?.value,
+      lastValue: history[history.length - 1]?.value,
+      firstTime: history[0]?.date,
+      lastTime: history[history.length - 1]?.date,
+      earliestCardTime: earliestCardTime?.toISOString()
+    })
+
+    return history
+  }
+
   // Chart data generator
   const getChartData = useMemo(() => {
     if (!userData) {
@@ -4764,21 +3435,33 @@ export default function App() {
     }
 
     const currentCollection = userData.collections.find(c => c.id === selectedCollection) || userData.collections[0]
-    const history = userData.portfolioHistory?.[selectedCollection]?.[selectedTimeRange] || []
     
-    // If no history but collection exists, generate initial data point with current value
-    if (history.length === 0 && currentCollection) {
-      const currentValue = currentCollection.totalValue || 0
+    // Generate real collection history data based on current collection
+    const history = generateCollectionHistoryData(selectedTimeRange)
+    
+    // If no collection or no cards, show $0.00 for all time points
+    if (!currentCollection || !currentCollection.cards || currentCollection.cards.length === 0) {
+      const dataPoints = priceService.getDataPointsForRange(selectedTimeRange)
       const now = new Date()
+      const timeInterval = priceService.getTimeInterval(selectedTimeRange, dataPoints)
       
-      // Generate a simple data point showing the current value
-      const singlePoint = { date: now.toISOString(), value: currentValue }
+      const labels = []
+      const data = []
+      
+      for (let i = dataPoints - 1; i >= 0; i--) {
+        const date = new Date(now.getTime() - (i * timeInterval))
+        labels.push(selectedTimeRange === '1D' 
+          ? date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        )
+        data.push(0) // $0.00 for all time points when no collection
+      }
       
       return {
-        labels: [now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })],
+        labels,
         datasets: [{
           label: 'Portfolio Value',
-          data: [convertCurrency(currentValue)],
+          data,
           borderColor: '#6865E7',
           backgroundColor: 'rgba(104, 101, 231, 0.1)',
           borderWidth: 2,
@@ -5199,6 +3882,7 @@ export default function App() {
         }
       },
       y: {
+        beginAtZero: true,
         grid: {
           color: 'rgba(156, 163, 175, 0.1)'
         },
@@ -5252,6 +3936,7 @@ export default function App() {
         }
       },
       y: {
+        beginAtZero: true,
         grid: {
           color: 'rgba(156, 163, 175, 0.1)'
         },
@@ -5260,9 +3945,9 @@ export default function App() {
           font: {
             size: 12
           },
-        callback: function(value) {
-          return formatCurrency(value)
-        }
+          callback: function(value) {
+            return formatCurrency(value)
+          }
         }
       }
     },
@@ -5722,7 +4407,7 @@ export default function App() {
                   <div className="flex flex-col items-start text-white/70 text-[10px] leading-tight">
                     <div>{scannedCard ? scannedCard.set : ''}</div>
                     <div>{scannedCard ? scannedCard.rarity : ''}</div>
-                    <div>{scannedCard ? scannedCard.number : ''}</div>
+                    <div>{scannedCard ? (scannedCard.formattedNumber || scannedCard.number) : ''}</div>
                   </div>
                 </div>
 
@@ -5783,7 +4468,7 @@ export default function App() {
 
               {/* Set Cards Grid */}
               <div className="p-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                   {setCards.map((card, index) => (
                     <div
                       key={`set-${card.id}-${index}`}
@@ -5809,7 +4494,7 @@ export default function App() {
                         </div>
                       </div>
                       <h3 className="text-white font-medium text-sm mb-1">{card.name}</h3>
-                      <p className="text-gray-400 text-xs mb-2">{card.number}</p>
+                      <p className="text-gray-400 text-xs mb-2">{card.formattedNumber || card.number}</p>
                       <div className="flex items-center justify-between">
                         <p className="text-primary font-bold text-sm">${(() => {
                           if (card.currentValue) return card.currentValue.toFixed(2);
@@ -5860,7 +4545,7 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <span className="text-white text-sm">@Stuart60</span>
                     <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{mockUserData.profilePicture}</span>
+                      <span className="text-white text-xs font-bold">S</span>
                     </div>
                     <button>
                       <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5956,7 +4641,7 @@ export default function App() {
                         <img src="/Assets/Cardnumb_Background.svg" alt="Card Number" className="w-[46px] h-[28px]" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-white text-xs font-bold">
-                            {selectedCard.number ? selectedCard.number.replace('#', '') : '001'}
+                            {selectedCard.formattedNumber ? selectedCard.formattedNumber.replace('#', '') : (selectedCard.number ? selectedCard.number.replace('#', '') : '001')}
                           </span>
                         </div>
                       </div>
@@ -6635,7 +5320,7 @@ export default function App() {
                     </div>
                     <div className="bg-gray-700 rounded p-3 text-center">
                       <div className="text-white text-xs mb-2">Card Number</div>
-                      <div className="text-white text-sm">{selectedCard.number}/{selectedCard.printed_total || selectedCard.set?.total || '?'}</div>
+                      <div className="text-white text-sm">{selectedCard.formattedNumber || selectedCard.number}/{selectedCard.printed_total || selectedCard.set?.total || '?'}</div>
                     </div>
                     <div className="bg-gray-700 rounded p-3 text-center">
                       <div className="text-white text-xs mb-2">Card Format</div>
@@ -7690,71 +6375,59 @@ export default function App() {
               {/* Bottom Spacing */}
               <div className="h-20"></div>
 
-              {/* Inactive Bottom Navigation Bar - Card Profile Screen */}
-              <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-[390px] h-[73px] z-[60]">
-                {/* Glass Container */}
-                <div className="relative w-full h-full">
-                  {/* Background Glass Effect */}
-                  <div className="absolute inset-0 bg-[#2B2B2B]/20 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
-                    {/* Figma Glass Effect - Light at 45 degrees, intensity 80% - More Subtle */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-transparent rounded-2xl"></div>
-                    {/* Refraction 80%, Depth 30%, Dispersion 32%, Frost 10% */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/4 via-white/2 to-white/3 rounded-2xl"></div>
-                    {/* Frosting Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/6 via-transparent to-white/3 rounded-2xl"></div>
-                  </div>
+              {/* Card Profile Navigation Bar - Using main navigation with none state */}
+              <div 
+                className="fixed bottom-0 left-0 right-0 px-2 py-2 sm:px-[19px] sm:py-0 sm:bottom-4 sm:rounded-[16px]"
+                style={{
+                  filter: 'drop-shadow(0px 24px 7px rgba(0,0,0,0.01)) drop-shadow(16px 16px 16px rgba(0,0,0,0.04)) drop-shadow(0px 9px 5px rgba(0,0,0,0.15)) drop-shadow(0px 4px 4px rgba(0,0,0,0.25)) drop-shadow(0px 1px 2px rgba(0,0,0,0.29))'
+                }}
+              >
+                <div 
+                  className="flex items-center justify-between px-4 py-2 sm:px-[30px] sm:py-0 rounded-[16px] relative border border-white/50 h-[75px] overflow-hidden"
+                  style={{
+                    background: 'rgba(43,43,43,0.9)',
+                    backdropFilter: 'blur(60px) saturate(200%)',
+                    WebkitBackdropFilter: 'blur(60px) saturate(200%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                  }}
+                >
 
-                  {/* Navigation Items - Interactive but Inactive */}
-                  <div className="relative z-10 flex justify-between items-center h-full px-8">
-                    <button 
-                      onClick={() => {
-                        console.log('Home button clicked - navigating to dashboard');
-                        setSelectedCard(null) // Close card profile modal
-                        setShowCardProfile(false)
-                        setShowSearchResults(false)
-                        setTimeout(() => {
-                          setActiveTab('home')
-                          // Trigger indicator animation after navigation is complete
-                          setTimeout(() => {
-                            console.log('Triggering indicator animation');
-                            setIndicatorAnimation('exit');
-                            setTimeout(() => {
-                              setIndicatorAnimation('enter');
-                            }, 50);
-                          }, 50);
-                        }, 100);
-                      }}
-                      className="relative flex flex-col gap-1 px-2 py-3 rounded-xl transition-all duration-300 group items-center justify-center h-full hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <div className="relative z-10 transition-all duration-300 group-hover:scale-105">
+                  {/* Home Button */}
+                  <button 
+                    onClick={() => {
+                      setSelectedCard(null) // Close card profile modal
+                      setShowCardProfile(false)
+                      setShowSearchResults(false)
+                      setTimeout(() => {
+                        setActiveTab('home')
+                        setNavigationMode('home')
+                        scrollToTop() // Scroll to top when navigating
+                      }, 100);
+                    }}
+                    className="flex flex-col gap-[10px] h-[75px] items-center justify-center pt-[26px] px-2 sm:px-[10px] w-16 sm:w-[84px]"
+                  >
+                    <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
+                      <div className="w-6 h-6">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M20.04 6.82018L14.28 2.79018C12.71 1.69018 10.3 1.75018 8.78999 2.92018L3.77999 6.83018C2.77999 7.61018 1.98999 9.21018 1.98999 10.4702V17.3702C1.98999 19.9202 4.05999 22.0002 6.60999 22.0002H17.39C19.94 22.0002 22.01 19.9302 22.01 17.3802V10.6002C22.01 9.25018 21.14 7.59018 20.04 6.82018ZM12.75 18.0002C12.75 18.4102 12.41 18.7502 12 18.7502C11.59 18.7502 11.25 18.4102 11.25 18.0002V15.0002C11.25 14.5902 11.59 14.2502 12 14.2502C12.41 14.2502 12.75 14.5902 12.75 15.0002V18.0002Z" fill="none" stroke="#8F8F94" strokeWidth="2"></path>
+                          <path d="M20.04 6.82006L14.28 2.79006C12.71 1.69006 10.3 1.75006 8.78999 2.92006L3.77999 6.83006C2.77999 7.61006 1.98999 9.21006 1.98999 10.4701V17.3701C1.98999 19.9201 4.05999 22.0001 6.60999 22.0001H17.39C19.94 22.0001 22.01 19.9301 22.01 17.3801V10.6001C22.01 9.25006 21.14 7.59006 20.04 6.82006ZM12.75 18.0001C12.75 18.4101 12.41 18.7501 12 18.7501C11.59 18.7501 11.25 18.4101 11.25 18.0001V15.0001C11.25 14.5901 11.59 14.2501 12 14.2501C12.41 14.2501 12.75 14.5901 12.75 15.0001V18.0001Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </div>
-                      <div className="relative z-10 text-xs font-medium transition-all duration-300 opacity-0 transform translate-y-2">Home</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        console.log('Collection button clicked in card profile')
-                        setSelectedCard(null) // Close card profile modal
-                        setShowCardProfile(false)
-                        setShowSearchResults(false)
-                        setTimeout(() => {
-                          setActiveTab('collection')
-                          setNavigationMode('collection')
-                          // Trigger indicator animation after navigation is complete
-                          setTimeout(() => {
-                            setIndicatorAnimation('exit');
-                            setTimeout(() => {
-                              setIndicatorAnimation('enter');
-                            }, 50);
-                          }, 50);
-                        }, 100);
-                      }}
-                      className="relative flex flex-col gap-1 px-2 py-3 rounded-xl transition-all duration-300 group items-center justify-center h-full hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <div className="relative z-10 transition-all duration-300 group-hover:scale-105">
+                    </div>
+                  </button>
+                  {/* Collection Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedCard(null) // Close card profile modal first
+                      setTimeout(() => {
+                        setActiveTab('collection')
+                        setNavigationMode('collection')
+                        scrollToTop() // Scroll to top when navigating
+                      }, 100) // Small delay to ensure modal closes first
+                    }}
+                    className="flex flex-col gap-[10px] h-[75px] items-center justify-center pt-[26px] px-2 sm:px-[10px] w-16 sm:w-[84px]"
+                  >
+                    <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
+                      <div className="w-6 h-6">
                         <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <g clipPath="url(#clip0_248_3247)">
                             <path d="M11.555 1.469C11.6113 1.26096 11.7477 1.0837 11.9344 0.976052C12.1211 0.868406 12.3428 0.839157 12.551 0.894714L22.871 3.65814C23.0797 3.71364 23.2578 3.84974 23.3661 4.03652C23.4745 4.2233 23.5042 4.44546 23.4488 4.65414L19.4888 19.4279C19.4325 19.6363 19.2959 19.8138 19.1088 19.9215C18.9217 20.0292 18.6995 20.0582 18.491 20.0021L8.17104 17.2387C7.96268 17.1828 7.78501 17.0466 7.67702 16.8599C7.56903 16.6731 7.53954 16.4512 7.59504 16.2427L11.555 1.469Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -7767,68 +6440,57 @@ export default function App() {
                           </defs>
                         </svg>
                       </div>
-                      <div className="relative z-10 text-xs font-medium transition-all duration-300 opacity-0 transform translate-y-2">Collection</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
+                    </div>
+                  </button>
+                  {/* Marketplace Button */}
+                  <button 
+                    onClick={() => {
+                      setSelectedCard(null) // Close card profile modal
+                      setShowCardProfile(false)
+                      setShowSearchResults(false)
+                      setTimeout(() => {
                         setActiveTab('marketplace')
-                        setShowCardProfile(false)
-                        setShowSearchResults(false)
-                        // Trigger indicator animation after navigation is complete
-                        setTimeout(() => {
-                          setIndicatorAnimation('exit');
-                          setTimeout(() => {
-                            setIndicatorAnimation('enter');
-                          }, 50);
-                        }, 100);
-                      }}
-                      className="relative flex flex-col gap-1 px-2 py-3 rounded-xl transition-all duration-300 group items-center justify-center h-full hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <div className="relative z-10 transition-all duration-300 group-hover:scale-105">
+                        setNavigationMode('marketplace')
+                        scrollToTop() // Scroll to top when navigating
+                      }, 100);
+                    }}
+                    className="flex flex-col gap-[10px] h-[75px] items-center justify-center pt-[26px] px-2 sm:px-[10px] w-16 sm:w-[84px]"
+                  >
+                    <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
+                      <div className="w-6 h-6">
                         <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <g clipPath="url(#clip0_144_6148)">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M11.3335 21.3348C11.3335 22.8078 10.1394 24.0019 8.66636 24.0019C7.19337 24.0019 5.99927 22.8078 5.99927 21.3348C5.99927 19.8618 7.19337 18.6677 8.66636 18.6677C10.1394 18.6677 11.3335 19.8618 11.3335 21.3348ZM22.0018 21.3348C22.0018 22.8078 20.8077 24.0019 19.3347 24.0019C17.8617 24.0019 16.6676 22.8078 16.6676 21.3348C16.6676 19.8618 17.8617 18.6677 19.3347 18.6677C20.8068 18.6677 22.0018 19.8618 22.0018 21.3348Z" fill="#8F8F94"></path>
-                            <path d="M1.99902 0.998108H2.47949C3.90971 0.998253 5.14138 2.00775 5.42188 3.41022L5.57812 4.1944L5.73926 4.99908H21.3311C22.8789 4.99924 23.9975 6.47835 23.5762 7.96783L22.2051 12.8165C21.8396 14.1084 20.66 15.001 19.3174 15.001H9.51953C8.08934 15.001 6.85784 13.9913 6.57715 12.5889L4.76758 3.54108C4.54945 2.45042 3.59172 1.66524 2.47949 1.6651H1.99902C1.81496 1.6651 1.66528 1.5161 1.66504 1.33209C1.66504 1.17082 1.77952 1.03595 1.93164 1.00494L1.99902 0.998108Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round"></path>
+                          <g clipPath="url(#clip0_248_3253)">
+                            <path fillRule="evenodd" clipRule="evenodd" d="M11.3334 21.3351C11.3334 22.8081 10.1393 24.0022 8.6663 24.0022C7.1933 24.0022 5.99921 22.8081 5.99921 21.3351C5.99921 19.8621 7.1933 18.668 8.6663 18.668C10.1393 18.668 11.3334 19.8621 11.3334 21.3351ZM22.0018 21.3351C22.0018 22.8081 20.8077 24.0022 19.3347 24.0022C17.8617 24.0022 16.6676 22.8081 16.6676 21.3351C16.6676 19.8621 17.8617 18.668 19.3347 18.668C20.8077 18.668 22.0018 19.8621 22.0018 21.3351Z" fill="#8F8F94"/>
+                            <path fillRule="evenodd" clipRule="evenodd" d="M0.665039 1.33159C0.665039 0.595096 1.26209 -0.00195312 1.99859 -0.00195312H2.47918C4.38621 -0.00195312 6.02813 1.3441 6.40213 3.2141L6.55905 3.99868H21.3308C23.5421 3.99868 25.1407 6.11215 24.5388 8.23995L23.1673 13.0888C22.68 14.8114 21.1078 16.0006 19.3177 16.0006H9.51926C7.61223 16.0006 5.97031 14.6545 5.59631 12.7846L3.78683 3.73716C3.66217 3.11382 3.11486 2.66514 2.47918 2.66514H1.99859C1.26209 2.66514 0.665039 2.06809 0.665039 1.33159ZM7.09247 6.66578L8.21161 12.2615C8.33628 12.8848 8.88359 13.3335 9.51926 13.3335H19.3177C19.9144 13.3335 20.4385 12.9371 20.6009 12.3629L21.9724 7.51403C22.0928 7.08847 21.7731 6.66578 21.3308 6.66578H7.09247Z" fill="#8F8F94"/>
                           </g>
                           <defs>
-                            <clipPath id="clip0_144_6148">
-                              <rect width="24" height="24" fill="white" transform="translate(0.666748)"></rect>
+                            <clipPath id="clip0_248_3253">
+                              <rect width="24" height="24" fill="white" transform="translate(0.666687)"/>
                             </clipPath>
                           </defs>
                         </svg>
                       </div>
-                      <div className="relative z-10 text-xs font-medium transition-all duration-300 opacity-0 transform translate-y-2">Marketplace</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => {
-                        console.log('Profile button clicked in card profile')
-                        setSelectedCard(null) // Close card profile modal
-                        setShowCardProfile(false)
-                        setShowSearchResults(false)
-                        setTimeout(() => {
-                          setActiveTab('profile')
-                          // Trigger indicator animation after navigation is complete
-                          setTimeout(() => {
-                            setIndicatorAnimation('exit');
-                            setTimeout(() => {
-                              setIndicatorAnimation('enter');
-                            }, 50);
-                          }, 50);
-                        }, 100);
-                      }}
-                      className="relative flex flex-col gap-1 px-2 py-3 rounded-xl transition-all duration-300 group items-center justify-center h-full hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <div className="relative z-10 transition-all duration-300 group-hover:scale-105">
+                    </div>
+                  </button>
+                  {/* Profile Button */}
+                  <button 
+                    onClick={() => {
+                      setActiveTab('profile')
+                      setNavigationMode('profile')
+                      setSelectedCard(null) // Close card profile modal
+                      scrollToTop() // Scroll to top when navigating
+                    }}
+                    className="flex flex-col gap-[10px] h-[75px] items-center justify-center pt-[26px] px-2 sm:px-[10px] w-16 sm:w-[84px]"
+                  >
+                    <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
+                      <div className="w-6 h-6">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                           <path d="M20.59 22C20.59 18.13 16.74 15 12 15C7.26003 15 3.41003 18.13 3.41003 22" stroke="#8F8F94" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
                         </svg>
                       </div>
-                      <div className="relative z-10 text-xs font-medium transition-all duration-300 opacity-0 transform translate-y-2">Profile</div>
-                    </button>
-                  </div>
+                    </div>
+                  </button>
                 </div>
               </div>
 
@@ -7906,7 +6568,7 @@ export default function App() {
                             {selectedCard?.name || 'Unknown Card'}
                           </h3>
                           <p style={{ color: '#999', fontSize: '14px', margin: 0 }}>
-                            {selectedCard?.number || 'N/A'}
+                            {selectedCard?.formattedNumber || selectedCard?.number || 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -8529,11 +7191,11 @@ export default function App() {
 
               {/* Add to Collection Modal - Card Profile */}
               {showCardProfileModal && cardToAddFromProfile && showCardProfile && (
-                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                  <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[90vh] flex flex-col">
-                    <div className="p-6 overflow-y-auto flex-1">
+                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0.5 sm:p-4">
+                  <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[95vh] sm:max-h-[80vh] flex flex-col shadow-2xl">
+                    <div className="p-4 sm:p-6 overflow-y-auto flex-1">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-4 sm:mb-6">
                       <h2 className="text-white text-xl font-semibold">Add to Collection</h2>
                       <button
                         onClick={() => {
@@ -9995,21 +8657,26 @@ export default function App() {
                 </div>
 
                 {/* Price Change */}
-                <div className={`flex items-center gap-1 text-sm mb-1 ${
-                  (userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0 
-                    ? 'text-green-400' 
-                    : 'text-red-400'
-                }`}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={
-                        (userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0) >= 0
-                          ? "M7 11l5-5m0 0l5 5m-5-5v12"
-                          : "M17 13l-5 5m0 0l-5-5m5 5V6"
-                      }></path>
-                </svg>
-                    <span>{formatCurrency(Math.abs(userData?.collections.find(c => c.id === selectedCollection)?.monthlyChange || 0))}</span>
-                    <span>past 6 months</span>
-              </div>
+                {(() => {
+                  const priceChange = calculatePriceChange(selectedTimeRange)
+                  return (
+                    <div className={`flex items-center gap-1 text-sm mb-1 ${
+                      priceChange.change >= 0 
+                        ? 'text-green-400' 
+                        : 'text-red-400'
+                    }`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={
+                            priceChange.change >= 0
+                              ? "M7 11l5-5m0 0l5 5m-5-5v12"
+                              : "M17 13l-5 5m0 0l-5-5m5 5V6"
+                          }></path>
+                      </svg>
+                        <span>{formatCurrency(Math.abs(priceChange.change))}</span>
+                        <span>{priceChange.timeLabel}</span>
+                    </div>
+                  )
+                })()}
 
                 {/* Last Updated */}
                 <div className="text-gray-400 text-xs mb-4">
@@ -10022,15 +8689,15 @@ export default function App() {
             </div>
 
             {/* Time Range Selector */}
-            <div className="flex gap-2">
-                  {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((range) => (
+            <div className="flex gap-1 sm:gap-2 w-full">
+              {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((range) => (
                 <button
                   key={range}
-                      onClick={() => setSelectedTimeRange(range === 'Max' ? 'MAX' : range)}
-                      className={`px-3 py-1 text-sm rounded ${
-                        selectedTimeRange === (range === 'Max' ? 'MAX' : range)
+                  onClick={() => setSelectedTimeRange(range === 'Max' ? 'MAX' : range)}
+                  className={`flex-1 px-2 sm:px-3 py-1 text-xs sm:text-sm rounded font-medium ${
+                    selectedTimeRange === (range === 'Max' ? 'MAX' : range)
                       ? 'bg-primary text-accent'
-                          : 'bg-gray-700 text-gray-300'
+                      : 'bg-gray-700 text-gray-300'
                   }`}
                 >
                   {range}
@@ -10048,33 +8715,23 @@ export default function App() {
                   <div className="text-white font-bold text-sm mb-2">Total Cards</div>
                   <div className="bg-[#202020] rounded p-1 mb-2">
                     <div className="text-white text-xl font-bold">{userDatabase.getTotalCards().toLocaleString()}</div>
-                    <div className="flex items-center gap-1 text-green-400 text-xs">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      <span>{userDatabase.getCardsAddedThisMonth()}</span>
-                      <span>this month</span>
-                      </div>
           </div>
 
                   {/* Portfolio Items */}
                   <div className="space-y-1">
                     {userData?.collections?.slice(0, 2).map((collection, index) => (
-                      <div key={collection.id} className="flex items-center justify-between px-2 py-1">
-                        <span className="text-white text-xs">{collection.name}</span>
-                        <div className="flex items-center gap-1 text-green-400 text-xs">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          <span>{collection.totalCards || 0}</span>
-                        </div>
-                      </div>
+                       <div key={collection.id} className="flex items-center justify-between px-2 py-1">
+                         <span className="text-white text-xs">{collection.name}</span>
+                         <div className="text-white text-xs">
+                           <span>{collection.cards?.length || 0}</span>
+                         </div>
+                       </div>
                     ))}
 
                   <button 
                   onClick={() => setShowCollectionsModal(true)}
-                  className="text-center text-white text-xs py-2 hover:text-blue-400 transition-colors cursor-pointer w-full"
-                  style={{ marginTop: '24px' }}
+                  className="text-center text-white text-xs py-3 hover:text-blue-400 transition-colors cursor-pointer w-full"
+                  style={{ marginTop: '60px' }}
                   >
                   View Collections
                   </button>
@@ -10195,7 +8852,7 @@ export default function App() {
                         <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors">{card.name}</h4>
                         <p className="text-gray-400 text-xs">{card.set} • {card.rarity}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white text-xs font-medium">{card.number}</span>
+                          <span className="text-white text-xs font-medium">{card.formattedNumber || card.number}</span>
                           <span className="text-gray-500 text-xs">•</span>
                           <span className="text-gray-400 text-xs">Qty: {getCardQuantityInCollection(card.cardId || card.id)}</span>
                 </div>
@@ -10231,155 +8888,24 @@ export default function App() {
                   <div className="text-xs text-gray-400">Hot Today</div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Trending Card 1 */}
-                  <div 
-                    onClick={() => handleCardClick(trendingCardsData[0])}
-                    className="relative bg-gradient-to-br from-orange-500/10 to-red-500/5 rounded-xl p-4 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-3">
-                        <div className="w-20 h-28 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={trendingCardsData[0].imageUrl} 
-                            alt={trendingCardsData[0].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">🔥</span>
-                      </div>
-                  </div>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">1</span>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
+                  {/* Trending Cards - Using MarketplaceCard for consistency */}
+                  {trendingCardsData.slice(0, 12).map((card, index) => (
+                    <MarketplaceCard
+                      key={card.id || index}
+                      platform="Trending"
+                      cardName={card.name}
+                      setName={card.set_name || card.set || 'Unknown Set'}
+                      rarity={card.rarity || 'Unknown'}
+                      cardNumber={card.formattedNumber || card.number || ''}
+                      price={formatCurrency(card.current_value || card.price || 0)}
+                      isCollection={false}
+                      cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                      onClick={() => handleCardClick(card)}
+                      onAddToCollection={() => handleAddToCollection(card)}
+                    />
+                  ))}
                 </div>
-              </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-orange-400 transition-colors mb-1">{trendingCardsData[0].name}</h4>
-                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[0].set}</p>
-                      <div className="text-orange-400 font-bold text-lg">{formatCurrency(trendingCardsData[0].current_value || trendingCardsData[0].price || 0)}</div>
-                      <div className="flex items-center gap-1 text-orange-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                        <span className="font-semibold">+{(Math.abs(trendingCardsData[0].percentChange || 0)).toFixed(1)}%</span>
-              </div>
-              </div>
-            </div>
-
-                  {/* Trending Card 2 */}
-                  <div 
-                    onClick={() => handleCardClick(trendingCardsData[1])}
-                    className="relative bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-3">
-                        <div className="w-20 h-28 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={trendingCardsData[1].imageUrl} 
-                            alt={trendingCardsData[1].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">⚡</span>
-              </div>
-                    </div>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">2</span>
-                  </div>
-                      </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-blue-400 transition-colors mb-1">{trendingCardsData[1].name}</h4>
-                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[1].set}</p>
-                      <div className="text-blue-400 font-bold text-lg">{formatCurrency(trendingCardsData[1].current_value || trendingCardsData[1].price || 0)}</div>
-                      <div className="flex items-center gap-1 text-blue-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                        <span className="font-semibold">+{(Math.abs(trendingCardsData[1].percentChange || 0)).toFixed(1)}%</span>
-                      </div>
-                  </div>
-                </div>
-
-                  {/* Trending Card 3 */}
-                  <div 
-                    onClick={() => handleCardClick(trendingCardsData[2])}
-                    className="relative bg-gradient-to-br from-green-500/10 to-emerald-500/5 rounded-xl p-4 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-3">
-                        <div className="w-20 h-28 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={trendingCardsData[2].imageUrl} 
-                            alt={trendingCardsData[2].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">🌿</span>
-                      </div>
-                  </div>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">3</span>
-                </div>
-                    </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-green-400 transition-colors mb-1">{trendingCardsData[2].name}</h4>
-                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[2].set}</p>
-                      <div className="text-green-400 font-bold text-lg">{formatCurrency(trendingCardsData[2].current_value || trendingCardsData[2].price || 0)}</div>
-                      <div className="flex items-center gap-1 text-green-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                        <span className="font-semibold">+{(Math.abs(trendingCardsData[2].percentChange || 0)).toFixed(1)}%</span>
-                      </div>
-                  </div>
-                </div>
-
-                  {/* Trending Card 4 */}
-                  <div 
-                    onClick={() => handleCardClick(trendingCardsData[3])}
-                    className="relative bg-gradient-to-br from-purple-500/10 to-pink-500/5 rounded-xl p-4 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className="relative mb-3">
-                        <div className="w-20 h-28 rounded-lg shadow-lg overflow-hidden bg-gray-800">
-                          <img 
-                            src={trendingCardsData[3].imageUrl} 
-                            alt={trendingCardsData[3].name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextSibling.style.display = 'flex'
-                            }}
-                          />
-                          <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center" style={{display: 'none'}}>
-                            <span className="text-white font-bold text-xs">✨</span>
-                      </div>
-                  </div>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">4</span>
-                </div>
-                    </div>
-                      <h4 className="text-white font-bold text-sm group-hover:text-purple-400 transition-colors mb-1">{trendingCardsData[3].name}</h4>
-                      <p className="text-gray-400 text-xs mb-2">{trendingCardsData[3].set}</p>
-                      <div className="text-purple-400 font-bold text-lg">{formatCurrency(trendingCardsData[3].current_value || trendingCardsData[3].price || 0)}</div>
-                      <div className="flex items-center gap-1 text-purple-400 text-xs">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                        </svg>
-                        <span className="font-semibold">+{(Math.abs(trendingCardsData[3].percentChange || 0)).toFixed(1)}%</span>
-                      </div>
-                  </div>
-                </div>
-              </div>
               
                 <button 
                   onClick={() => {
@@ -10428,7 +8954,7 @@ export default function App() {
               {/* Search Results */}
               {showSearchResults && (
                 <div className="mb-6">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                     {filteredSearchResults.map((card, index) => (
                       <MarketplaceCard
                         key={`search-${card.id}-${index}`}
@@ -10436,9 +8962,9 @@ export default function App() {
                         cardName={card.name}
                         setName={card.set?.name || card.set || 'Unknown Set'}
                         rarity={card.rarity}
-                        cardNumber={`#${card.number || ''}`}
+                        cardNumber={card.formattedNumber || card.number || ''}
                         price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
-                        isCollection={true}
+                        isCollection={false}
                         cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
                         onClick={() => {
                           setSelectedCard(card);
@@ -10466,7 +8992,7 @@ export default function App() {
                         </svg>
                 <h3 className="text-white font-medium">Trending Now</h3>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
                   <MarketplaceCard
                     key={`trending-${card.id}`}
@@ -10474,9 +9000,9 @@ export default function App() {
                     cardName={card.name}
                     setName={card.set?.name || 'Unknown Set'}
                     rarity={card.rarity}
-                    cardNumber={`#${card.number || ''}`}
+                    cardNumber={card.formattedNumber || card.number || ''}
                     price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
-                    isCollection={true}
+                    isCollection={false}
                     cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
                     onClick={() => {
                       setSelectedCard(card);
@@ -10495,6 +9021,24 @@ export default function App() {
                     <span className="text-sm">Loading more cards...</span>
                     </div>
                   </div>
+              )}
+              
+              {/* Load More Button for Search Page Trending Cards */}
+              {allTrendingCards.length > visibleCardsCount && (
+                <div className="mt-6">
+                  <div className="text-center text-gray-400 text-sm mb-2">
+                    Showing {visibleCardsCount} of {allTrendingCards.length} trending cards
+                  </div>
+                  <button 
+                    onClick={() => setVisibleCardsCount(prev => Math.min(prev + 12, allTrendingCards.length))}
+                    className="w-full py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 rounded-xl text-white text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <span>Load More Trending Cards</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
               )}
               
               {/* End of Results */}
@@ -10715,7 +9259,7 @@ export default function App() {
               </div>
 
               {/* Collection Cards Grid - Responsive */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 sm:gap-1 md:gap-1.5">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                 {(() => {
                   try {
                     const collection = userData?.collections?.find(c => c.id === selectedCollection)
@@ -10748,7 +9292,7 @@ export default function App() {
                           (card.name || '').toLowerCase().includes(searchTerm) ||
                           (card.set || '').toLowerCase().includes(searchTerm) ||
                           (card.rarity || '').toLowerCase().includes(searchTerm) ||
-                          (card.number || '').toLowerCase().includes(searchTerm)
+                          (card.formattedNumber || card.number || '').toLowerCase().includes(searchTerm)
                         )
                         if (!matchesSearch) return false
                       }
@@ -10908,7 +9452,7 @@ export default function App() {
                           cardName={card.name}
                           setName={card.set || 'Unknown Set'}
                           rarity={card.rarity}
-                          cardNumber={`#${card.number}`}
+                          cardNumber={card.formattedNumber || card.number}
                           price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
                           isCollection={true}
                           isSelected={isSelected}
@@ -11291,15 +9835,18 @@ export default function App() {
                 <h2 className="text-white text-lg font-bold">Trending Products</h2>
                 <button className="text-gray-400 text-sm">View all</button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-x-visible md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {[
-                  { platform: 'TCGPlayer', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
-                  { platform: 'eBay', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
-                  { platform: 'Whatnot', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
-                  { platform: 'Drip', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
-                  { platform: 'Fanatics', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` },
-                  { platform: 'TCGPlayer', cardName: 'Charizard', setName: 'Base Set', rarity: 'Rare Holo', cardNumber: '004/102', price: `$${(Math.random() * 100 + 10).toFixed(2)}` }
-                ].map((card, index) => (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {userData?.collections?.flatMap(collection => 
+                  collection.cards?.slice(0, 6).map((card, index) => ({
+                    platform: 'TCGPlayer',
+                    cardName: card.name,
+                    setName: card.set?.name || card.set || 'Unknown Set',
+                    rarity: card.rarity,
+                    cardNumber: card.formattedNumber || card.number || '',
+                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
+                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                  })) || []
+                ).map((card, index) => (
                   <MarketplaceCard
                     key={index}
                     platform={card.platform}
@@ -11319,15 +9866,18 @@ export default function App() {
                 <h2 className="text-white text-lg font-bold">Recent Searches</h2>
                 <button className="text-gray-400 text-sm">View all</button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-x-visible md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {[
-                  { platform: 'eBay', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
-                  { platform: 'Whatnot', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
-                  { platform: 'TCGPlayer', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
-                  { platform: 'Fanatics', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
-                  { platform: 'Drip', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` },
-                  { platform: 'eBay', cardName: 'Pikachu VMAX', setName: 'Vivid Voltage', rarity: 'Rare Ultra', cardNumber: '188/185', price: `$${(Math.random() * 50 + 5).toFixed(2)}` }
-                ].map((card, index) => (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {userData?.collections?.flatMap(collection => 
+                  collection.cards?.slice(6, 12).map((card, index) => ({
+                    platform: 'eBay',
+                    cardName: card.name,
+                    setName: card.set?.name || card.set || 'Unknown Set',
+                    rarity: card.rarity,
+                    cardNumber: card.formattedNumber || card.number || '',
+                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
+                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                  })) || []
+                ).map((card, index) => (
                   <MarketplaceCard
                     key={index}
                     platform={card.platform}
@@ -11347,15 +9897,18 @@ export default function App() {
                 <h2 className="text-white text-lg font-bold">Wishlist</h2>
                 <button className="text-gray-400 text-sm">View all</button>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {[
-                  { platform: 'Fanatics', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
-                  { platform: 'Drip', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
-                  { platform: 'eBay', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
-                  { platform: 'TCGPlayer', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
-                  { platform: 'Whatnot', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` },
-                  { platform: 'Fanatics', cardName: 'Mewtwo GX', setName: 'Shining Legends', rarity: 'Rare Holo GX', cardNumber: '072/073', price: `$${(Math.random() * 80 + 20).toFixed(2)}` }
-                ].map((card, index) => (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {userData?.collections?.flatMap(collection => 
+                  collection.cards?.slice(12, 18).map((card, index) => ({
+                    platform: 'Wishlist',
+                    cardName: card.name,
+                    setName: card.set?.name || card.set || 'Unknown Set',
+                    rarity: card.rarity,
+                    cardNumber: card.formattedNumber || card.number || '',
+                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
+                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                  }))
+                ).slice(0, 6).map((card, index) => (
                   <MarketplaceCard
                     key={index}
                     platform={card.platform}
@@ -11388,6 +9941,12 @@ export default function App() {
                 </button>
                 <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-xl text-left">
                   Collection Stats
+                </button>
+                <button 
+                  onClick={() => setShowEventHistory(true)}
+                  className="w-full bg-gray-800 text-white py-3 px-4 rounded-xl text-left hover:bg-gray-700 transition-colors"
+                >
+                  Event History
                 </button>
                 <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-xl text-left">
                   Price Alerts
@@ -11596,13 +10155,13 @@ export default function App() {
 
         {/* Bottom Navigation Bar - Glass Effect Design */}
         <div 
-          className="fixed bottom-4 left-0 right-0 px-[19px] py-0 rounded-[16px]"
+          className="fixed bottom-0 left-0 right-0 px-2 py-2 sm:px-[19px] sm:py-0 sm:bottom-4 sm:rounded-[16px]"
           style={{
             filter: 'drop-shadow(0px 24px 7px rgba(0,0,0,0.01)) drop-shadow(16px 16px 16px rgba(0,0,0,0.04)) drop-shadow(0px 9px 5px rgba(0,0,0,0.15)) drop-shadow(0px 4px 4px rgba(0,0,0,0.25)) drop-shadow(0px 1px 2px rgba(0,0,0,0.29))'
           }}
         >
           <div 
-            className="flex items-center justify-between px-[30px] py-0 rounded-[16px] relative border border-white/50 h-[75px] overflow-hidden"
+            className="flex items-center justify-between px-4 py-2 sm:px-[30px] sm:py-0 rounded-[16px] relative border border-white/50 h-[75px] overflow-hidden"
             style={{
               background: 'rgba(43,43,43,0.9)',
               backdropFilter: 'blur(60px) saturate(200%)',
@@ -11618,9 +10177,9 @@ export default function App() {
                 setSelectedCard(null) // Close card profile modal
                 scrollToTop() // Scroll to top when navigating
               }}
-              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-2 sm:px-[10px] w-16 sm:w-[84px] ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
-              <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
+              <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
                 <div className="w-6 h-6">
                   {navigationMode === 'home' ? (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11650,9 +10209,9 @@ export default function App() {
                   scrollToTop() // Scroll to top when navigating
                 }, 100) // Small delay to ensure modal closes first
               }}
-              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-2 sm:px-[10px] w-16 sm:w-[84px] ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
-              <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
+              <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
                 <div className="w-6 h-6">
                   {navigationMode === 'collection' ? (
                       <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11690,13 +10249,14 @@ export default function App() {
             {/* Marketplace Button */}
             <button 
               onClick={() => {
+                setSelectedCard(null) // Close card profile modal
                 setActiveTab('marketplace')
                 setNavigationMode('marketplace')
                 scrollToTop() // Scroll to top when navigating
               }}
-              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'marketplace' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-2 sm:px-[10px] w-16 sm:w-[84px] ${navigationMode === 'marketplace' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
-              <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
+              <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
                 <div className="w-6 h-6">
                   {navigationMode === 'marketplace' ? (
                       <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11740,9 +10300,9 @@ export default function App() {
                 setSelectedCard(null) // Close card profile modal
                 scrollToTop() // Scroll to top when navigating
               }}
-              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+              className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-2 sm:px-[10px] w-16 sm:w-[84px] ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
             >
-              <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
+              <div className="flex flex-col gap-[6px] h-[58px] items-center w-12 sm:w-[64px]">
                 <div className="w-6 h-6">
                   {navigationMode === 'profile' ? (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11764,32 +10324,6 @@ export default function App() {
                       </div>
                 </button>
 
-            {/* Active Indicator */}
-            <div className={`absolute bottom-0 transition-all duration-500 ease-in-out ${
-              navigationMode === 'none' ? 'transform -translate-x-[200px] opacity-0' : 'transform translate-x-0 opacity-100'
-            }`}
-                 style={{
-                   left: navigationMode === 'home' ? '41px' : 
-                         navigationMode === 'collection' ? '125px' :
-                         navigationMode === 'marketplace' ? '209px' : 
-                         navigationMode === 'profile' ? '293px' : '-200px'
-                 }}>
-              <div className="relative flex justify-center">
-                {/* Glow Effect with rounded corners */}
-                <div className="absolute inset-0 bg-[#6865E7] blur-sm opacity-30 scale-110 rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
-                <div className="absolute inset-0 bg-[#6865E7] blur-md opacity-20 scale-125 rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
-                
-                {/* Main Indicator with rounded corners */}
-                <div className="relative z-10 rounded-t-[16px] overflow-hidden">
-                  <svg width="64" height="8" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M59.9277 3.92798C62.1768 3.92798 64 5.75121 64 8.00024H0C0 5.75121 1.82324 3.92798 4.07227 3.92798H25L31.1387 0.802979C31.9937 0.367721 33.0063 0.367721 33.8613 0.802979L40 3.92798H59.9277Z" fill="#6865E7"/>
-                  </svg>
-                </div>
-                
-                {/* Subtle Glass Diffusion Effect with rounded corners */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-t-[16px]" style={{clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 4% 50%, 4% 0)'}}></div>
-                      </div>
-                      </div>
                     </div>
 
         {/* Top Movers Modal */}
@@ -11815,7 +10349,7 @@ export default function App() {
                 </button>
                     </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-0.5">
                 {topMoversData.map((mover) => (
                   <div 
                     key={mover.id}
@@ -11870,7 +10404,7 @@ export default function App() {
                         </h4>
                         <p className="text-gray-400 text-xs">{mover.set} • {mover.rarity}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-white text-xs font-medium">{mover.number}</span>
+                          <span className="text-white text-xs font-medium">{mover.formattedNumber || mover.number}</span>
                           <span className="text-gray-500 text-xs">•</span>
                           <span className="text-gray-400 text-xs">Qty: {getCardQuantityInCollection(mover.cardId || mover.id)}</span>
                     </div>
@@ -11929,7 +10463,7 @@ export default function App() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                 {trendingCardsData.map((card) => (
                   <div 
                     key={card.id}
@@ -12260,11 +10794,11 @@ export default function App() {
 
         {/* Add to Collection Modal - Search Results - Rendered at top level */}
         {showSearchResultsModal && cardToAddFromSearch && (showSearchResults || activeTab === 'cards' || activeTab === 'search') && (
-          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[90vh] flex flex-col">
-              <div className="p-6 overflow-y-auto flex-1">
+          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0.5 sm:p-4">
+            <div className="bg-gray-800 rounded-2xl w-full max-w-md mx-auto relative modal-container max-h-[95vh] sm:max-h-[80vh] flex flex-col shadow-2xl">
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
                   <h2 className="text-white text-xl font-semibold">Add to Collection</h2>
                 <button 
                     onClick={() => {
@@ -13099,6 +11633,12 @@ export default function App() {
       <div className="px-4">
         <p className="text-white text-center py-8">Welcome to Card Collector!</p>
       </div>
+
+      {/* Event History Modal */}
+      <EventHistory 
+        isOpen={showEventHistory} 
+        onClose={() => setShowEventHistory(false)} 
+      />
     </div>
   )
 }

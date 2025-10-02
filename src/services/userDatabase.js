@@ -1,6 +1,8 @@
 // User Database Service
 // This service manages user data including collections, decks, binders, and activity
 
+import eventTracker from './eventTracker.js'
+
 class UserDatabaseService {
   constructor() {
     this.storageKey = 'pokemonCardCollector_userData'
@@ -186,6 +188,17 @@ class UserDatabaseService {
       userData.recentActivity = userData.recentActivity.slice(0, 50);
     }
 
+    // Track event
+    if (existingCard) {
+      eventTracker.trackCardUpdated(cardData, collectionId, {
+        quantityChange: quantity,
+        oldQuantity: existingCard.quantity - quantity,
+        newQuantity: existingCard.quantity
+      })
+    } else {
+      eventTracker.trackCardAdded(cardData, collectionId, quantity, condition)
+    }
+
     return this.saveUserData(userData)
   }
 
@@ -313,6 +326,9 @@ class UserDatabaseService {
     if (userData.recentActivity.length > 50) {
       userData.recentActivity = userData.recentActivity.slice(0, 50);
     }
+
+    // Track event
+    eventTracker.trackCardRemoved(card, collectionId, quantity)
 
     return this.saveUserData(userData)
   }
@@ -469,6 +485,9 @@ class UserDatabaseService {
       '1Y': [],
       'MAX': []
     }
+
+    // Track event
+    eventTracker.trackCollectionCreated(newCollection)
 
     return this.saveUserData(userData)
   }

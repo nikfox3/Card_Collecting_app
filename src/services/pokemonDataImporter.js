@@ -25,7 +25,27 @@ class PokemonDataImporterService {
       }
       
       this.loadingProgress = 50
-      this.database = await response.json()
+      const rawDatabase = await response.json()
+      
+      // Process each card to add formatted number
+      this.database = rawDatabase.map(card => {
+        const totalInSet = card.printed_total || card.total_in_set || card.official_card_count
+        const number = card.number || card.card_number
+        
+        // Format card number as XXX/YYY
+        let formattedNumber = number
+        if (totalInSet && number && number.match(/^\d+$/)) {
+          const totalStr = String(totalInSet)
+          const paddedNumber = number.padStart(totalStr.length, '0')
+          formattedNumber = `${paddedNumber}/${totalInSet}`
+        }
+        
+        return {
+          ...card,
+          formattedNumber
+        }
+      })
+      
       this.loadingProgress = 100
       this.isLoaded = true
       
@@ -65,17 +85,119 @@ class PokemonDataImporterService {
 
     let results = this.database
 
-    // Filter by name
+    // Comprehensive search across multiple fields
     if (query && query.trim()) {
       const searchTerm = query.toLowerCase().trim()
+      
       if (exactMatch) {
+        // Exact match search
         results = results.filter(card => 
-          card.name.toLowerCase() === searchTerm
+          card.name.toLowerCase() === searchTerm ||
+          (card.artist && card.artist.toLowerCase() === searchTerm) ||
+          (card.number && card.number.toLowerCase() === searchTerm)
         )
       } else {
-        results = results.filter(card => 
-          card.name.toLowerCase().includes(searchTerm)
-        )
+        // Partial match search across multiple fields
+        results = results.filter(card => {
+          // Search in card name
+          if (card.name && card.name.toLowerCase().includes(searchTerm)) {
+            return true
+          }
+          
+          // Search in artist name
+          if (card.artist && card.artist.toLowerCase().includes(searchTerm)) {
+            return true
+          }
+          
+          // Search in card number (handle various Pokemon TCG formats)
+          if (card.number) {
+            const cardNumber = card.number.toLowerCase()
+            const searchTermLower = searchTerm.toLowerCase()
+            
+            // Direct match
+            if (cardNumber === searchTermLower) {
+              return true
+            }
+            
+            // Contains match
+            if (cardNumber.includes(searchTermLower)) {
+              return true
+            }
+            
+            // Handle XXX/YYY format searches
+            if (searchTerm.match(/^\d+\/\d+$/)) {
+              // For exact XXX/YYY format, only match exact card numbers
+              // Check both the raw number and formatted number
+              if (cardNumber === searchTermLower || 
+                  (card.formattedNumber && card.formattedNumber.toLowerCase() === searchTermLower)) {
+                return true
+              }
+            }
+            
+            // Handle numeric searches with different padding
+            if (searchTerm.match(/^\d+$/)) {
+              const searchNum = parseInt(searchTerm)
+              const cardNum = parseInt(cardNumber)
+              
+              // Direct numeric match
+              if (cardNum === searchNum) {
+                return true
+              }
+              
+              // Handle zero-padded matches (e.g., "1" matches "001")
+              const paddedSearch = searchTerm.padStart(3, '0')
+              if (cardNumber === paddedSearch) {
+                return true
+              }
+              
+              // Handle unpadded matches (e.g., "001" matches "1")
+              const unpaddedCard = cardNumber.replace(/^0+/, '')
+              if (unpaddedCard === searchTerm) {
+                return true
+              }
+              
+              // Handle partial matches for numeric searches (e.g., "025" matches "025/102", "025a")
+              if (cardNumber.startsWith(searchTerm) || 
+                  (card.formattedNumber && card.formattedNumber.startsWith(searchTerm))) {
+                return true
+              }
+            }
+            
+            // Handle letter suffixes (e.g., "25a", "15A1")
+            if (searchTerm.match(/^\d+[a-zA-Z]/)) {
+              const numericPart = searchTerm.match(/^\d+/)[0]
+              if (cardNumber.startsWith(numericPart)) {
+                return true
+              }
+            }
+          }
+          
+          // Search in set name
+          if (card.set_name && card.set_name.toLowerCase().includes(searchTerm)) {
+            return true
+          }
+          
+          // Search in rarity
+          if (card.rarity && card.rarity.toLowerCase().includes(searchTerm)) {
+            return true
+          }
+          
+          // Search in types
+          if (card.type && card.type.toLowerCase().includes(searchTerm)) {
+            return true
+          }
+          
+          // Search in subtypes
+          if (card.subtypes && Array.isArray(card.subtypes)) {
+            if (card.subtypes.some(subtype => 
+              subtype.toLowerCase().includes(searchTerm)
+            )) {
+              return true
+            }
+          }
+          
+          return false
+        })
       }
     }
 
@@ -332,6 +454,23 @@ class PokemonDataImporterService {
       }
     }
     
+    // Format card number as XXX/YYY where XXX is padded to match YYY length
+    const formatCardNumber = (number, totalInSet) => {
+      if (!number) return number
+      
+      // If we have a set total and the number is purely numeric, format as XXX/YYY
+      if (totalInSet && number.match(/^\d+$/)) {
+        const totalStr = String(totalInSet)
+        const paddedNumber = number.padStart(totalStr.length, '0')
+        return `${paddedNumber}/${totalInSet}`
+      }
+      
+      return number
+    }
+
+    const totalInSet = pokemonCard.printed_total || pokemonCard.total_in_set || pokemonCard.official_card_count
+    const formattedNumber = formatCardNumber(pokemonCard.number || pokemonCard.card_number, totalInSet)
+
     return {
       id: pokemonCard.id || pokemonCard.card_id,
       name: pokemonCard.name,
@@ -340,6 +479,7 @@ class PokemonDataImporterService {
       series: pokemonCard.series,
       rarity: pokemonCard.rarity,
       number: pokemonCard.number || pokemonCard.card_number,
+      formattedNumber: formattedNumber,
       imageUrl: this.formatImageUrl(this.fixImageUrl(rawImageUrl), 'high', 'webp'),
       images: {
         small: this.formatImageUrl(this.fixImageUrl(pokemonCard.image_small), 'low', 'webp'),

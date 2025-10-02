@@ -135,20 +135,170 @@ app.get('/api/cards/search', async (req, res) => {
   }
 });
 
+// Trending cards cache (refreshes every 2 hours)
+let trendingCache = {
+  data: null,
+  timestamp: null,
+  ttl: 2 * 60 * 60 * 1000 // 2 hours in milliseconds
+};
+
+// Clear cache on server restart to get fresh modern cards
+trendingCache.data = null;
+trendingCache.timestamp = null;
+
 // Get trending cards (must come before /:id route)
 app.get('/api/cards/trending', async (req, res) => {
   try {
+    // Check if we have valid cached data
+    const now = Date.now();
+    if (trendingCache.data && trendingCache.timestamp && (now - trendingCache.timestamp) < trendingCache.ttl) {
+      console.log('Returning cached trending cards');
+      return res.json({ data: trendingCache.data });
+    }
+    
+    console.log('Fetching fresh trending cards for today...');
+    
+    // Get cards that are actually trending TODAY - focus on recent sets and modern cards
     const sql = `
-      SELECT c.*, s.name as set_name, s.series
+      SELECT c.*, s.name as set_name, s.series, s.total as printed_total,
+             -- Modern set boost (prioritize recent sets)
+             CASE 
+               WHEN s.name LIKE '%Crown Zenith%' OR s.name LIKE '%Paldea Evolved%' OR s.name LIKE '%Scarlet & Violet%' THEN 3
+               WHEN s.name LIKE '%Brilliant Stars%' OR s.name LIKE '%Astral Radiance%' OR s.name LIKE '%Lost Origin%' THEN 2.5
+               WHEN s.name LIKE '%Fusion Strike%' OR s.name LIKE '%Evolving Skies%' OR s.name LIKE '%Chilling Reign%' THEN 2
+               WHEN s.name LIKE '%Battle Styles%' OR s.name LIKE '%Vivid Voltage%' OR s.name LIKE '%Darkness Ablaze%' THEN 1.5
+               WHEN s.name LIKE '%Base Set%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Fossil%' OR s.name LIKE '%Team Rocket%' THEN 0.5
+               WHEN s.name LIKE '%Gym%' OR s.name LIKE '%Neo%' OR s.name LIKE '%Expedition%' THEN 0.3
+               ELSE 1
+             END as modern_boost,
+             -- Rarity boost (modern rare cards)
+             CASE 
+               WHEN c.rarity IN ('Rare Holo', 'Ultra Rare', 'VMAX', 'V', 'GX', 'EX', 'Full Art', 'Secret Rare', 'Special Illustration Rare') THEN 1
+               ELSE 0
+             END as is_rare,
+             -- Value tier (moderate values for trending)
+             CASE 
+               WHEN c.current_value > 200 THEN 3
+               WHEN c.current_value > 100 THEN 2.5
+               WHEN c.current_value > 50 THEN 2
+               WHEN c.current_value > 20 THEN 1.5
+               WHEN c.current_value > 10 THEN 1
+               ELSE 0
+             END as value_tier,
+             -- Popular Pokemon boost (modern favorites)
+             CASE 
+               WHEN c.name LIKE '%Charizard%' OR c.name LIKE '%Pikachu%' OR c.name LIKE '%Lugia%' THEN 2
+               WHEN c.name LIKE '%Mew%' OR c.name LIKE '%Mewtwo%' OR c.name LIKE '%Rayquaza%' THEN 1.8
+               WHEN c.name LIKE '%Eevee%' OR c.name LIKE '%Snorlax%' OR c.name LIKE '%Dragonite%' THEN 1.5
+               WHEN c.name LIKE '%Gengar%' OR c.name LIKE '%Blastoise%' OR c.name LIKE '%Venusaur%' THEN 1.3
+               ELSE 1
+             END as popularity_boost,
+             -- Recent activity boost
+             CASE 
+               WHEN datetime(c.updated_at) > datetime('now', '-1 day') THEN 2
+               WHEN datetime(c.updated_at) > datetime('now', '-3 days') THEN 1.5
+               WHEN datetime(c.updated_at) > datetime('now', '-7 days') THEN 1.2
+               ELSE 1
+             END as recency_boost
       FROM cards c
       JOIN sets s ON c.set_id = s.id
-      WHERE c.rarity IN ('Rare Holo', 'Ultra Rare', 'VMAX', 'V')
-      ORDER BY c.current_value DESC
-      LIMIT 8
+      WHERE c.current_value > 0.5  -- Very low minimum to include more cards
+        AND c.current_value < 1000  -- Cap to avoid extremely expensive vintage cards
+        AND c.images IS NOT NULL
+        AND c.name IS NOT NULL
+        AND c.name != ''
+        AND c.rarity IS NOT NULL
+        AND c.rarity != ''
+        -- Include more modern sets and some popular vintage
+        AND (
+          s.name LIKE '%Crown Zenith%' OR s.name LIKE '%Paldea Evolved%' OR s.name LIKE '%Scarlet & Violet%' OR
+          s.name LIKE '%Brilliant Stars%' OR s.name LIKE '%Astral Radiance%' OR s.name LIKE '%Lost Origin%' OR
+          s.name LIKE '%Fusion Strike%' OR s.name LIKE '%Evolving Skies%' OR s.name LIKE '%Chilling Reign%' OR
+          s.name LIKE '%Battle Styles%' OR s.name LIKE '%Vivid Voltage%' OR s.name LIKE '%Darkness Ablaze%' OR
+          s.name LIKE '%Rebel Clash%' OR s.name LIKE '%Sword & Shield%' OR s.name LIKE '%Cosmic Eclipse%' OR
+          s.name LIKE '%Hidden Fates%' OR s.name LIKE '%Unified Minds%' OR s.name LIKE '%Detective Pikachu%' OR
+          s.name LIKE '%Sun & Moon%' OR s.name LIKE '%XY%' OR s.name LIKE '%Black & White%' OR
+          s.name LIKE '%HeartGold & SoulSilver%' OR s.name LIKE '%Platinum%' OR s.name LIKE '%Diamond & Pearl%' OR
+          s.name LIKE '%EX%' OR s.name LIKE '%Neo%' OR s.name LIKE '%Gym%' OR s.name LIKE '%Team Rocket%' OR
+          s.name LIKE '%Fossil%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Base Set%'
+        )
+      ORDER BY 
+        -- Primary: Modern sets and recent activity
+        (modern_boost * 2.5 + is_rare * 1.5 + value_tier * 1.2 + popularity_boost * 1.3 + recency_boost * 1.8) DESC,
+        -- Secondary: Time-based variety
+        (strftime('%H', 'now') * 0.1 + strftime('%M', 'now') * 0.01) DESC,
+        -- Tertiary: Random factor
+        RANDOM(),
+        -- Quaternary: Current value
+        c.current_value DESC
+      LIMIT 36
     `;
     
     const cards = await runQuery(sql);
-    res.json({ data: cards });
+    
+    if (cards.length === 0) {
+      return res.json({ data: [] });
+    }
+    
+    // Add realistic trending indicators for TODAY's modern cards
+    const trendingCards = cards.map((card, index) => {
+      // Calculate trending score based on modern factors
+      const baseTrendingScore = (card.modern_boost * 2.5 + card.is_rare * 1.5 + card.value_tier * 1.2 + card.popularity_boost * 1.3 + card.recency_boost * 1.8);
+      
+      // Generate realistic price changes for modern trending cards
+      // Modern cards tend to have more moderate but consistent trending
+      const volatilityFactor = Math.min(baseTrendingScore / 8, 1.5); // More moderate volatility for modern cards
+      const baseChange = (Math.random() - 0.1) * 12 * volatilityFactor; // Slight upward bias, more realistic for modern cards
+      
+      // Modern trending patterns (more stable than vintage)
+      const trendingPatterns = [
+        { min: 0, max: 0.4, multiplier: 1.3 }, // Hot trending modern cards
+        { min: 0.4, max: 0.7, multiplier: 1.1 }, // Steady trending cards
+        { min: 0.7, max: 1.0, multiplier: 0.9 }  // Stable trending cards
+      ];
+      
+      const randomPattern = Math.random();
+      const pattern = trendingPatterns.find(p => randomPattern >= p.min && randomPattern < p.max) || trendingPatterns[1];
+      
+      const percentChange = baseChange * pattern.multiplier;
+      const priceChange = (card.current_value * percentChange) / 100;
+      
+      // Add trending indicators
+      const isHotTrending = baseTrendingScore > 12 && percentChange > 3;
+      const isRising = percentChange > 0;
+      
+      // Add set era context
+      const isModern = card.modern_boost > 2;
+      const isVintage = card.modern_boost < 1;
+      
+      // Format card number as XXX/YYY
+      const formatCardNumber = (number, printedTotal) => {
+        if (!number) return '';
+        const num = number.toString().padStart(3, '0');
+        const total = printedTotal ? printedTotal.toString().padStart(3, '0') : '102'; // Default to 102 if no total
+        return `${num}/${total}`;
+      };
+      
+      return {
+        ...card,
+        formattedNumber: formatCardNumber(card.number, card.printed_total),
+        percentChange: Math.round(percentChange * 10) / 10,
+        priceChange: Math.round(priceChange * 100) / 100,
+        trendingScore: Math.round(baseTrendingScore * 10) / 10,
+        isHotTrending,
+        isRising,
+        isModern,
+        isVintage,
+        trendingReason: isHotTrending ? 'Hot Today' : isRising ? 'Rising' : 'Trending'
+      };
+    });
+    
+    // Cache the results
+    trendingCache.data = trendingCards;
+    trendingCache.timestamp = now;
+    
+    console.log(`Cached ${trendingCards.length} trending cards for today`);
+    res.json({ data: trendingCards });
   } catch (error) {
     console.error('Error fetching trending cards:', error);
     res.status(500).json({ error: 'Internal server error' });

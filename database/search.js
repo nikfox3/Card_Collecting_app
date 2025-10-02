@@ -76,11 +76,12 @@ class PokemonCardSearch {
                 // Exact matches (highest priority)
                 searchConditions.push(`(
                     cards.name LIKE ? OR 
-                    cards.artist LIKE ? OR 
+                    cards.artist LIKE ? OR
                     sets.name LIKE ? OR
-                    cards.rarity LIKE ?
+                    cards.rarity LIKE ? OR
+                    cards.number LIKE ?
                 )`);
-                searchParams.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
+                searchParams.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
                 
                 // Partial matches in attacks, abilities, and other text fields
                 searchConditions.push(`(
@@ -93,12 +94,28 @@ class PokemonCardSearch {
                 )`);
                 searchParams.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
                 
-                // Type and Pokemon number searches
+                // Card number and Pokemon number searches
+                // Handle various card number formats: "001/102", "25", "25a", "25★", etc.
                 if (searchTerm.match(/^\d+$/)) {
-                    // Numeric search - could be card number or Pokemon number
+                    // Pure numeric search - could be card number or Pokemon number
                     searchConditions.push(`(
                         cards.number = ? OR 
+                        cards.number LIKE ? OR
                         cards.national_pokedex_numbers LIKE ?
+                    )`);
+                    searchParams.push(searchTerm, `%${searchTerm}%`, `%${searchTerm}%`);
+                } else if (searchTerm.match(/^\d+[a-zA-Z★]*$/)) {
+                    // Card number with letters or symbols (e.g., "25a", "25★")
+                    searchConditions.push(`(
+                        cards.number = ? OR 
+                        cards.number LIKE ?
+                    )`);
+                    searchParams.push(searchTerm, `%${searchTerm}%`);
+                } else if (searchTerm.match(/^\d+\/\d+$/)) {
+                    // Card number with set total (e.g., "001/102", "25/102")
+                    searchConditions.push(`(
+                        cards.number = ? OR 
+                        cards.number LIKE ?
                     )`);
                     searchParams.push(searchTerm, `%${searchTerm}%`);
                 }
@@ -109,9 +126,10 @@ class PokemonCardSearch {
                     fuzzyTerms.forEach(term => {
                         searchConditions.push(`(
                             cards.name LIKE ? OR 
+                            cards.artist LIKE ? OR
                             sets.name LIKE ?
                         )`);
-                        searchParams.push(`%${term}%`, `%${term}%`);
+                        searchParams.push(`%${term}%`, `%${term}%`, `%${term}%`);
                     });
                 }
                 
