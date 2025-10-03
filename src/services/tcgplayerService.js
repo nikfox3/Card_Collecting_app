@@ -38,7 +38,7 @@ class TCGPlayerService {
         
         // For now, we'll return mock data that matches TCGPlayer's structure
         // In production, you'd implement actual web scraping or use their API
-        return this.generateMockTCGPlayerData(cardName, setName)
+        return this.generateMockTCGPlayerData(cardName, setName, cardData)
       } catch (error) {
         console.error('Error searching TCGPlayer:', error)
         return null
@@ -47,14 +47,14 @@ class TCGPlayerService {
   }
 
   // Generate mock data that matches TCGPlayer's structure
-  generateMockTCGPlayerData(cardName, setName) {
+  generateMockTCGPlayerData(cardName, setName, timeRange = '7D', currentPrice = null, cardData = null) {
     // Use real TCGPlayer data for Psyduck Detective Pikachu
     if (cardName === 'Psyduck' && setName === 'Detective Pikachu') {
-      return this.getRealPsyduckData()
+      return this.getRealPsyduckData(cardData)
     }
     
-    // Base price for other cards
-    const basePrice = 0.45
+    // Use currentPrice parameter first, then card's current value, fallback to 0.45
+    const basePrice = currentPrice || cardData?.current_value || 0.45
     
     // Generate realistic price history (last 365 days to cover all time ranges)
     const history = []
@@ -208,9 +208,9 @@ class TCGPlayerService {
   }
 
   // Get real Psyduck data from TCGPlayer
-  getRealPsyduckData() {
+  getRealPsyduckData(cardData = null) {
     // Generate comprehensive price history covering all time ranges
-    const basePrice = 0.45
+    const basePrice = cardData?.current_value || 0.45
     const realPriceHistory = []
     const now = new Date()
     
@@ -219,15 +219,12 @@ class TCGPlayerService {
       const date = new Date(now)
       date.setDate(date.getDate() - i)
       
-      // Use real TCGPlayer data for the last 30 days (Aug 30 - Sep 29)
+      // Use the card's current value as the base price for all historical data
       let price
       if (i <= 30) {
-        const realData = [
-          0.44, 0.43, 0.45, 0.46, 0.40, 0.33, 0.33, 0.35, 0.33, 0.33,
-          0.34, 0.34, 0.36, 0.37, 0.37, 0.41, 0.40, 0.40, 0.40, 0.40,
-          0.41, 0.41, 0.42, 0.41, 0.43, 0.44, 0.44, 0.45, 0.45, 0.44, 0.45
-        ]
-        price = realData[30 - i] || basePrice
+        // Use the card's current value with some realistic variation
+        const variation = (Math.random() - 0.5) * 0.1 // ±5 cents variation
+        price = Math.max(0.01, basePrice + variation) // Ensure minimum price
       } else {
         // Generate realistic historical data for older dates
         const trendFactor = Math.sin((i / 365) * Math.PI * 2) * 0.1 // Seasonal trend
@@ -284,6 +281,7 @@ class TCGPlayerService {
   // Calculate price change over time period
   calculatePriceChange(priceHistory, days = 7) {
     if (!priceHistory || priceHistory.length < 2) {
+      console.warn('calculatePriceChange: Not enough price history data', { priceHistoryLength: priceHistory?.length })
       return { absoluteChange: 0, percentageChange: 0 }
     }
 
@@ -293,6 +291,15 @@ class TCGPlayerService {
     
     const absoluteChange = endPrice - startPrice
     const percentageChange = (absoluteChange / startPrice) * 100
+
+    console.log('calculatePriceChange:', {
+      days,
+      recentLength: recent.length,
+      startPrice,
+      endPrice,
+      absoluteChange,
+      percentageChange
+    })
 
     return {
       absoluteChange: parseFloat(absoluteChange.toFixed(2)),
@@ -336,6 +343,98 @@ class TCGPlayerService {
       return data.currentPrice
     } catch (error) {
       console.log('Error getting current price:', error)
+      return null
+    }
+  }
+
+  // Get historical data from database for any card
+  async getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData) {
+    try {
+      // Calculate date range based on timeRange
+      const endDate = new Date()
+      const startDate = new Date()
+      
+      switch (timeRange) {
+        case '1D':
+          startDate.setDate(endDate.getDate() - 1)
+          break
+        case '7D':
+          startDate.setDate(endDate.getDate() - 7)
+          break
+        case '1M':
+          startDate.setMonth(endDate.getMonth() - 1)
+          break
+        case '3M':
+          startDate.setMonth(endDate.getMonth() - 3)
+          break
+        case '6M':
+          startDate.setMonth(endDate.getMonth() - 6)
+          break
+        case '1Y':
+          startDate.setFullYear(endDate.getFullYear() - 1)
+          break
+        case 'Max':
+          startDate.setFullYear(2020) // Go back to 2020 for max data
+          break
+        default:
+          startDate.setDate(endDate.getDate() - 7)
+      }
+
+      // Query the database for historical data
+      const response = await fetch(`http://localhost:3001/api/price-history?cardName=${encodeURIComponent(cardName)}&setName=${encodeURIComponent(setName)}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (!data.data || data.data.length === 0) {
+        console.log(`No real historical data found for ${cardName} ${setName}`)
+        return null
+      }
+
+      // Sort by date
+      const sortedData = data.data.sort((a, b) => new Date(a.date) - new Date(b.date))
+      
+      // Format data for chart
+      const labels = sortedData.map(point => {
+        const date = new Date(point.date)
+        if (timeRange === '1D') {
+          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        } else if (timeRange === '7D' || timeRange === '1M') {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        }
+      })
+      
+      const prices = sortedData.map(point => point.price)
+      
+      // Calculate changes
+      const absoluteChange = prices.length > 1 ? prices[prices.length - 1] - prices[0] : 0
+      const percentageChange = prices.length > 1 ? ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100 : 0
+
+      const chartData = {
+        labels,
+        datasets: [{
+          label: 'Price',
+          data: prices,
+          borderColor: '#8871FF',
+          backgroundColor: 'rgba(136, 113, 255, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }],
+        absoluteChange,
+        percentageChange
+      }
+
+      console.log(`Generated chart data from REAL historical data for ${cardName}: ${prices.length} data points, change: $${absoluteChange.toFixed(2)}`)
+      return chartData
+      
+    } catch (error) {
+      console.error('Error getting historical data from database:', error)
       return null
     }
   }
@@ -521,87 +620,28 @@ class TCGPlayerService {
   }
 
   // Get chart data formatted for our chart component
-  async getChartData(cardName, setName, timeRange = '7D') {
-    // Try to get real TCGPlayer data first
-    if (cardName === 'Psyduck' && setName === 'Detective Pikachu') {
-      console.log(`Attempting to get TCGPlayer data for ${timeRange}`)
-      
-      // Get historical data from database
-      const historicalData = await this.getHistoricalData('186010', timeRange)
-      if (historicalData) {
-        console.log(`Successfully got historical TCGPlayer data for ${timeRange}`)
+  async getChartData(cardName, setName, timeRange = '7D', cardData = null) {
+    console.log(`Getting chart data for ${cardName} from ${setName} for ${timeRange}`)
+    
+    // Try to get real historical data from database first
+    try {
+      const historicalData = await this.getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData)
+      if (historicalData && historicalData.datasets && historicalData.datasets.length > 0) {
+        console.log(`Successfully got real historical data for ${cardName} ${setName}`)
         return historicalData
       }
-      
-      // Get current price from API
-      const currentPrice = await this.getCurrentPrice('186010')
-      if (currentPrice) {
-        console.log(`Got current price: $${currentPrice}`)
-        // Generate data with real current price
-        return this.generateMockTCGPlayerData(cardName, setName, timeRange, currentPrice)
-      }
-      
-      console.log(`Failed to get real TCGPlayer data for ${timeRange}, using fallback data`)
+    } catch (error) {
+      console.warn(`Error getting historical data for ${cardName}:`, error)
     }
 
-    const priceHistory = await this.getPriceHistory(cardName, setName)
-    
-    if (!priceHistory.length) {
-      return {
-        labels: [],
-        datasets: [],
-        absoluteChange: 0,
-        percentageChange: 0
-      }
-    }
-
-    // Special handling for 1D - generate hourly data
-    if (timeRange === '1D') {
-      return this.generate1DayData(priceHistory)
-    }
-
-    // Convert timeRange to days
-    const daysMap = {
-      '1D': 1,
-      '7D': 7,
-      '1M': 30,
-      '3M': 90,
-      '6M': 180,
-      '1Y': 365,
-      'Max': 365
-    }
-    
-    const days = daysMap[timeRange] || 7
-    const recentHistory = priceHistory.slice(-days)
-
-
-    const labels = recentHistory.map(point => {
-      // Parse date as local time to avoid timezone issues
-      const [year, month, day] = point.date.split('-').map(Number)
-      const date = new Date(year, month - 1, day) // month is 0-indexed
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    })
-
-    const prices = recentHistory.map(point => point.price)
-
-
-    const priceChange = this.calculatePriceChange(recentHistory)
-
+    // If no real data is available, return empty chart with error message
+    console.log(`No real historical data available for ${cardName} ${setName}`)
     return {
-      labels,
-      datasets: [{
-        label: 'Price',
-        data: prices,
-        borderColor: priceChange.absoluteChange >= 0 ? '#10B981' : '#EF4444',
-        backgroundColor: priceChange.absoluteChange >= 0 ? '#10B98120' : '#EF444420',
-        tension: 0.4,
-        fill: true
-      }],
-      absoluteChange: priceChange.absoluteChange,
-      percentageChange: priceChange.percentageChange,
-      currentPrice: prices[0], // Price at the beginning of the selected range (what user is viewing)
-      startPrice: prices[0], // Oldest price in the selected range
-      endPrice: prices[prices.length - 1] // Most recent price in the selected range
+      labels: [],
+      datasets: [],
+      absoluteChange: 0,
+      percentageChange: 0,
+      error: 'No historical data available'
     }
   }
 }

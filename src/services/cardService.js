@@ -50,7 +50,9 @@ class CardService {
   // Get trending cards
   async getTrendingCards() {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/trending`);
+      // Add cache-busting parameter to force fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/cards/trending?t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -65,7 +67,9 @@ class CardService {
   // Get top movers
   async getTopMovers() {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/top-movers`);
+      // Add cache-busting parameter to force fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/cards/top-movers?t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -129,6 +133,7 @@ class CardService {
       series: card.series,
       rarity: card.rarity,
       number: card.number,
+      formattedNumber: card.formattedNumber || this.formatCardNumber(card.number, card.printed_total),
       price: card.current_value || 0,
       change: 0, // We'll calculate this later
       dailyChange: 0, // We'll calculate this later
@@ -138,7 +143,8 @@ class CardService {
       emoji: this.getTypeEmoji(types[0]),
       color: this.getTypeColor(types[0]),
       cardId: card.id,
-      imageUrl: images.large || images.small || '',
+      imageUrl: images.high || images.large || images.small || '',
+      images: images,
       artist: card.artist || 'Unknown',
       hp: card.hp,
       type: types[0] || 'Colorless',
@@ -158,11 +164,30 @@ class CardService {
       language: card.language || 'en',
       variant: card.variant || 'Normal',
       variants: card.variants ? JSON.parse(card.variants) : ['Normal'],
+      // Variant boolean fields from CSV
+      variant_normal: card.variant_normal === true || card.variant_normal === 'true' || card.variant_normal === 1 || card.variant_normal === '1',
+      variant_reverse: card.variant_reverse === true || card.variant_reverse === 'true' || card.variant_reverse === 1 || card.variant_reverse === '1',
+      variant_holo: card.variant_holo === true || card.variant_holo === 'true' || card.variant_holo === 1 || card.variant_holo === '1',
+      variant_first_edition: card.variant_first_edition === true || card.variant_first_edition === 'true' || card.variant_first_edition === 1 || card.variant_first_edition === '1',
       regulation: card.regulation || 'A',
       format: card.format || 'Standard',
       created_at: card.created_at,
       updated_at: card.updated_at
     };
+  }
+
+  // Format card number as XXX/YYY
+  formatCardNumber(number, printedTotal) {
+    if (!number) return number;
+    
+    // If we have a set total and the number is purely numeric, format as XXX/YYY
+    if (printedTotal && number.match(/^\d+$/)) {
+      const totalStr = String(printedTotal);
+      const paddedNumber = number.padStart(totalStr.length, '0');
+      return `${paddedNumber}/${printedTotal}`;
+    }
+    
+    return number;
   }
 
   // Get emoji for Pokemon type

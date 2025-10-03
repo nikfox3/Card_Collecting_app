@@ -1,5 +1,245 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 
+// Function to construct TCGdx image URL
+function constructTCGdxImageUrl(card, quality = 'high', extension = 'webp') {
+  // Map set names to series and set codes
+  // Format: 'Set Name': { series: 'series_code', set: 'set_code' }
+  const setMap = {
+    '151': { series: 'Scarlet & Violet', set: 'sv3pt5' },
+    'Ancient Origins': { series: 'XY', set: 'xy7' },
+    'Aquapolis': { series: 'E-Card', set: 'ecard2' },
+    'Arceus': { series: 'Platinum', set: 'pl4' },
+    'Astral Radiance': { series: 'Sword & Shield', set: 'swsh10' },
+    'Astral Radiance Trainer Gallery': { series: 'Sword & Shield', set: 'swsh10tg' },
+    'BREAKpoint': { series: 'XY', set: 'xy9' },
+    'BREAKthrough': { series: 'XY', set: 'xy8' },
+    'BW Black Star Promos': { series: 'Black & White', set: 'bwp' },
+    'Base': { series: 'Base', set: 'base1' },
+    'Base Set 2': { series: 'Base', set: 'base4' },
+    'Battle Styles': { series: 'Sword & Shield', set: 'swsh5' },
+    'Best of Game': { series: 'Other', set: 'bp' },
+    'Black & White': { series: 'Black & White', set: 'bw1' },
+    'Black Bolt': { series: 'Scarlet & Violet', set: 'zsv10pt5' },
+    'Boundaries Crossed': { series: 'Black & White', set: 'bw7' },
+    'Brilliant Stars': { series: 'Sword & Shield', set: 'swsh9' },
+    'Brilliant Stars Trainer Gallery': { series: 'Sword & Shield', set: 'swsh9tg' },
+    'Burning Shadows': { series: 'Sun & Moon', set: 'sm3' },
+    'Call of Legends': { series: 'HeartGold & SoulSilver', set: 'col1' },
+    'Celebrations': { series: 'Sword & Shield', set: 'cel25' },
+    'Celebrations: Classic Collection': { series: 'Sword & Shield', set: 'cel25c' },
+    'Celestial Storm': { series: 'Sun & Moon', set: 'sm7' },
+    'Champion\'s Path': { series: 'Sword & Shield', set: 'swsh35' },
+    'Chilling Reign': { series: 'Sword & Shield', set: 'swsh6' },
+    'Cosmic Eclipse': { series: 'Sun & Moon', set: 'sm12' },
+    'Crimson Invasion': { series: 'Sun & Moon', set: 'sm4' },
+    'Crown Zenith': { series: 'Sword & Shield', set: 'swsh12pt5' },
+    'Crown Zenith Galarian Gallery': { series: 'Sword & Shield', set: 'swsh12pt5gg' },
+    'Crystal Guardians': { series: 'EX', set: 'ex14' },
+    'DP Black Star Promos': { series: 'Diamond & Pearl', set: 'dpp' },
+    'Dark Explorers': { series: 'Black & White', set: 'bw5' },
+    'Darkness Ablaze': { series: 'Sword & Shield', set: 'swsh3' },
+    'Delta Species': { series: 'EX', set: 'ex11' },
+    'Deoxys': { series: 'EX', set: 'ex8' },
+    'Destined Rivals': { series: 'Scarlet & Violet', set: 'sv10' },
+    'Detective Pikachu': { series: 'Sun & Moon', set: 'det1' },
+    'Diamond & Pearl': { series: 'Diamond & Pearl', set: 'dp1' },
+    'Double Crisis': { series: 'XY', set: 'dc1' },
+    'Dragon': { series: 'EX', set: 'ex3' },
+    'Dragon Frontiers': { series: 'EX', set: 'ex15' },
+    'Dragon Majesty': { series: 'Sun & Moon', set: 'sm75' },
+    'Dragon Vault': { series: 'Black & White', set: 'dv1' },
+    'Dragons Exalted': { series: 'Black & White', set: 'bw6' },
+    'EX Trainer Kit 2 Minun': { series: 'EX', set: 'tk2b' },
+    'EX Trainer Kit 2 Plusle': { series: 'EX', set: 'tk2a' },
+    'EX Trainer Kit Latias': { series: 'EX', set: 'tk1a' },
+    'EX Trainer Kit Latios': { series: 'EX', set: 'tk1b' },
+    'Emerald': { series: 'EX', set: 'ex9' },
+    'Emerging Powers': { series: 'Black & White', set: 'bw2' },
+    'Evolutions': { series: 'XY', set: 'xy12' },
+    'Evolving Skies': { series: 'Sword & Shield', set: 'swsh7' },
+    'Expedition Base Set': { series: 'E-Card', set: 'ecard1' },
+    'Fates Collide': { series: 'XY', set: 'xy10' },
+    'FireRed & LeafGreen': { series: 'EX', set: 'ex6' },
+    'Flashfire': { series: 'XY', set: 'xy2' },
+    'Forbidden Light': { series: 'Sun & Moon', set: 'sm6' },
+    'Fossil': { series: 'Base', set: 'base3' },
+    'Furious Fists': { series: 'XY', set: 'xy3' },
+    'Fusion Strike': { series: 'Sword & Shield', set: 'swsh8' },
+    'Generations': { series: 'XY', set: 'g1' },
+    'Great Encounters': { series: 'Diamond & Pearl', set: 'dp4' },
+    'Guardians Rising': { series: 'Sun & Moon', set: 'sm2' },
+    'Gym Challenge': { series: 'Gym', set: 'gym2' },
+    'Gym Heroes': { series: 'Gym', set: 'gym1' },
+    'HGSS Black Star Promos': { series: 'HeartGold & SoulSilver', set: 'hsp' },
+    'HS—Triumphant': { series: 'HeartGold & SoulSilver', set: 'hgss4' },
+    'HS—Undaunted': { series: 'HeartGold & SoulSilver', set: 'hgss3' },
+    'HS—Unleashed': { series: 'HeartGold & SoulSilver', set: 'hgss2' },
+    'HeartGold & SoulSilver': { series: 'HeartGold & SoulSilver', set: 'hgss1' },
+    'Hidden Fates': { series: 'Sun & Moon', set: 'sm115' },
+    'Hidden Fates Shiny Vault': { series: 'Sun & Moon', set: 'sma' },
+    'Hidden Legends': { series: 'EX', set: 'ex5' },
+    'Holon Phantoms': { series: 'EX', set: 'ex13' },
+    'Journey Together': { series: 'Scarlet & Violet', set: 'sv9' },
+    'Jungle': { series: 'Base', set: 'base2' },
+    'Kalos Starter Set': { series: 'XY', set: 'xy0' },
+    'Legend Maker': { series: 'EX', set: 'ex12' },
+    'Legendary Collection': { series: 'Other', set: 'base6' },
+    'Legendary Treasures': { series: 'Black & White', set: 'bw11' },
+    'Legends Awakened': { series: 'Diamond & Pearl', set: 'dp6' },
+    'Lost Origin': { series: 'Sword & Shield', set: 'swsh11' },
+    'Lost Origin Trainer Gallery': { series: 'Sword & Shield', set: 'swsh11tg' },
+    'Lost Thunder': { series: 'Sun & Moon', set: 'sm8' },
+    'Majestic Dawn': { series: 'Diamond & Pearl', set: 'dp5' },
+    'McDonald\'s Collection 2011': { series: 'Other', set: 'mcd11' },
+    'McDonald\'s Collection 2012': { series: 'Other', set: 'mcd12' },
+    'McDonald\'s Collection 2014': { series: 'Other', set: 'mcd14' },
+    'McDonald\'s Collection 2015': { series: 'Other', set: 'mcd15' },
+    'McDonald\'s Collection 2016': { series: 'Other', set: 'mcd16' },
+    'McDonald\'s Collection 2017': { series: 'Other', set: 'mcd17' },
+    'McDonald\'s Collection 2018': { series: 'Other', set: 'mcd18' },
+    'McDonald\'s Collection 2019': { series: 'Other', set: 'mcd19' },
+    'McDonald\'s Collection 2021': { series: 'Other', set: 'mcd21' },
+    'McDonald\'s Collection 2022': { series: 'Other', set: 'mcd22' },
+    'Mega Evolution': { series: 'Mega Evolution', set: 'me1' },
+    'Mysterious Treasures': { series: 'Diamond & Pearl', set: 'dp2' },
+    'Neo Destiny': { series: 'Neo', set: 'neo4' },
+    'Neo Discovery': { series: 'Neo', set: 'neo2' },
+    'Neo Genesis': { series: 'Neo', set: 'neo1' },
+    'Neo Revelation': { series: 'Neo', set: 'neo3' },
+    'Next Destinies': { series: 'Black & White', set: 'bw4' },
+    'Nintendo Black Star Promos': { series: 'NP', set: 'np' },
+    'Noble Victories': { series: 'Black & White', set: 'bw3' },
+    'Obsidian Flames': { series: 'Scarlet & Violet', set: 'sv3' },
+    'POP Series 1': { series: 'POP', set: 'pop1' },
+    'POP Series 2': { series: 'POP', set: 'pop2' },
+    'POP Series 3': { series: 'POP', set: 'pop3' },
+    'POP Series 4': { series: 'POP', set: 'pop4' },
+    'POP Series 5': { series: 'POP', set: 'pop5' },
+    'POP Series 6': { series: 'POP', set: 'pop6' },
+    'POP Series 7': { series: 'POP', set: 'pop7' },
+    'POP Series 8': { series: 'POP', set: 'pop8' },
+    'POP Series 9': { series: 'POP', set: 'pop9' },
+    'Paldea Evolved': { series: 'Scarlet & Violet', set: 'sv2' },
+    'Paldean Fates': { series: 'Scarlet & Violet', set: 'sv4pt5' },
+    'Paradox Rift': { series: 'Scarlet & Violet', set: 'sv4' },
+    'Phantom Forces': { series: 'XY', set: 'xy4' },
+    'Plasma Blast': { series: 'Black & White', set: 'bw10' },
+    'Plasma Freeze': { series: 'Black & White', set: 'bw9' },
+    'Plasma Storm': { series: 'Black & White', set: 'bw8' },
+    'Platinum': { series: 'Platinum', set: 'pl1' },
+    'Pokémon Futsal Collection': { series: 'Other', set: 'fut20' },
+    'Pokémon GO': { series: 'Sword & Shield', set: 'pgo' },
+    'Pokémon Rumble': { series: 'Other', set: 'ru1' },
+    'Power Keepers': { series: 'EX', set: 'ex16' },
+    'Primal Clash': { series: 'XY', set: 'xy5' },
+    'Prismatic Evolutions': { series: 'Scarlet & Violet', set: 'sv8pt5' },
+    'Rebel Clash': { series: 'Sword & Shield', set: 'swsh2' },
+    'Rising Rivals': { series: 'Platinum', set: 'pl2' },
+    'Roaring Skies': { series: 'XY', set: 'xy6' },
+    'Ruby & Sapphire': { series: 'EX', set: 'ex1' },
+    'SM Black Star Promos': { series: 'Sun & Moon', set: 'smp' },
+    'SWSH Black Star Promos': { series: 'Sword & Shield', set: 'swshp' },
+    'Sandstorm': { series: 'EX', set: 'ex2' },
+    'Scarlet & Violet': { series: 'Scarlet & Violet', set: 'sv1' },
+    'Scarlet & Violet Black Star Promos': { series: 'Scarlet & Violet', set: 'svp' },
+    'Scarlet & Violet Energies': { series: 'Scarlet & Violet', set: 'sve' },
+    'Secret Wonders': { series: 'Diamond & Pearl', set: 'dp3' },
+    'Shining Fates': { series: 'Sword & Shield', set: 'swsh45' },
+    'Shining Fates Shiny Vault': { series: 'Sword & Shield', set: 'swsh45sv' },
+    'Shining Legends': { series: 'Sun & Moon', set: 'sm35' },
+    'Shrouded Fable': { series: 'Scarlet & Violet', set: 'sv6pt5' },
+    'Silver Tempest': { series: 'Sword & Shield', set: 'swsh12' },
+    'Silver Tempest Trainer Gallery': { series: 'Sword & Shield', set: 'swsh12tg' },
+    'Skyridge': { series: 'E-Card', set: 'ecard3' },
+    'Southern Islands': { series: 'Other', set: 'si1' },
+    'Steam Siege': { series: 'XY', set: 'xy11' },
+    'Stellar Crown': { series: 'Scarlet & Violet', set: 'sv7' },
+    'Stormfront': { series: 'Diamond & Pearl', set: 'dp7' },
+    'Sun & Moon': { series: 'Sun & Moon', set: 'sm1' },
+    'Supreme Victors': { series: 'Platinum', set: 'pl3' },
+    'Surging Sparks': { series: 'Scarlet & Violet', set: 'sv8' },
+    'Sword & Shield': { series: 'Sword & Shield', set: 'swsh1' },
+    'Team Magma vs Team Aqua': { series: 'EX', set: 'ex4' },
+    'Team Rocket': { series: 'Base', set: 'base5' },
+    'Team Rocket Returns': { series: 'EX', set: 'ex7' },
+    'Team Up': { series: 'Sun & Moon', set: 'sm9' },
+    'Temporal Forces': { series: 'Scarlet & Violet', set: 'sv5' },
+    'Twilight Masquerade': { series: 'Scarlet & Violet', set: 'sv6' },
+    'Ultra Prism': { series: 'Sun & Moon', set: 'sm5' },
+    'Unbroken Bonds': { series: 'Sun & Moon', set: 'sm10' },
+    'Unified Minds': { series: 'Sun & Moon', set: 'sm11' },
+    'Unseen Forces': { series: 'EX', set: 'ex10' },
+    'Vivid Voltage': { series: 'Sword & Shield', set: 'swsh4' },
+    'White Flare': { series: 'Scarlet & Violet', set: 'rsv10pt5' },
+    'Wizards Black Star Promos': { series: 'Base', set: 'basep' },
+    'XY': { series: 'XY', set: 'xy1' },
+    'XY Black Star Promos': { series: 'XY', set: 'xyp' },
+  };
+  
+  // Try to find set info from set name
+  let setInfo = setMap[card.set_name] || setMap[card.set];
+  
+  // Fallback: try to extract from set_id (e.g., "me01" → series: "me", set: "me01")
+  if (!setInfo && card.set_id) {
+    const setId = card.set_id;
+    const seriesMatch = setId.match(/^([a-z]+)/i);
+    if (seriesMatch) {
+      setInfo = { series: seriesMatch[1], set: setId };
+    }
+  }
+  
+  // Final fallback
+  if (!setInfo) {
+    setInfo = { series: 'base', set: 'base1' };
+  }
+  
+  // Construct the TCGdx URL: https://assets.tcgdex.net/{language}/{series}/{set}/{cardNumber}/{quality}.{extension}
+  const baseUrl = 'https://assets.tcgdex.net/en';
+  const cardNumber = card.number || card.cardNumber || '1';
+  
+  return `${baseUrl}/${setInfo.series}/${setInfo.set}/${cardNumber}/${quality}.${extension}`;
+}
+
+// Function to get the best available image URL
+function getCardImageUrl(card) {
+  // First try existing imageUrl or images
+  if (card.imageUrl && card.imageUrl !== '/placeholder-card.png') {
+    return card.imageUrl;
+  }
+  
+  // Check if images is a string that needs to be parsed
+  let images = card.images;
+  if (typeof images === 'string') {
+    try {
+      images = JSON.parse(images);
+    } catch (e) {
+      console.warn('Failed to parse images JSON:', e);
+      images = {};
+    }
+  }
+  
+  if (images?.high && typeof images.high === 'string' && images.high !== '/placeholder-card.png') {
+    return images.high;
+  }
+  
+  if (images?.large && typeof images.large === 'string' && images.large !== '/placeholder-card.png') {
+    return images.large;
+  }
+  
+  if (images?.small && typeof images.small === 'string' && images.small !== '/placeholder-card.png') {
+    return images.small;
+  }
+  
+  // If no existing image, try to construct TCGdx URL
+  try {
+    const constructedUrl = constructTCGdxImageUrl(card, 'high', 'webp');
+    return constructedUrl;
+  } catch (error) {
+    console.warn('Failed to construct TCGdx URL for card:', card.name, error);
+    return '/placeholder-card.png';
+  }
+}
+
 // Marketplace Card Component
 const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, price, onClick, isCollection = false, isSelected = false, onPressStart, onPressEnd, onTouchStart, onTouchEnd, onTouchMove, cardImage, quantity = 1, onAddToCollection }) => {
   const affiliateLinks = {
@@ -14,13 +254,12 @@ const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, pric
     e.preventDefault()
     e.stopPropagation() // Prevent event bubbling
     
-    if (isCollection) {
-      // Collection mode - only trigger onClick (no external links)
-      if (onClick) onClick(e)
-    } else {
-      // Marketplace mode - open affiliate link
+    // Always prioritize onClick handler (card profile) over affiliate links
+    if (onClick) {
+      onClick(e)
+    } else if (!isCollection) {
+      // Only open affiliate link if no onClick handler is provided
       window.open(affiliateLinks[platform] || '#', '_blank')
-      if (onClick) onClick(e)
     }
   }
 
@@ -42,21 +281,26 @@ const MarketplaceCard = ({ platform, cardName, setName, rarity, cardNumber, pric
       <div className="bg-[#202020] rounded-[4px] p-[6px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
         {/* Card Image */}
         <div className="aspect-[3/4] bg-gray-700 rounded mb-1 flex items-center justify-center overflow-hidden relative">
-          {cardImage && cardImage !== '/placeholder-card.png' ? (
-            <img 
-              src={cardImage} 
-              alt={cardName} 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                console.log(`Image failed to load for ${cardName}:`, cardImage)
-                e.target.style.display = 'none'
-                e.target.nextSibling.style.display = 'flex'
-              }}
-              onLoad={() => {
-                console.log(`Image loaded successfully for ${cardName}:`, cardImage)
-              }}
-            />
-          ) : null}
+          {(() => {
+            // cardImage is already the processed URL from getCardImageUrl
+            const imageUrl = cardImage;
+            
+            return imageUrl && imageUrl !== '/placeholder-card.png' ? (
+              <img 
+                src={imageUrl} 
+                alt={cardName} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.log(`Image failed to load for ${cardName}:`, imageUrl)
+                  e.target.style.display = 'none'
+                  e.target.nextSibling.style.display = 'flex'
+                }}
+                onLoad={() => {
+                  console.log(`Image loaded successfully for ${cardName}:`, imageUrl)
+                }}
+              />
+            ) : null;
+          })()}
           <span className="text-gray-400 text-xs" style={{ display: (cardImage && cardImage !== '/placeholder-card.png') ? 'none' : 'flex' }}>
             {cardImage === '/placeholder-card.png' ? 'No Image' : 'Card Image'}
           </span>
@@ -251,6 +495,7 @@ export default function App() {
   const [topMoversData, setTopMoversData] = useState([])
   const [trendingCardsData, setTrendingCardsData] = useState([])
   const [isLoadingData, setIsLoadingData] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Load user data from database
   useEffect(() => {
@@ -306,11 +551,14 @@ export default function App() {
         // Initialize card data migration service
         await cardDataMigration.initialize()
         
-        // Load real data from database
+        // Load real data from database with cache busting
         const [topMovers, trending] = await Promise.all([
           cardService.getTopMovers(),
           cardService.getTrendingCards()
         ])
+        
+        console.log('Loaded trending cards:', trending.length)
+        console.log('Sample trending card:', trending[0])
         
         // Transform the data and add mock properties for compatibility
         const transformedTopMovers = topMovers.map((card, index) => {
@@ -352,7 +600,7 @@ export default function App() {
     }
     
     loadData()
-  }, [])
+  }, [refreshKey])
 
   // State variables that were accidentally removed
   const [activeTab, setActiveTab] = useState('home')
@@ -665,8 +913,9 @@ export default function App() {
   const [showPriceTypeDropdown, setShowPriceTypeDropdown] = useState(false)
   
   // Infinite scroll state
-  const [visibleCardsCount, setVisibleCardsCount] = useState(36)
+  const [visibleCardsCount, setVisibleCardsCount] = useState(12) // Start with 12 cards
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [showLoadMoreHint, setShowLoadMoreHint] = useState(false)
   
   // Trending cards pagination (removed - dashboard now shows fixed 12 cards)
   
@@ -723,11 +972,11 @@ export default function App() {
     
     setIsLoadingMore(true)
     
-    // Simulate loading delay
+    // Load more cards immediately with a small delay for smooth UX
     setTimeout(() => {
-      setVisibleCardsCount(prev => Math.min(prev + 12, allTrendingCards.length))
+      setVisibleCardsCount(prev => Math.min(prev + 12, allTrendingCards.length)) // Load 12 cards at a time
       setIsLoadingMore(false)
-    }, 1000)
+    }, 300) // Reasonable loading delay
   }
   
   // Infinite scroll handler
@@ -735,8 +984,19 @@ export default function App() {
     const { scrollTop, scrollHeight, clientHeight } = e.target
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
 
+    // Show hint when approaching load threshold
+    if (scrollPercentage > 0.7 && scrollPercentage < 0.8) {
+      setShowLoadMoreHint(true)
+    } else {
+      setShowLoadMoreHint(false)
+    }
+
     // Load more when user scrolls to 80% of the content
-    if (scrollPercentage > 0.8 && visibleCardsCount < allTrendingCards.length) {
+    // Only trigger on search page when trending cards are visible
+    if (scrollPercentage > 0.8 && 
+        visibleCardsCount < allTrendingCards.length && 
+        !showSearchResults && 
+        !isLoadingMore) {
       loadMoreCards()
     }
   }
@@ -903,11 +1163,13 @@ export default function App() {
     try {
       setLoading(true);
         
-        // Use database migration service for search
-        const searchResults = await cardDataMigration.searchCards(searchQuery, {
-          limit: 200,
-          exactMatch: false
-        });
+        // Use API endpoint for search to get proper formatted numbers
+        const response = await fetch(`/api/cards/search?q=${encodeURIComponent(searchQuery)}&limit=200&t=${Date.now()}`);
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+        const searchData = await response.json();
+        const searchResults = searchData.data || [];
         
         // Search results loaded successfully
         
@@ -3126,18 +3388,18 @@ export default function App() {
     
     // Create a consistent card ID based on card properties
     // This ensures the same card always gets the same ID regardless of when it's added
-    const cardId = card.id || card.cardId || `${card.name}-${card.set?.name || card.set || card.set_name || 'Unknown'}-${card.number || '001'}`.replace(/[^a-zA-Z0-9-]/g, '-');
+    const cardId = card.id || card.cardId || `${card.name}-${card.set_name || 'Unknown'}-${card.number || '001'}`.replace(/[^a-zA-Z0-9-]/g, '-');
     
     
     // Prepare card data for database
     const cardData = {
       id: cardId,
       name: card.name,
-      set: card.set?.name || card.set || card.set_name || 'Unknown Set',
-      set_name: card.set?.name || card.set || card.set_name || 'Unknown Set',
+      set: card.set_name || 'Unknown Set',
+      set_name: card.set_name || 'Unknown Set',
       rarity: card.rarity || 'Unknown',
       number: card.number || '001',
-      imageUrl: card.imageUrl || card.images?.large || card.images?.small,
+      imageUrl: getCardImageUrl(card),
       images: card.images || { small: card.imageUrl, large: card.imageUrl },
       artist: card.artist || 'Unknown Artist',
       currentValue: card.price || card.currentValue || card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || 0,
@@ -3603,54 +3865,105 @@ export default function App() {
     if (!selectedCard) return []
     
     const basePrice = selectedCard.current_value || selectedCard.price || 12.00
-    
-    
     const grading = getGradedOptions.find(g => g.id === selectedGradingService)
     const gradingMultiplier = grading ? grading.multiplier : 1.0
     
-    const variants = []
+    // Get the actual variants available for this card
+    const cardVariants = []
     
-    // Add normal variant
-    variants.push({
-      id: 'normal',
-      name: 'Normal',
-      price: basePrice * gradingMultiplier,
-      multiplier: 1.0
-    })
-    
-    // Add holofoil variant (typically 1.5-2x normal price)
-    variants.push({
-      id: 'holofoil',
-      name: 'Holofoil',
-      price: basePrice * 1.8 * gradingMultiplier,
-      multiplier: 1.8
-    })
-    
-    // Add reverse holofoil variant (typically 1.2-1.5x normal price)
-    variants.push({
-      id: 'reverseHolofoil',
-      name: 'Reverse Holo',
-      price: basePrice * 1.3 * gradingMultiplier,
-      multiplier: 1.3
-    })
-    
-    // Add first edition if it's a vintage card
-    if (selectedCard.set?.name?.includes('Base Set') || selectedCard.set?.name?.includes('Jungle') || selectedCard.set?.name?.includes('Fossil')) {
-      variants.push({
-        id: 'firstEdition',
-        name: '1st Edition',
-        price: basePrice * 3.0 * gradingMultiplier,
-        multiplier: 3.0
-      })
+    // First, try to use the boolean columns if they exist
+    if (selectedCard.variant_normal === true || selectedCard.variant_normal === 'true' || selectedCard.variant_normal === 1 || selectedCard.variant_normal === '1') {
+      cardVariants.push('Normal')
+    }
+    if (selectedCard.variant_reverse === true || selectedCard.variant_reverse === 'true' || selectedCard.variant_reverse === 1 || selectedCard.variant_reverse === '1') {
+      cardVariants.push('Reverse Holo')
+    }
+    if (selectedCard.variant_holo === true || selectedCard.variant_holo === 'true' || selectedCard.variant_holo === 1 || selectedCard.variant_holo === '1') {
+      cardVariants.push('Holo')
+    }
+    if (selectedCard.variant_first_edition === true || selectedCard.variant_first_edition === 'true' || selectedCard.variant_first_edition === 1 || selectedCard.variant_first_edition === '1') {
+      cardVariants.push('1st Edition')
     }
     
-    // Add special variants for certain cards
-    if (selectedCard.name?.includes('Charizard') || selectedCard.name?.includes('Pikachu')) {
+    // If no boolean columns are found, try to parse the variants JSON array
+    if (cardVariants.length === 0 && selectedCard.variants) {
+      let variantsArray = selectedCard.variants
+      if (typeof variantsArray === 'string') {
+        try {
+          variantsArray = JSON.parse(variantsArray)
+        } catch (e) {
+          console.warn('Failed to parse variants JSON:', e)
+        }
+      }
+      
+      if (Array.isArray(variantsArray)) {
+        cardVariants.push(...variantsArray)
+      }
+    }
+    
+    // If still no variants found, default to Normal
+    if (cardVariants.length === 0) {
+      cardVariants.push('Normal')
+    }
+    
+    console.log('Card variants for', selectedCard.name, ':', {
+      booleanColumns: {
+        variant_normal: selectedCard.variant_normal,
+        variant_reverse: selectedCard.variant_reverse,
+        variant_holo: selectedCard.variant_holo,
+        variant_first_edition: selectedCard.variant_first_edition
+      },
+      variantsField: selectedCard.variants,
+      finalVariants: cardVariants
+    })
+    
+    // Variant multipliers based on rarity and type
+    const variantMultipliers = {
+      'Normal': 1.0,
+      'Holo': 1.8,
+      'Reverse Holo': 1.3,
+      '1st Edition': 3.0,
+      'Shadowless': 2.5,
+      'Holographic': 1.8,
+      'Reverse Holofoil': 1.3,
+      'First Edition': 3.0,
+      'Special': 2.0,
+      'Rare': 1.5,
+      'Ultra Rare': 2.0,
+      'Secret Rare': 3.0,
+      'Radiant': 1.4,
+      'V': 1.6,
+      'VMAX': 2.2,
+      'VSTAR': 2.0,
+      'ex': 1.8,
+      'GX': 2.0,
+      'Tag Team': 2.5,
+      'Full Art': 2.0,
+      'Alternate Art': 3.0,
+      'Rainbow': 2.5,
+      'Gold': 3.0
+    }
+    
+    // Create variants based on the card's actual available variants
+    const variants = cardVariants.map(variantName => {
+      const multiplier = variantMultipliers[variantName] || 1.0
+      const variantId = variantName.toLowerCase().replace(/\s+/g, '')
+      
+      return {
+        id: variantId,
+        name: variantName,
+        price: basePrice * multiplier * gradingMultiplier,
+        multiplier: multiplier
+      }
+    })
+    
+    // If no variants are specified, default to Normal
+    if (variants.length === 0) {
       variants.push({
-        id: 'shadowless',
-        name: 'Shadowless',
-        price: basePrice * 2.5 * gradingMultiplier,
-        multiplier: 2.5
+        id: 'normal',
+        name: 'Normal',
+        price: basePrice * gradingMultiplier,
+        multiplier: 1.0
       })
     }
     
@@ -3707,7 +4020,7 @@ export default function App() {
 
     try {
       // Use TCGPlayer service for real data
-      const chartData = await tcgplayerService.getChartData(card.name, card.set_name || card.set, timeRange)
+      const chartData = await tcgplayerService.getChartData(card.name, card.set_name || card.set, timeRange, card)
       return chartData
     } catch (error) {
       console.warn('Error fetching TCGPlayer chart data, falling back to mock data:', error)
@@ -3826,18 +4139,28 @@ export default function App() {
       }
 
       try {
-        // Use the same time range as the chart for consistency
+        // Use real card data as primary source
+        const currentPrice = selectedCard.current_value || getCurrentPrice
+        
+        // Try to get chart data for price changes, but don't rely on it for current price
         const chartData = await getCardChartData(selectedCard, cardChartTimeRange, 'normal', 'raw', 'PSA', '10')
+        
+        // Use chart data for changes, but prioritize real card data for current price
+        const absoluteChange = chartData.absoluteChange || 0
+        const percentageChange = chartData.percentageChange || 0
+        
         setMarketValueData({
-          currentPrice: chartData.currentPrice || getCurrentPrice,
-          absoluteChange: chartData.absoluteChange || 0,
-          percentageChange: chartData.percentageChange || 0,
-          isPositive: (chartData.absoluteChange || 0) >= 0
+          currentPrice: currentPrice,
+          absoluteChange: absoluteChange,
+          percentageChange: percentageChange,
+          isPositive: absoluteChange >= 0
         })
       } catch (error) {
         console.error('Error loading market value data:', error)
+        // Use real card data as fallback
+        const currentPrice = selectedCard.current_value || getCurrentPrice
         setMarketValueData({
-          currentPrice: getCurrentPrice,
+          currentPrice: currentPrice,
           absoluteChange: 0,
           percentageChange: 0,
           isPositive: false
@@ -3846,7 +4169,7 @@ export default function App() {
     }
 
     loadMarketValueData()
-  }, [selectedCard, cardChartTimeRange, getCurrentPrice])
+  }, [selectedCard, cardChartTimeRange, getCurrentPrice, selectedCardVariant])
 
   // Card chart options
   const cardChartOptions = {
@@ -4481,7 +4804,7 @@ export default function App() {
                     >
                       <div className="aspect-[3/4] bg-gray-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
                         <img
-                          src={card.images?.small || card.imageUrl}
+                          src={getCardImageUrl(card)}
                           alt={card.name}
                           className="w-full h-full object-cover rounded-lg"
                           onError={(e) => {
@@ -4580,11 +4903,7 @@ export default function App() {
                   {/* Card Image */}
                   <div className="w-[217px] h-[301px]">
                     <HolographicCard
-                      src={(() => {
-                        // Ensure we return a string, not a function
-                        const imageSrc = selectedCard.imageUrl || selectedCard.images?.large || selectedCard.images?.small || cardImages[selectedCard.id];
-                        return typeof imageSrc === 'string' ? imageSrc : '';
-                      })()}
+                      src={getCardImageUrl(selectedCard)}
                       alt={selectedCard.name}
                       className="w-full h-full bg-transparent rounded-xl overflow-hidden"
                       enableGyroscope={true}
@@ -4638,7 +4957,7 @@ export default function App() {
                     <div className="flex items-center gap-3">
                       {/* Card Number Indicator */}
                       <div className="relative">
-                        <img src="/Assets/Cardnumb_Background.svg" alt="Card Number" className="w-[46px] h-[28px]" />
+                        <img src="/Assets/Cardnumb_Background.svg" alt="Card Number" className="w-[80px] h-[28px]" />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-white text-xs font-bold">
                             {selectedCard.formattedNumber ? selectedCard.formattedNumber.replace('#', '') : (selectedCard.number ? selectedCard.number.replace('#', '') : '001')}
@@ -4822,20 +5141,9 @@ export default function App() {
                     <div className="flex justify-between items-center">
                       <span className="text-white">Avg. market value</span>
                       <div className="flex flex-col items-end">
-                        <div className="flex items-center gap-1">
-                          <svg className={`w-4 h-4 ${marketValueData.isPositive ? 'text-green-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={marketValueData.isPositive 
-                              ? "M7 11l5-5m0 0l5 5m-5-5v12"
-                              : "M17 13l-5 5m0 0l-5-5m5 5V6"
-                            } />
-                          </svg>
-                          <span className="text-white text-lg font-bold">
-                            ${marketValueData.currentPrice.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className={`text-sm ${marketValueData.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                          ${marketValueData.absoluteChange >= 0 ? '+' : ''}${marketValueData.absoluteChange.toFixed(2)} ({marketValueData.percentageChange >= 0 ? '+' : ''}${marketValueData.percentageChange.toFixed(2)}%)
-                        </div>
+                        <span className="text-white text-lg font-bold">
+                          ${marketValueData.currentPrice.toFixed(2)}
+                        </span>
                         <div className="text-gray-400 text-xs">
                           market data
                         </div>
@@ -4901,16 +5209,15 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-col">
                       <span className="text-white text-xl font-bold">
-                  ${getCurrentPrice.toFixed(2)}
+                  ${marketValueData.currentPrice.toFixed(2)}
                       </span>
                       <div className={`flex items-center gap-1 text-sm ${(() => {
-                        // Use the same calculation as the chart data to ensure consistency
-                        const chartData = getCardChartData
-                        if (!chartData.datasets || chartData.datasets.length === 0) {
+                        // Use the actual chart data from state
+                        if (!cardChartData.datasets || cardChartData.datasets.length === 0) {
                           return 'text-gray-400'
                         }
                         
-                        const history = chartData.datasets[0].data
+                        const history = cardChartData.datasets[0].data
                         if (history.length < 2) {
                           return 'text-gray-400'
                         }
@@ -4926,13 +5233,12 @@ export default function App() {
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
                             (() => {
-                              // Use the same calculation as the chart data to ensure consistency
-                              const chartData = getCardChartData
-                              if (!chartData.datasets || chartData.datasets.length === 0) {
+                              // Use the actual chart data from state
+                              if (!cardChartData.datasets || cardChartData.datasets.length === 0) {
                                 return "M7 11l5-5m0 0l5 5m-5-5v12" // Default up arrow
                               }
                               
-                              const history = chartData.datasets[0].data
+                              const history = cardChartData.datasets[0].data
                               if (history.length < 2) {
                                 return "M7 11l5-5m0 0l5 5m-5-5v12" // Default up arrow
                               }
@@ -4953,13 +5259,12 @@ export default function App() {
                           } />
                         </svg>
                         <span>{(() => {
-                          // Use the same calculation as the chart data to ensure consistency
-                          const chartData = getCardChartData
-                          if (!chartData.datasets || chartData.datasets.length === 0) {
+                          // Use the actual chart data from state
+                          if (!cardChartData.datasets || cardChartData.datasets.length === 0) {
                             return '$0.00'
                           }
                           
-                          const history = chartData.datasets[0].data
+                          const history = cardChartData.datasets[0].data
                           if (history.length < 2) {
                             return '$0.00'
                           }
@@ -4986,6 +5291,7 @@ export default function App() {
                             case '3M': return 'past 3 months'
                             case '6M': return 'past 6 months'
                             case '1Y': return 'past year'
+                            case 'Max': return 'total'
                             default: return 'this week'
                           }
                         })()}</span>
@@ -5003,7 +5309,7 @@ export default function App() {
                         </svg>
                       </button>
                         {showCardVariantDropdown && (
-                          <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[120px]">
+                          <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[180px]">
                             {getCardVariants.map((variant) => (
                               <button
                                 key={variant.id}
@@ -5011,13 +5317,13 @@ export default function App() {
                                   setSelectedCardVariant(variant.id)
                                   setShowCardVariantDropdown(false)
                                 }}
-                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
                                   selectedCardVariant === variant.id ? 'bg-gray-700 text-white' : 'text-gray-300'
                                 }`}
                               >
-                                <div className="flex justify-between items-center">
-                                  <span>{variant.name}</span>
-                                  <span className="text-xs text-gray-400">${variant.price.toFixed(2)}</span>
+                                <div className="flex justify-between items-center gap-3">
+                                  <span className="flex-1">{variant.name}</span>
+                                  <span className="text-xs text-gray-400 font-medium">${variant.price.toFixed(2)}</span>
                                 </div>
                               </button>
                             ))}
@@ -5037,7 +5343,7 @@ export default function App() {
                         </svg>
                       </button>
                         {showGradingDropdown && (
-                          <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[120px]">
+                          <div className="absolute top-full right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[120px]">
                             {getGradedOptions.map((grading) => (
                               <button
                                 key={grading.id}
@@ -5085,7 +5391,7 @@ export default function App() {
 
                   {/* Time Range Buttons */}
                   <div className="flex gap-2 mb-4 w-full">
-                    {['1D', '7D', '1M', '3M', '6M', '1Y'].map((period) => (
+                    {['1D', '7D', '1M', '3M', '6M', '1Y', 'Max'].map((period) => (
                       <button 
                         key={period}
                         onClick={() => setCardChartTimeRange(period)}
@@ -7036,7 +7342,7 @@ export default function App() {
                           </svg>
                         </button>
                         {showEditVariantDropdown && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50 min-w-[180px]">
                             {['Normal', 'Holo', 'Reverse Holo', 'Foil'].map((variant) => (
                               <button
                                 key={variant}
@@ -7044,7 +7350,7 @@ export default function App() {
                                   setEditVariant(variant);
                                   setShowEditVariantDropdown(false);
                                 }}
-                                className="w-full px-3 py-2 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
+                                className="w-full px-4 py-3 text-white hover:bg-gray-600 text-left first:rounded-t-lg last:rounded-b-lg"
                               >
                                 {variant}
                               </button>
@@ -7215,10 +7521,7 @@ export default function App() {
                       <div className="mb-6 p-4 bg-gray-700 rounded-xl">
                         <div className="flex gap-4 items-center">
                           <img 
-                            src={(() => {
-                              const imageSrc = cardToAddFromProfile.imageUrl || cardToAddFromProfile.images?.large || cardToAddFromProfile.images?.small || cardImages[cardToAddFromProfile.id];
-                              return typeof imageSrc === 'string' ? imageSrc : '';
-                            })()} 
+                            src={getCardImageUrl(cardToAddFromProfile)} 
                             alt={cardToAddFromProfile.name}
                             className="w-20 h-28 object-cover rounded-lg"
                           />
@@ -7324,7 +7627,7 @@ export default function App() {
                           </svg>
                         </button>
                         {showVariantDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg">
+                          <div className="absolute z-50 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg min-w-[180px]">
                             <div className="py-1">
                               {['normal', 'holo', 'reverse holo', '1st edition'].map(variant => (
                                 <button
@@ -7333,7 +7636,7 @@ export default function App() {
                                     setSelectedVariant(variant);
                                     setShowVariantDropdown(false);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition-colors"
+                                  className="w-full px-4 py-3 text-left text-white hover:bg-gray-600 transition-colors"
                                 >
                                   {variant}
                                 </button>
@@ -8876,16 +9179,29 @@ export default function App() {
             <div className="px-4 mb-6 pb-20">
               <div className="bg-gradient-to-br from-[#2b2b2b] to-[#1a1a1a] rounded-2xl p-6 border border-gray-700/50">
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
                         </svg>
                       </div>
-                    <h3 className="text-white font-bold text-lg">Trending Cards</h3>
+                      <h3 className="text-white font-bold text-lg">Trending Cards</h3>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400">Hot Today</div>
+                  <div className="flex flex-col items-end">
+                    <div className="text-xs text-gray-400">Hot Today</div>
+                    <button 
+                      onClick={() => setRefreshKey(prev => prev + 1)}
+                      className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
@@ -8900,7 +9216,7 @@ export default function App() {
                       cardNumber={card.formattedNumber || card.number || ''}
                       price={formatCurrency(card.current_value || card.price || 0)}
                       isCollection={false}
-                      cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                      cardImage={getCardImageUrl(card)}
                       onClick={() => handleCardClick(card)}
                       onAddToCollection={() => handleAddToCollection(card)}
                     />
@@ -8960,12 +9276,12 @@ export default function App() {
                         key={`search-${card.id}-${index}`}
                         platform="Search"
                         cardName={card.name}
-                        setName={card.set?.name || card.set || 'Unknown Set'}
-                        rarity={card.rarity}
+                        setName={card.set_name || 'Unknown Set'}
+                        rarity={card.rarity || 'Unknown'}
                         cardNumber={card.formattedNumber || card.number || ''}
-                        price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
+                        price={formatCurrency(card.current_value || 0)}
                         isCollection={false}
-                        cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                        cardImage={getCardImageUrl(card)}
                         onClick={() => {
                           setSelectedCard(card);
                           setShowCardProfile(true);
@@ -8986,24 +9302,35 @@ export default function App() {
               {/* Trending Cards Section - Only show when no search results */}
               {!showSearchResults && (
                 <div className="mb-6 pb-20">
-                  <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                <h3 className="text-white font-medium">Trending Now</h3>
-              </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <h3 className="text-white font-medium">Trending Now</h3>
+                    </div>
+                    <button 
+                      onClick={() => setRefreshKey(prev => prev + 1)}
+                      className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-0.5">
                 {allTrendingCards.slice(0, visibleCardsCount).map((card, index) => (
                   <MarketplaceCard
                     key={`trending-${card.id}`}
                     platform="Trending"
                     cardName={card.name}
-                    setName={card.set?.name || 'Unknown Set'}
-                    rarity={card.rarity}
+                    setName={card.set_name || 'Unknown Set'}
+                    rarity={card.rarity || 'Unknown'}
                     cardNumber={card.formattedNumber || card.number || ''}
-                    price={formatCurrency(card.currentValue || card.current_value || card.price || 0)}
+                    price={formatCurrency(card.current_value || 0)}
                     isCollection={false}
-                    cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                    cardImage={getCardImageUrl(card)}
                     onClick={() => {
                       setSelectedCard(card);
                       setShowCardProfile(true);
@@ -9013,14 +9340,24 @@ export default function App() {
                 ))}
                 </div>
 
+              {/* Load More Hint */}
+              {showLoadMoreHint && !isLoadingMore && visibleCardsCount < allTrendingCards.length && (
+                <div className="flex justify-center items-center py-4">
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <span>Scroll down for more cards...</span>
+                  </div>
+                </div>
+              )}
+
               {/* Loading More Indicator */}
               {isLoadingMore && (
                 <div className="flex justify-center items-center py-8">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                    <span className="text-sm">Loading more cards...</span>
-                    </div>
+                  <div className="flex items-center gap-3 text-gray-400">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-600 border-t-primary"></div>
+                    <span className="text-sm font-medium">Loading more trending cards...</span>
                   </div>
+                </div>
               )}
               
               {/* Load More Button for Search Page Trending Cards */}
@@ -9457,7 +9794,7 @@ export default function App() {
                           isCollection={true}
                           isSelected={isSelected}
                           quantity={card.quantity || 1}
-                          cardImage={card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'}
+                          cardImage={getCardImageUrl(card)}
                           onClick={(e) => handleCollectionCardClick(e, card)}
                           onPressStart={(e) => handleCollectionCardPressStart(e, card)}
                           onPressEnd={handleCollectionCardPressEnd}
@@ -9840,11 +10177,11 @@ export default function App() {
                   collection.cards?.slice(0, 6).map((card, index) => ({
                     platform: 'TCGPlayer',
                     cardName: card.name,
-                    setName: card.set?.name || card.set || 'Unknown Set',
-                    rarity: card.rarity,
+                    setName: card.set_name || 'Unknown Set',
+                    rarity: card.rarity || 'Unknown',
                     cardNumber: card.formattedNumber || card.number || '',
-                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
-                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                    price: formatCurrency(card.current_value || 0),
+                    cardImage: getCardImageUrl(card)
                   })) || []
                 ).map((card, index) => (
                   <MarketplaceCard
@@ -9871,11 +10208,11 @@ export default function App() {
                   collection.cards?.slice(6, 12).map((card, index) => ({
                     platform: 'eBay',
                     cardName: card.name,
-                    setName: card.set?.name || card.set || 'Unknown Set',
-                    rarity: card.rarity,
+                    setName: card.set_name || 'Unknown Set',
+                    rarity: card.rarity || 'Unknown',
                     cardNumber: card.formattedNumber || card.number || '',
-                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
-                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                    price: formatCurrency(card.current_value || 0),
+                    cardImage: getCardImageUrl(card)
                   })) || []
                 ).map((card, index) => (
                   <MarketplaceCard
@@ -9902,11 +10239,11 @@ export default function App() {
                   collection.cards?.slice(12, 18).map((card, index) => ({
                     platform: 'Wishlist',
                     cardName: card.name,
-                    setName: card.set?.name || card.set || 'Unknown Set',
-                    rarity: card.rarity,
+                    setName: card.set_name || 'Unknown Set',
+                    rarity: card.rarity || 'Unknown',
                     cardNumber: card.formattedNumber || card.number || '',
-                    price: formatCurrency(card.currentValue || card.current_value || card.price || 0),
-                    cardImage: card.imageUrl || card.images?.small || card.images?.large || '/placeholder-card.png'
+                    price: formatCurrency(card.current_value || 0),
+                    cardImage: getCardImageUrl(card)
                   }))
                 ).slice(0, 6).map((card, index) => (
                   <MarketplaceCard
@@ -10367,7 +10704,7 @@ export default function App() {
                       <div className="relative">
                         <div className="w-16 h-20 rounded-lg shadow-lg overflow-hidden bg-gray-800">
                           <img 
-                            src={mover.imageUrl} 
+                            src={getCardImageUrl(mover)} 
                             alt={mover.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -10382,8 +10719,8 @@ export default function App() {
                             'bg-gradient-to-br from-gray-400 to-gray-600'
                           }`} style={{display: 'none'}}>
                             <span className="text-white font-bold text-xs">#{mover.rank}</span>
-                      </div>
                           </div>
+                        </div>
                         <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
                           mover.type === 'gain' ? 'bg-green-500' : 'bg-red-500'
                         }`}>
@@ -10486,7 +10823,7 @@ export default function App() {
                       <div className="relative mb-3">
                         <div className="w-20 h-28 rounded-lg shadow-lg overflow-hidden bg-gray-800">
                           <img 
-                            src={card.imageUrl} 
+                            src={getCardImageUrl(card)} 
                             alt={card.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -10532,7 +10869,9 @@ export default function App() {
                       }`}>
                         {card.name}
                       </h4>
-                      <p className="text-gray-400 text-xs mb-2">{card.set}</p>
+                      <p className="text-gray-400 text-xs mb-1">{card.set_name || card.set || 'Unknown Set'}</p>
+                      <p className="text-gray-500 text-xs mb-1">{card.formattedNumber || card.number || ''}</p>
+                      <p className="text-gray-500 text-xs mb-2">{card.rarity || 'Unknown'}</p>
                       <div className={`font-bold text-lg ${
                         card.color === 'orange' ? 'text-orange-400' :
                         card.color === 'blue' ? 'text-blue-400' :

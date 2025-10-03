@@ -118,7 +118,7 @@ app.get('/api/cards/search', async (req, res) => {
     
     // Use LIKE search instead of FTS for now
     const sql = `
-      SELECT c.*, s.name as set_name, s.series
+      SELECT c.*, s.name as set_name, s.series, s.printed_total
       FROM cards c
       JOIN sets s ON c.set_id = s.id
       WHERE c.name LIKE ? OR s.name LIKE ?
@@ -128,7 +128,18 @@ app.get('/api/cards/search', async (req, res) => {
     
     const searchTerm = `%${query}%`;
     const cards = await runQuery(sql, [searchTerm, searchTerm, limit]);
-    res.json({ data: cards });
+    
+    // Format card numbers as XXX/YYY
+    const formattedCards = cards.map(card => ({
+      ...card,
+      formattedNumber: card.printed_total ? 
+        (card.number.match(/^\d+$/) ? 
+          `${card.number.padStart(String(card.printed_total).length, '0')}/${card.printed_total}` : 
+          card.number) : 
+        card.number
+    }));
+    
+    res.json({ data: formattedCards });
   } catch (error) {
     console.error('Error searching cards:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -158,138 +169,223 @@ app.get('/api/cards/trending', async (req, res) => {
     
     console.log('Fetching fresh trending cards for today...');
     
-    // Get cards that are actually trending TODAY - focus on recent sets and modern cards
+    // Advanced trending algorithm - focus on recent, high-value, high-demand cards
     const sql = `
       SELECT c.*, s.name as set_name, s.series, s.total as printed_total,
-             -- Modern set boost (prioritize recent sets)
+             -- Set recency score (balanced approach for variety)
              CASE 
-               WHEN s.name LIKE '%Crown Zenith%' OR s.name LIKE '%Paldea Evolved%' OR s.name LIKE '%Scarlet & Violet%' THEN 3
-               WHEN s.name LIKE '%Brilliant Stars%' OR s.name LIKE '%Astral Radiance%' OR s.name LIKE '%Lost Origin%' THEN 2.5
-               WHEN s.name LIKE '%Fusion Strike%' OR s.name LIKE '%Evolving Skies%' OR s.name LIKE '%Chilling Reign%' THEN 2
-               WHEN s.name LIKE '%Battle Styles%' OR s.name LIKE '%Vivid Voltage%' OR s.name LIKE '%Darkness Ablaze%' THEN 1.5
-               WHEN s.name LIKE '%Base Set%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Fossil%' OR s.name LIKE '%Team Rocket%' THEN 0.5
-               WHEN s.name LIKE '%Gym%' OR s.name LIKE '%Neo%' OR s.name LIKE '%Expedition%' THEN 0.3
-               ELSE 1
-             END as modern_boost,
-             -- Rarity boost (modern rare cards)
+               WHEN s.name IN ('151', 'Black Bolt', 'Destined Rivals', 'Journey Together', 'White Flare', 'Mega Evolution') THEN 10.0
+               WHEN s.name LIKE '%Obsidian Flames%' OR s.name LIKE '%Silver Tempest%' THEN 9.0
+               WHEN s.name LIKE '%Crown Zenith%' OR s.name LIKE '%Paldea Evolved%' OR s.name LIKE '%Scarlet & Violet%' THEN 8.0
+               WHEN s.name LIKE '%Brilliant Stars%' OR s.name LIKE '%Astral Radiance%' OR s.name LIKE '%Lost Origin%' THEN 7.0
+               WHEN s.name LIKE '%Fusion Strike%' OR s.name LIKE '%Evolving Skies%' OR s.name LIKE '%Chilling Reign%' THEN 6.0
+               WHEN s.name LIKE '%Battle Styles%' OR s.name LIKE '%Vivid Voltage%' OR s.name LIKE '%Darkness Ablaze%' THEN 5.0
+               WHEN s.name LIKE '%Rebel Clash%' OR s.name LIKE '%Sword & Shield%' OR s.name LIKE '%Cosmic Eclipse%' THEN 4.0
+               WHEN s.name LIKE '%Hidden Fates%' OR s.name LIKE '%Unified Minds%' OR s.name LIKE '%Detective Pikachu%' THEN 3.0
+               WHEN s.name LIKE '%Sun & Moon%' OR s.name LIKE '%XY%' OR s.name LIKE '%Black & White%' THEN 2.5
+               WHEN s.name LIKE '%HeartGold & SoulSilver%' OR s.name LIKE '%Platinum%' OR s.name LIKE '%Diamond & Pearl%' THEN 2.0
+               WHEN s.name LIKE '%EX%' OR s.name LIKE '%Neo%' OR s.name LIKE '%Gym%' THEN 1.5
+               WHEN s.name LIKE '%Team Rocket%' OR s.name LIKE '%Fossil%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Base Set%' THEN 1.0
+               ELSE 0.5
+             END as set_recency_score,
+             -- Rarity premium (higher rarities get more points)
              CASE 
-               WHEN c.rarity IN ('Rare Holo', 'Ultra Rare', 'VMAX', 'V', 'GX', 'EX', 'Full Art', 'Secret Rare', 'Special Illustration Rare') THEN 1
-               ELSE 0
-             END as is_rare,
-             -- Value tier (moderate values for trending)
+               WHEN c.rarity IN ('Special Illustration Rare', 'Hyper Rare', 'Secret Rare') THEN 4.0
+               WHEN c.rarity IN ('Ultra Rare', 'VMAX', 'VSTAR', 'V', 'GX', 'EX', 'Full Art') THEN 3.0
+               WHEN c.rarity IN ('Rare Holo', 'Rare', 'Holo Rare') THEN 2.0
+               WHEN c.rarity IN ('Uncommon', 'Common') THEN 1.0
+               ELSE 1.5
+             END as rarity_score,
+             -- Value tier (exponential scaling for high-value cards)
              CASE 
-               WHEN c.current_value > 200 THEN 3
-               WHEN c.current_value > 100 THEN 2.5
-               WHEN c.current_value > 50 THEN 2
+               WHEN c.current_value > 500 THEN 5.0
+               WHEN c.current_value > 200 THEN 4.0
+               WHEN c.current_value > 100 THEN 3.0
+               WHEN c.current_value > 50 THEN 2.0
                WHEN c.current_value > 20 THEN 1.5
-               WHEN c.current_value > 10 THEN 1
-               ELSE 0
-             END as value_tier,
-             -- Popular Pokemon boost (modern favorites)
+               WHEN c.current_value > 10 THEN 1.0
+               WHEN c.current_value > 5 THEN 0.8
+               ELSE 0.5
+             END as value_score,
+             -- Popular Pokemon multiplier (high-demand characters)
              CASE 
-               WHEN c.name LIKE '%Charizard%' OR c.name LIKE '%Pikachu%' OR c.name LIKE '%Lugia%' THEN 2
-               WHEN c.name LIKE '%Mew%' OR c.name LIKE '%Mewtwo%' OR c.name LIKE '%Rayquaza%' THEN 1.8
-               WHEN c.name LIKE '%Eevee%' OR c.name LIKE '%Snorlax%' OR c.name LIKE '%Dragonite%' THEN 1.5
-               WHEN c.name LIKE '%Gengar%' OR c.name LIKE '%Blastoise%' OR c.name LIKE '%Venusaur%' THEN 1.3
-               ELSE 1
-             END as popularity_boost,
-             -- Recent activity boost
+               WHEN c.name LIKE '%Charizard%' THEN 3.0
+               WHEN c.name LIKE '%Pikachu%' THEN 2.8
+               WHEN c.name LIKE '%Lugia%' OR c.name LIKE '%Mew%' OR c.name LIKE '%Mewtwo%' THEN 2.5
+               WHEN c.name LIKE '%Rayquaza%' OR c.name LIKE '%Giratina%' OR c.name LIKE '%Arceus%' THEN 2.3
+               WHEN c.name LIKE '%Eevee%' OR c.name LIKE '%Snorlax%' OR c.name LIKE '%Dragonite%' THEN 2.0
+               WHEN c.name LIKE '%Gengar%' OR c.name LIKE '%Blastoise%' OR c.name LIKE '%Venusaur%' THEN 1.8
+               WHEN c.name LIKE '%Lucario%' OR c.name LIKE '%Gardevoir%' OR c.name LIKE '%Garchomp%' THEN 1.6
+               WHEN c.name LIKE '%Zoroark%' OR c.name LIKE '%Greninja%' OR c.name LIKE '%Decidueye%' THEN 1.4
+               ELSE 1.0
+             END as popularity_multiplier,
+             -- Recent activity boost (cards updated recently)
              CASE 
-               WHEN datetime(c.updated_at) > datetime('now', '-1 day') THEN 2
+               WHEN datetime(c.updated_at) > datetime('now', '-6 hours') THEN 2.0
+               WHEN datetime(c.updated_at) > datetime('now', '-1 day') THEN 1.8
                WHEN datetime(c.updated_at) > datetime('now', '-3 days') THEN 1.5
                WHEN datetime(c.updated_at) > datetime('now', '-7 days') THEN 1.2
-               ELSE 1
-             END as recency_boost
+               WHEN datetime(c.updated_at) > datetime('now', '-30 days') THEN 1.0
+               ELSE 0.8
+             END as activity_boost,
+             -- Competitive format relevance (cards likely to be in competitive play)
+             CASE 
+               WHEN c.name LIKE '%VMAX%' OR c.name LIKE '%VSTAR%' OR c.name LIKE '%V%' THEN 1.5
+               WHEN c.name LIKE '%GX%' OR c.name LIKE '%EX%' THEN 1.3
+               WHEN c.rarity IN ('Ultra Rare', 'Secret Rare', 'Special Illustration Rare') THEN 1.2
+               ELSE 1.0
+             END as competitive_boost
       FROM cards c
       JOIN sets s ON c.set_id = s.id
-      WHERE c.current_value > 0.5  -- Very low minimum to include more cards
-        AND c.current_value < 1000  -- Cap to avoid extremely expensive vintage cards
+      WHERE c.current_value >= 0.0  -- Include all cards with any value
+        AND c.current_value < 2000  -- Cap to avoid extremely expensive vintage
         AND c.images IS NOT NULL
         AND c.name IS NOT NULL
         AND c.name != ''
         AND c.rarity IS NOT NULL
         AND c.rarity != ''
-        -- Include more modern sets and some popular vintage
+        -- Focus on most recent and popular sets with full database access
         AND (
+          -- Most recent sets (2024-2025) - Mega Evolution gets top priority
+          s.name = 'Mega Evolution' OR
+          s.name IN ('151', 'Black Bolt', 'Destined Rivals', 'Journey Together', 'White Flare') OR
+          s.name LIKE '%Obsidian Flames%' OR s.name LIKE '%Silver Tempest%' OR
+          -- Recent Scarlet & Violet era
           s.name LIKE '%Crown Zenith%' OR s.name LIKE '%Paldea Evolved%' OR s.name LIKE '%Scarlet & Violet%' OR
           s.name LIKE '%Brilliant Stars%' OR s.name LIKE '%Astral Radiance%' OR s.name LIKE '%Lost Origin%' OR
           s.name LIKE '%Fusion Strike%' OR s.name LIKE '%Evolving Skies%' OR s.name LIKE '%Chilling Reign%' OR
           s.name LIKE '%Battle Styles%' OR s.name LIKE '%Vivid Voltage%' OR s.name LIKE '%Darkness Ablaze%' OR
           s.name LIKE '%Rebel Clash%' OR s.name LIKE '%Sword & Shield%' OR s.name LIKE '%Cosmic Eclipse%' OR
+          -- Popular recent sets
           s.name LIKE '%Hidden Fates%' OR s.name LIKE '%Unified Minds%' OR s.name LIKE '%Detective Pikachu%' OR
           s.name LIKE '%Sun & Moon%' OR s.name LIKE '%XY%' OR s.name LIKE '%Black & White%' OR
           s.name LIKE '%HeartGold & SoulSilver%' OR s.name LIKE '%Platinum%' OR s.name LIKE '%Diamond & Pearl%' OR
+          -- Popular vintage sets
           s.name LIKE '%EX%' OR s.name LIKE '%Neo%' OR s.name LIKE '%Gym%' OR s.name LIKE '%Team Rocket%' OR
-          s.name LIKE '%Fossil%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Base Set%'
+          s.name LIKE '%Fossil%' OR s.name LIKE '%Jungle%' OR s.name LIKE '%Base Set%' OR
+          -- Additional popular sets
+          s.name LIKE '%Secret Wonders%' OR s.name LIKE '%Legend Maker%' OR s.name LIKE '%Aquapolis%' OR
+          s.name LIKE '%McDonald%' OR s.name LIKE '%Southern Islands%' OR s.name LIKE '%Triumphant%' OR
+          s.name LIKE '%Emerald%' OR s.name LIKE '%Dragon Vault%' OR s.name LIKE '%Steam Siege%' OR
+          s.name LIKE '%Plasma Blast%' OR s.name LIKE '%Flashfire%' OR s.name LIKE '%Ancient Origins%' OR
+          s.name LIKE '%BREAKpoint%' OR s.name LIKE '%BREAKthrough%' OR s.name LIKE '%Call of Legends%' OR
+          s.name LIKE '%Boundaries Crossed%' OR s.name LIKE '%Burning Shadows%' OR s.name LIKE '%Best of Game%'
         )
       ORDER BY 
-        -- Primary: Modern sets and recent activity
-        (modern_boost * 2.5 + is_rare * 1.5 + value_tier * 1.2 + popularity_boost * 1.3 + recency_boost * 1.8) DESC,
-        -- Secondary: Time-based variety
+        -- Primary: Comprehensive trending score (balanced approach)
+        (set_recency_score * 2.5 + rarity_score * 2.0 + value_score * 2.5 + popularity_multiplier * 1.5 + activity_boost * 1.2 + competitive_boost * 1.0) DESC,
+        -- Secondary: Time-based variety (changes throughout the day)
         (strftime('%H', 'now') * 0.1 + strftime('%M', 'now') * 0.01) DESC,
-        -- Tertiary: Random factor
+        -- Tertiary: Random factor for variety
         RANDOM(),
-        -- Quaternary: Current value
+        -- Quaternary: Current value as tiebreaker
         c.current_value DESC
-      LIMIT 36
+      LIMIT 500
     `;
     
     const cards = await runQuery(sql);
     
+    console.log(`Fetched ${cards.length} cards from database`);
+    
     if (cards.length === 0) {
+      console.log('No cards found, returning empty array');
       return res.json({ data: [] });
     }
     
-    // Add realistic trending indicators for TODAY's modern cards
+    // Process cards with advanced trending algorithm
     const trendingCards = cards.map((card, index) => {
-      // Calculate trending score based on modern factors
-      const baseTrendingScore = (card.modern_boost * 2.5 + card.is_rare * 1.5 + card.value_tier * 1.2 + card.popularity_boost * 1.3 + card.recency_boost * 1.8);
+      // Calculate comprehensive trending score using the new algorithm (heavily weighted toward recent sets)
+      const comprehensiveScore = (
+        card.set_recency_score * 3.5 + 
+        card.rarity_score * 1.5 + 
+        card.value_score * 1.8 + 
+        card.popularity_multiplier * 1.2 + 
+        card.activity_boost * 1.0 + 
+        card.competitive_boost * 0.8
+      );
       
-      // Generate realistic price changes for modern trending cards
-      // Modern cards tend to have more moderate but consistent trending
-      const volatilityFactor = Math.min(baseTrendingScore / 8, 1.5); // More moderate volatility for modern cards
-      const baseChange = (Math.random() - 0.1) * 12 * volatilityFactor; // Slight upward bias, more realistic for modern cards
+      // Generate realistic price changes based on card characteristics
+      let percentChange = 0;
+      let priceChange = 0;
       
-      // Modern trending patterns (more stable than vintage)
+      // High-value cards tend to have more volatile price changes
+      if (card.current_value > 100) {
+        // High-value cards: more dramatic changes
+        const volatility = Math.min(card.value_score / 3, 2.0);
+        const baseVolatility = (Math.random() - 0.3) * 15 * volatility; // -30% to +30% range
+        percentChange = baseVolatility;
+      } else if (card.current_value > 20) {
+        // Mid-value cards: moderate changes
+        const volatility = Math.min(card.value_score / 4, 1.5);
+        const baseVolatility = (Math.random() - 0.2) * 12 * volatility; // -20% to +20% range
+        percentChange = baseVolatility;
+      } else {
+        // Lower-value cards: smaller changes
+        const volatility = Math.min(card.value_score / 5, 1.0);
+        const baseVolatility = (Math.random() - 0.1) * 8 * volatility; // -10% to +10% range
+        percentChange = baseVolatility;
+      }
+      
+      // Apply trending patterns based on card characteristics
       const trendingPatterns = [
-        { min: 0, max: 0.4, multiplier: 1.3 }, // Hot trending modern cards
-        { min: 0.4, max: 0.7, multiplier: 1.1 }, // Steady trending cards
-        { min: 0.7, max: 1.0, multiplier: 0.9 }  // Stable trending cards
+        { min: 0, max: 0.2, multiplier: 1.8, label: 'Explosive' }, // Top 20% - explosive growth
+        { min: 0.2, max: 0.4, multiplier: 1.4, label: 'Hot' }, // Next 20% - hot trending
+        { min: 0.4, max: 0.6, multiplier: 1.1, label: 'Rising' }, // Next 20% - steady rising
+        { min: 0.6, max: 0.8, multiplier: 0.8, label: 'Stable' }, // Next 20% - stable
+        { min: 0.8, max: 1.0, multiplier: 0.5, label: 'Cooling' } // Bottom 20% - cooling down
       ];
       
       const randomPattern = Math.random();
-      const pattern = trendingPatterns.find(p => randomPattern >= p.min && randomPattern < p.max) || trendingPatterns[1];
+      const pattern = trendingPatterns.find(p => randomPattern >= p.min && randomPattern < p.max) || trendingPatterns[2];
       
-      const percentChange = baseChange * pattern.multiplier;
-      const priceChange = (card.current_value * percentChange) / 100;
+      percentChange = percentChange * pattern.multiplier;
+      priceChange = (card.current_value * percentChange) / 100;
       
-      // Add trending indicators
-      const isHotTrending = baseTrendingScore > 12 && percentChange > 3;
+      // Determine trending status
+      const isExplosive = pattern.label === 'Explosive' && percentChange > 5;
+      const isHotTrending = pattern.label === 'Hot' && percentChange > 2;
       const isRising = percentChange > 0;
+      const isCooling = percentChange < -2;
       
       // Add set era context
-      const isModern = card.modern_boost > 2;
-      const isVintage = card.modern_boost < 1;
+      const isVeryRecent = card.set_recency_score > 4.0;
+      const isRecent = card.set_recency_score > 2.0;
+      const isVintage = card.set_recency_score < 1.0;
       
       // Format card number as XXX/YYY
       const formatCardNumber = (number, printedTotal) => {
         if (!number) return '';
         const num = number.toString().padStart(3, '0');
-        const total = printedTotal ? printedTotal.toString().padStart(3, '0') : '102'; // Default to 102 if no total
+        const total = printedTotal ? printedTotal.toString().padStart(3, '0') : '102';
         return `${num}/${total}`;
       };
+      
+      // Determine trending reason
+      let trendingReason = 'Trending';
+      if (isExplosive) trendingReason = 'Explosive Growth';
+      else if (isHotTrending) trendingReason = 'Hot Today';
+      else if (isRising) trendingReason = 'Rising';
+      else if (isCooling) trendingReason = 'Cooling Down';
+      else if (isVeryRecent) trendingReason = 'New Release';
+      else if (isVintage) trendingReason = 'Vintage Pick';
       
       return {
         ...card,
         formattedNumber: formatCardNumber(card.number, card.printed_total),
         percentChange: Math.round(percentChange * 10) / 10,
         priceChange: Math.round(priceChange * 100) / 100,
-        trendingScore: Math.round(baseTrendingScore * 10) / 10,
-        isHotTrending,
+        trendingScore: Math.round(comprehensiveScore * 10) / 10,
+        isHotTrending: isExplosive || isHotTrending,
         isRising,
-        isModern,
+        isCooling,
+        isVeryRecent,
+        isRecent,
         isVintage,
-        trendingReason: isHotTrending ? 'Hot Today' : isRising ? 'Rising' : 'Trending'
+        trendingReason,
+        trendingPattern: pattern.label,
+        // Add market indicators
+        marketCap: card.current_value > 100 ? 'High Value' : card.current_value > 20 ? 'Mid Value' : 'Entry Level',
+        demandLevel: card.popularity_multiplier > 2.0 ? 'High Demand' : card.popularity_multiplier > 1.5 ? 'Moderate Demand' : 'Standard'
       };
     });
     
@@ -298,6 +394,7 @@ app.get('/api/cards/trending', async (req, res) => {
     trendingCache.timestamp = now;
     
     console.log(`Cached ${trendingCards.length} trending cards for today`);
+    console.log(`Returning ${trendingCards.length} trending cards to client`);
     res.json({ data: trendingCards });
   } catch (error) {
     console.error('Error fetching trending cards:', error);
@@ -328,6 +425,25 @@ app.get('/api/cards/top-movers', async (req, res) => {
   } catch (error) {
     console.error('Error fetching top movers:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get cards with prices (must come before /:id route)
+app.get('/api/cards/with-prices', async (req, res) => {
+  try {
+    const sql = `
+      SELECT c.id, c.name, c.current_value, s.name as set_name
+      FROM cards c
+      JOIN sets s ON c.set_id = s.id
+      WHERE c.current_value > 0
+      ORDER BY c.current_value DESC
+    `;
+    
+    const data = await runQuery(sql);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching cards with prices:', error);
+    res.status(500).json({ error: 'Failed to fetch cards with prices' });
   }
 });
 
@@ -728,6 +844,142 @@ app.post('/api/tcgplayer/populate', async (req, res) => {
   } catch (error) {
     console.error('Error populating historical data:', error);
     res.status(500).json({ error: 'Failed to populate historical data' });
+  }
+});
+
+// Get price history for a specific card
+app.get('/api/price-history', async (req, res) => {
+  try {
+    const { cardName, setName, cardId, startDate, endDate } = req.query;
+    
+    let cardIdToUse = cardId;
+    
+    // If cardId is not provided, try to find it by name and set
+    if (!cardIdToUse && cardName && setName) {
+      const cardSql = `
+        SELECT c.id, c.current_value, c.name, s.name as set_name
+        FROM cards c
+        JOIN sets s ON c.set_id = s.id
+        WHERE c.name = ? AND s.name = ?
+        LIMIT 1
+      `;
+      
+      const cardData = await runQuery(cardSql, [cardName, setName]);
+      
+      if (!cardData || cardData.length === 0) {
+        return res.json({ data: [] });
+      }
+      
+      cardIdToUse = cardData[0].id;
+    }
+    
+    if (!cardIdToUse) {
+      return res.status(400).json({ error: 'cardId or (cardName and setName) are required' });
+    }
+    
+    // Look for historical data for this specific card
+    const sql = `
+      SELECT date, price, volume
+      FROM price_history 
+      WHERE product_id = ?
+      AND date >= ? AND date <= ?
+      ORDER BY date ASC
+    `;
+    
+    const start = startDate || '2020-01-01';
+    const end = endDate || new Date().toISOString().split('T')[0];
+    
+    const data = await runQuery(sql, [cardIdToUse, start, end]);
+    
+    // If no historical data exists for this card, return empty array
+    if (!data || data.length === 0) {
+      console.log(`No historical data found for card ID ${cardIdToUse}`);
+      return res.json({ data: [] });
+    }
+    
+    res.json({ data });
+  } catch (error) {
+    console.error('Error fetching price history:', error);
+    res.status(500).json({ error: 'Failed to fetch price history' });
+  }
+});
+
+// Store price data
+app.post('/api/price-history', async (req, res) => {
+  try {
+    const { productId, price, date, volume = 1 } = req.body;
+    
+    if (!productId || !price || !date) {
+      return res.status(400).json({ error: 'productId, price, and date are required' });
+    }
+    
+    const sql = `
+      INSERT OR REPLACE INTO price_history (product_id, date, price, volume)
+      VALUES (?, ?, ?, ?)
+    `;
+    
+    await runQuery(sql, [productId, date, price, volume]);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error storing price data:', error);
+    res.status(500).json({ error: 'Failed to store price data' });
+  }
+});
+
+
+// Update card price
+app.post('/api/cards/update-price', async (req, res) => {
+  try {
+    const { cardId, currentValue } = req.body;
+    
+    if (!cardId || currentValue === undefined) {
+      return res.status(400).json({ error: 'cardId and currentValue are required' });
+    }
+    
+    const sql = `
+      UPDATE cards 
+      SET current_value = ?
+      WHERE id = ?
+    `;
+    
+    await runQuery(sql, [currentValue, cardId]);
+    
+    res.json({ success: true, cardId, currentValue });
+  } catch (error) {
+    console.error('Error updating card price:', error);
+    res.status(500).json({ error: 'Failed to update card price' });
+  }
+});
+
+// Get data collection statistics
+app.get('/api/price-history/stats', async (req, res) => {
+  try {
+    const stats = await runQuery(`
+      SELECT 
+        COUNT(*) as total_price_records,
+        COUNT(DISTINCT product_id) as unique_cards,
+        MIN(price) as min_price,
+        MAX(price) as max_price,
+        AVG(price) as avg_price,
+        MIN(date) as earliest_date,
+        MAX(date) as latest_date
+      FROM price_history
+    `);
+    
+    const cardsWithPrices = await runQuery(`
+      SELECT COUNT(*) as total_cards_with_prices
+      FROM cards 
+      WHERE current_value > 0
+    `);
+    
+    res.json({
+      ...stats[0],
+      total_cards_with_prices: cardsWithPrices[0].total_cards_with_prices
+    });
+  } catch (error) {
+    console.error('Error fetching data statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch data statistics' });
   }
 });
 

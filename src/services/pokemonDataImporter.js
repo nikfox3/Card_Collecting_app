@@ -295,7 +295,7 @@ class PokemonDataImporterService {
   // Fix tcgdx typo in URLs (should be tcgdx)
   fixImageUrl(url) {
     if (!url) return url
-    return url.replace(/tcgdx\.net/g, 'tcgdx.net')
+    return url.replace(/tcgdx\.net/g, 'tcgdex.net')
   }
 
   // Format TCGdx image URLs with proper extensions
