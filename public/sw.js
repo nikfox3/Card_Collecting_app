@@ -1,6 +1,7 @@
 // Service Worker for Card Collecting App
-const CACHE_NAME = 'card-collecting-app-v1';
-const RUNTIME_CACHE = 'card-collecting-runtime-v1';
+// Update version to force cache refresh when API URL changes
+const CACHE_NAME = 'card-collecting-app-v2';
+const RUNTIME_CACHE = 'card-collecting-runtime-v2';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -50,6 +51,11 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests (always use network)
   if (event.request.url.includes('/api/')) {
     return;
+  }
+
+  // Skip JavaScript files - always fetch fresh to get latest API URL
+  if (event.request.url.includes('.js') && event.request.url.includes('index-')) {
+    return fetch(event.request);
   }
 
   // Skip camera/media requests
