@@ -1,7 +1,7 @@
 // Daily price collection service
 class DailyPriceCollection {
   constructor() {
-    this.baseUrl = 'http://localhost:3001';
+    this.baseUrl = `${API_URL}`;
     this.tcgplayerService = null;
   }
 

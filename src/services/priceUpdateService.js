@@ -1,7 +1,7 @@
 // Price update service with TCGPlayer API integration and fallback
 class PriceUpdateService {
   constructor() {
-    this.baseUrl = 'http://localhost:3001';
+    this.baseUrl = `${API_URL}`;
     this.tcgdexService = null;
     this.useTCGdex = false;
   }

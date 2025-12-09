@@ -1,0 +1,199 @@
+{
+	"folders": [
+		{
+			"name": "Card Collecting App (Root)",
+			"path": "."
+		},
+		{
+			"name": "Admin Dashboard",
+			"path": "./admin-dashboard"
+		},
+		{
+			"name": "Pricing Data",
+			"path": "./Pricing Data"
+		},
+		{
+			"name": "Server",
+			"path": "./server"
+		},
+		{
+			"name": "Source (Frontend)",
+			"path": "./src"
+		},
+		{
+			"name": "Database",
+			"path": "./database"
+		},
+		{
+			"name": "Scripts",
+			"path": "./scripts"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.git": true,
+			"**/.DS_Store": true,
+			"**/node_modules": true,
+			"**/.pnp": true,
+			"**/.pnp.js": true,
+			"**/dist": true,
+			"**/build": true,
+			"**/.next": true,
+			"**/out": true,
+			"**/.cache": true,
+			"**/.image-cache": true,
+			"**/__pycache__": true,
+			"**/*.pyc": true,
+			"**/*.pyo": true,
+			"**/*.pyd": true,
+			"**/.Python": true,
+			"**/coverage": true
+		},
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/dist": true,
+			"**/build": true,
+			"**/.next": true,
+			"**/out": true,
+			"**/.cache": true,
+			"**/.image-cache": true,
+			"**/coverage": true,
+			"**/Pricing Data/Archives": true,
+			"**/Pricing Data/2025-*": true
+		},
+		"files.watcherExclude": {
+			"**/.git/objects/**": true,
+			"**/.git/subtree-cache/**": true,
+			"**/node_modules/**": true,
+			"**/.cache/**": true,
+			"**/.image-cache/**": true,
+			"**/dist/**": true,
+			"**/build/**": true,
+			"**/Pricing Data/Archives/**": true,
+			"**/Pricing Data/2025-*/**": true
+		},
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "explicit"
+		},
+		"javascript.preferences.importModuleSpecifier": "relative",
+		"typescript.preferences.importModuleSpecifier": "relative",
+		"files.associations": {
+			"*.cjs": "javascript",
+			"*.mjs": "javascript"
+		},
+		"[javascript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[javascriptreact]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[typescript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[typescriptreact]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[json]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[jsonc]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[css]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[html]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[markdown]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"esbenp.prettier-vscode",
+			"dbaeumer.vscode-eslint",
+			"bradlc.vscode-tailwindcss",
+			"ms-vscode.vscode-typescript-next",
+			"formulahendry.auto-rename-tag",
+			"christian-kohler.path-intellisense",
+			"ms-vscode.vscode-json"
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Start Dev Server",
+				"type": "shell",
+				"command": "npm run dev",
+				"problemMatcher": [],
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				},
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				}
+			},
+			{
+				"label": "Start API Server",
+				"type": "shell",
+				"command": "cd server && npm start",
+				"problemMatcher": [],
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				}
+			},
+			{
+				"label": "Start Admin Dashboard",
+				"type": "shell",
+				"command": "cd admin-dashboard && npm run dev",
+				"problemMatcher": [],
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				}
+			},
+			{
+				"label": "Start All Servers",
+				"dependsOn": [
+					"Start Dev Server",
+					"Start API Server"
+				],
+				"problemMatcher": [],
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				}
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Launch Frontend",
+				"type": "chrome",
+				"request": "launch",
+				"url": "http://localhost:5173",
+				"webRoot": "${workspaceFolder}"
+			},
+			{
+				"name": "Launch Admin Dashboard",
+				"type": "chrome",
+				"request": "launch",
+				"url": "http://localhost:5174",
+				"webRoot": "${workspaceFolder}/admin-dashboard"
+			}
+		]
+	}
+}
+
+
+
+

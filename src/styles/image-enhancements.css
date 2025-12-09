@@ -1,0 +1,158 @@
+/* Image Enhancement Styles for Card Images */
+
+/* Enhanced image rendering for better quality */
+.card-image-enhanced {
+  image-rendering: high-quality;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* Background removal simulation */
+.card-image-no-bg {
+  filter: contrast(1.1) saturate(1.1) brightness(1.05);
+  mix-blend-mode: multiply;
+}
+
+/* Enhanced card image container */
+.card-image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem; /* 12px rounded corners */
+}
+
+/* Card image with rounded corners */
+.card-image-rounded {
+  border-radius: 0.75rem; /* 12px rounded corners */
+  overflow: hidden;
+}
+
+/* Card image with more rounded corners for profile */
+.card-image-profile {
+  border-radius: 1rem; /* 16px rounded corners for profile */
+  overflow: hidden;
+}
+
+/* Enhanced image quality for different sizes */
+.card-image-small {
+  width: 4rem; /* 64px */
+  height: 5rem; /* 80px */
+  object-fit: contain;
+}
+
+.card-image-medium {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.card-image-large {
+  width: 15rem; /* 240px */
+  height: auto;
+  object-fit: contain;
+}
+
+.card-image-xlarge {
+  width: 31.25rem; /* 500px */
+  height: auto;
+  object-fit: contain;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+
+/* Container styles for different use cases */
+.card-container-search {
+  aspect-ratio: 3/4;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-container-profile {
+  width: 21.875rem; /* 350px */
+  height: 21rem; /* 336px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  position: relative;
+}
+
+.card-container-expanded {
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Hover effects for interactive cards */
+.card-image-hover {
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.card-image-hover:hover {
+  transform: scale(1.02);
+  filter: contrast(1.15) saturate(1.15) brightness(1.1);
+}
+
+/* Loading state for images */
+.card-image-loading {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Error state for failed images */
+.card-image-error {
+  background: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+/* Enhanced image quality for high-DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .card-image-enhanced {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .card-image-no-bg {
+    filter: contrast(1.15) saturate(1.15) brightness(1.1);
+  }
+}
+
+/* Print styles */
+@media print {
+  .card-image-enhanced {
+    filter: none;
+    mix-blend-mode: normal;
+  }
+}
+
+
+
+
+
+

@@ -1,0 +1,1059 @@
+{
+  "total_sets": 210,
+  "total_products": 30444,
+  "products_with_prices": 28290,
+  "coverage_percentage": 92.92,
+  "collection_timestamp": "2025-10-16T22:29:39.291628",
+  "sets": [
+    {
+      "name": "ME02: Phantasmal Flames",
+      "total_products": 18,
+      "products_with_prices": 16
+    },
+    {
+      "name": "ME: Mega Evolution Promo",
+      "total_products": 17,
+      "products_with_prices": 17
+    },
+    {
+      "name": "ME01: Mega Evolution",
+      "total_products": 226,
+      "products_with_prices": 225
+    },
+    {
+      "name": "MEE: Mega Evolution Energies",
+      "total_products": 8,
+      "products_with_prices": 8
+    },
+    {
+      "name": "SV: Black Bolt",
+      "total_products": 357,
+      "products_with_prices": 356
+    },
+    {
+      "name": "SV: White Flare",
+      "total_products": 341,
+      "products_with_prices": 339
+    },
+    {
+      "name": "SV10: Destined Rivals",
+      "total_products": 281,
+      "products_with_prices": 281
+    },
+    {
+      "name": "SV09: Journey Together",
+      "total_products": 225,
+      "products_with_prices": 222
+    },
+    {
+      "name": "McDonald's Promos 2024",
+      "total_products": 16,
+      "products_with_prices": 16
+    },
+    {
+      "name": "SV: Prismatic Evolutions",
+      "total_products": 396,
+      "products_with_prices": 393
+    },
+    {
+      "name": "SV08: Surging Sparks",
+      "total_products": 287,
+      "products_with_prices": 286
+    },
+    {
+      "name": "SV07: Stellar Crown",
+      "total_products": 211,
+      "products_with_prices": 206
+    },
+    {
+      "name": "Trick or Trade BOOster Bundle 2024",
+      "total_products": 35,
+      "products_with_prices": 34
+    },
+    {
+      "name": "SV: Shrouded Fable",
+      "total_products": 136,
+      "products_with_prices": 134
+    },
+    {
+      "name": "Battle Academy 2024",
+      "total_products": 140,
+      "products_with_prices": 133
+    },
+    {
+      "name": "SV06: Twilight Masquerade",
+      "total_products": 262,
+      "products_with_prices": 258
+    },
+    {
+      "name": "SV05: Temporal Forces",
+      "total_products": 258,
+      "products_with_prices": 253
+    },
+    {
+      "name": "SV: Paldean Fates",
+      "total_products": 290,
+      "products_with_prices": 289
+    },
+    {
+      "name": "Trading Card Game Classic",
+      "total_products": 103,
+      "products_with_prices": 103
+    },
+    {
+      "name": "SV04: Paradox Rift",
+      "total_products": 307,
+      "products_with_prices": 304
+    },
+    {
+      "name": "My First Battle",
+      "total_products": 50,
+      "products_with_prices": 50
+    },
+    {
+      "name": "SV: Scarlet & Violet 151",
+      "total_products": 245,
+      "products_with_prices": 244
+    },
+    {
+      "name": "McDonald's Promos 2023",
+      "total_products": 16,
+      "products_with_prices": 16
+    },
+    {
+      "name": "Trick or Trade BOOster Bundle 2023",
+      "total_products": 34,
+      "products_with_prices": 32
+    },
+    {
+      "name": "SV03: Obsidian Flames",
+      "total_products": 262,
+      "products_with_prices": 260
+    },
+    {
+      "name": "SV02: Paldea Evolved",
+      "total_products": 315,
+      "products_with_prices": 310
+    },
+    {
+      "name": "SV: Scarlet & Violet Promo Cards",
+      "total_products": 279,
+      "products_with_prices": 273
+    },
+    {
+      "name": "SV01: Scarlet & Violet Base Set",
+      "total_products": 304,
+      "products_with_prices": 295
+    },
+    {
+      "name": "SVE: Scarlet & Violet Energies",
+      "total_products": 40,
+      "products_with_prices": 40
+    },
+    {
+      "name": "Crown Zenith",
+      "total_products": 223,
+      "products_with_prices": 219
+    },
+    {
+      "name": "Crown Zenith: Galarian Gallery",
+      "total_products": 70,
+      "products_with_prices": 70
+    },
+    {
+      "name": "Prize Pack Series Cards",
+      "total_products": 652,
+      "products_with_prices": 639
+    },
+    {
+      "name": "SWSH12: Silver Tempest",
+      "total_products": 254,
+      "products_with_prices": 244
+    },
+    {
+      "name": "SWSH12: Silver Tempest Trainer Gallery",
+      "total_products": 30,
+      "products_with_prices": 30
+    },
+    {
+      "name": "SWSH11: Lost Origin",
+      "total_products": 273,
+      "products_with_prices": 263
+    },
+    {
+      "name": "SWSH11: Lost Origin Trainer Gallery",
+      "total_products": 30,
+      "products_with_prices": 30
+    },
+    {
+      "name": "Trick or Trade BOOster Bundle",
+      "total_products": 32,
+      "products_with_prices": 32
+    },
+    {
+      "name": "McDonald's Promos 2022",
+      "total_products": 16,
+      "products_with_prices": 16
+    },
+    {
+      "name": "Pokemon GO",
+      "total_products": 144,
+      "products_with_prices": 139
+    },
+    {
+      "name": "SWSH10: Astral Radiance",
+      "total_products": 253,
+      "products_with_prices": 245
+    },
+    {
+      "name": "SWSH10: Astral Radiance Trainer Gallery",
+      "total_products": 30,
+      "products_with_prices": 30
+    },
+    {
+      "name": "Battle Academy 2022",
+      "total_products": 140,
+      "products_with_prices": 127
+    },
+    {
+      "name": "SWSH09: Brilliant Stars",
+      "total_products": 233,
+      "products_with_prices": 229
+    },
+    {
+      "name": "SWSH09: Brilliant Stars Trainer Gallery",
+      "total_products": 30,
+      "products_with_prices": 30
+    },
+    {
+      "name": "SWSH08: Fusion Strike",
+      "total_products": 330,
+      "products_with_prices": 329
+    },
+    {
+      "name": "Celebrations",
+      "total_products": 74,
+      "products_with_prices": 70
+    },
+    {
+      "name": "Celebrations: Classic Collection",
+      "total_products": 25,
+      "products_with_prices": 25
+    },
+    {
+      "name": "SWSH07: Evolving Skies",
+      "total_products": 287,
+      "products_with_prices": 276
+    },
+    {
+      "name": "SWSH06: Chilling Reign",
+      "total_products": 275,
+      "products_with_prices": 268
+    },
+    {
+      "name": "SWSH05: Battle Styles",
+      "total_products": 231,
+      "products_with_prices": 221
+    },
+    {
+      "name": "First Partner Pack",
+      "total_products": 33,
+      "products_with_prices": 33
+    },
+    {
+      "name": "Shining Fates",
+      "total_products": 116,
+      "products_with_prices": 116
+    },
+    {
+      "name": "Shining Fates: Shiny Vault",
+      "total_products": 122,
+      "products_with_prices": 122
+    },
+    {
+      "name": "McDonald's 25th Anniversary Promos",
+      "total_products": 26,
+      "products_with_prices": 26
+    },
+    {
+      "name": "SWSH04: Vivid Voltage",
+      "total_products": 246,
+      "products_with_prices": 237
+    },
+    {
+      "name": "Champion's Path",
+      "total_products": 110,
+      "products_with_prices": 105
+    },
+    {
+      "name": "SWSH03: Darkness Ablaze",
+      "total_products": 241,
+      "products_with_prices": 226
+    },
+    {
+      "name": "Battle Academy",
+      "total_products": 140,
+      "products_with_prices": 140
+    },
+    {
+      "name": "SWSH02: Rebel Clash",
+      "total_products": 252,
+      "products_with_prices": 231
+    },
+    {
+      "name": "SWSH01: Sword & Shield Base Set",
+      "total_products": 287,
+      "products_with_prices": 260
+    },
+    {
+      "name": "SWSH: Sword & Shield Promo Cards",
+      "total_products": 342,
+      "products_with_prices": 339
+    },
+    {
+      "name": "SM - Cosmic Eclipse",
+      "total_products": 299,
+      "products_with_prices": 283
+    },
+    {
+      "name": "McDonald's Promos 2019",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "Hidden Fates",
+      "total_products": 96,
+      "products_with_prices": 90
+    },
+    {
+      "name": "Hidden Fates: Shiny Vault",
+      "total_products": 94,
+      "products_with_prices": 94
+    },
+    {
+      "name": "SM - Unified Minds",
+      "total_products": 297,
+      "products_with_prices": 277
+    },
+    {
+      "name": "SM - Unbroken Bonds",
+      "total_products": 271,
+      "products_with_prices": 252
+    },
+    {
+      "name": "Detective Pikachu",
+      "total_products": 39,
+      "products_with_prices": 33
+    },
+    {
+      "name": "SM - Team Up",
+      "total_products": 245,
+      "products_with_prices": 222
+    },
+    {
+      "name": "SM - Lost Thunder",
+      "total_products": 270,
+      "products_with_prices": 249
+    },
+    {
+      "name": "McDonald's Promos 2018",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "Miscellaneous Cards & Products",
+      "total_products": 1323,
+      "products_with_prices": 1052
+    },
+    {
+      "name": "Dragon Majesty",
+      "total_products": 91,
+      "products_with_prices": 82
+    },
+    {
+      "name": "SM - Celestial Storm",
+      "total_products": 222,
+      "products_with_prices": 200
+    },
+    {
+      "name": "World Championship Decks",
+      "total_products": 1890,
+      "products_with_prices": 1628
+    },
+    {
+      "name": "SM - Forbidden Light",
+      "total_products": 178,
+      "products_with_prices": 157
+    },
+    {
+      "name": "SM Trainer Kit: Alolan Sandslash & Alolan Ninetales",
+      "total_products": 62,
+      "products_with_prices": 56
+    },
+    {
+      "name": "SM - Ultra Prism",
+      "total_products": 211,
+      "products_with_prices": 187
+    },
+    {
+      "name": "McDonald's Promos 2017",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "SM - Crimson Invasion",
+      "total_products": 161,
+      "products_with_prices": 143
+    },
+    {
+      "name": "Shining Legends",
+      "total_products": 101,
+      "products_with_prices": 98
+    },
+    {
+      "name": "SM - Burning Shadows",
+      "total_products": 214,
+      "products_with_prices": 195
+    },
+    {
+      "name": "Alternate Art Promos",
+      "total_products": 57,
+      "products_with_prices": 57
+    },
+    {
+      "name": "SM - Guardians Rising",
+      "total_products": 241,
+      "products_with_prices": 197
+    },
+    {
+      "name": "Ash vs Team Rocket Deck Kit (JP Exclusive)",
+      "total_products": 21,
+      "products_with_prices": 18
+    },
+    {
+      "name": "SM Trainer Kit: Lycanroc & Alolan Raichu",
+      "total_products": 61,
+      "products_with_prices": 61
+    },
+    {
+      "name": "SM Base Set",
+      "total_products": 211,
+      "products_with_prices": 188
+    },
+    {
+      "name": "SM Promos",
+      "total_products": 335,
+      "products_with_prices": 296
+    },
+    {
+      "name": "XY - Evolutions",
+      "total_products": 175,
+      "products_with_prices": 136
+    },
+    {
+      "name": "Deck Exclusives",
+      "total_products": 469,
+      "products_with_prices": 467
+    },
+    {
+      "name": "McDonald's Promos 2016",
+      "total_products": 12,
+      "products_with_prices": 0
+    },
+    {
+      "name": "XY - Steam Siege",
+      "total_products": 158,
+      "products_with_prices": 131
+    },
+    {
+      "name": "League & Championship Cards",
+      "total_products": 599,
+      "products_with_prices": 537
+    },
+    {
+      "name": "XY - Fates Collide",
+      "total_products": 167,
+      "products_with_prices": 140
+    },
+    {
+      "name": "XY Trainer Kit: Pikachu Libre & Suicune",
+      "total_products": 62,
+      "products_with_prices": 61
+    },
+    {
+      "name": "Generations",
+      "total_products": 119,
+      "products_with_prices": 103
+    },
+    {
+      "name": "Generations: Radiant Collection",
+      "total_products": 32,
+      "products_with_prices": 32
+    },
+    {
+      "name": "XY - BREAKpoint",
+      "total_products": 155,
+      "products_with_prices": 134
+    },
+    {
+      "name": "McDonald's Promos 2015",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "XY - BREAKthrough",
+      "total_products": 227,
+      "products_with_prices": 176
+    },
+    {
+      "name": "XY - Ancient Origins",
+      "total_products": 134,
+      "products_with_prices": 105
+    },
+    {
+      "name": "XY - Roaring Skies",
+      "total_products": 144,
+      "products_with_prices": 121
+    },
+    {
+      "name": "XY Trainer Kit: Latias & Latios",
+      "total_products": 62,
+      "products_with_prices": 61
+    },
+    {
+      "name": "Jumbo Cards",
+      "total_products": 312,
+      "products_with_prices": 258
+    },
+    {
+      "name": "Double Crisis",
+      "total_products": 37,
+      "products_with_prices": 35
+    },
+    {
+      "name": "XY - Primal Clash",
+      "total_products": 196,
+      "products_with_prices": 172
+    },
+    {
+      "name": "XY Trainer Kit: Bisharp & Wigglytuff",
+      "total_products": 62,
+      "products_with_prices": 42
+    },
+    {
+      "name": "XY - Phantom Forces",
+      "total_products": 156,
+      "products_with_prices": 129
+    },
+    {
+      "name": "XY - Furious Fists",
+      "total_products": 158,
+      "products_with_prices": 121
+    },
+    {
+      "name": "McDonald's Promos 2014",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "XY - Flashfire",
+      "total_products": 147,
+      "products_with_prices": 113
+    },
+    {
+      "name": "XY Trainer Kit: Sylveon & Noivern",
+      "total_products": 62,
+      "products_with_prices": 57
+    },
+    {
+      "name": "XY Base Set",
+      "total_products": 197,
+      "products_with_prices": 152
+    },
+    {
+      "name": "XY Promos",
+      "total_products": 269,
+      "products_with_prices": 234
+    },
+    {
+      "name": "Kalos Starter Set",
+      "total_products": 51,
+      "products_with_prices": 45
+    },
+    {
+      "name": "Legendary Treasures",
+      "total_products": 119,
+      "products_with_prices": 116
+    },
+    {
+      "name": "Legendary Treasures: Radiant Collection",
+      "total_products": 25,
+      "products_with_prices": 25
+    },
+    {
+      "name": "Plasma Blast",
+      "total_products": 115,
+      "products_with_prices": 108
+    },
+    {
+      "name": "Plasma Freeze",
+      "total_products": 128,
+      "products_with_prices": 124
+    },
+    {
+      "name": "Plasma Storm",
+      "total_products": 146,
+      "products_with_prices": 139
+    },
+    {
+      "name": "Boundaries Crossed",
+      "total_products": 160,
+      "products_with_prices": 154
+    },
+    {
+      "name": "Dragon Vault",
+      "total_products": 24,
+      "products_with_prices": 22
+    },
+    {
+      "name": "Dragons Exalted",
+      "total_products": 131,
+      "products_with_prices": 129
+    },
+    {
+      "name": "McDonald's Promos 2012",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "Dark Explorers",
+      "total_products": 117,
+      "products_with_prices": 110
+    },
+    {
+      "name": "Next Destinies",
+      "total_products": 120,
+      "products_with_prices": 105
+    },
+    {
+      "name": "Noble Victories",
+      "total_products": 119,
+      "products_with_prices": 103
+    },
+    {
+      "name": "BW Trainer Kit: Excadrill & Zoroark",
+      "total_products": 61,
+      "products_with_prices": 51
+    },
+    {
+      "name": "Emerging Powers",
+      "total_products": 121,
+      "products_with_prices": 100
+    },
+    {
+      "name": "McDonald's Promos 2011",
+      "total_products": 12,
+      "products_with_prices": 12
+    },
+    {
+      "name": "Black and White",
+      "total_products": 133,
+      "products_with_prices": 114
+    },
+    {
+      "name": "Black and White Promos",
+      "total_products": 148,
+      "products_with_prices": 115
+    },
+    {
+      "name": "Call of Legends",
+      "total_products": 109,
+      "products_with_prices": 105
+    },
+    {
+      "name": "Professor Program Promos",
+      "total_products": 45,
+      "products_with_prices": 40
+    },
+    {
+      "name": "Triumphant",
+      "total_products": 106,
+      "products_with_prices": 104
+    },
+    {
+      "name": "Undaunted",
+      "total_products": 93,
+      "products_with_prices": 91
+    },
+    {
+      "name": "Pikachu World Collection Promos",
+      "total_products": 22,
+      "products_with_prices": 15
+    },
+    {
+      "name": "HGSS Trainer Kit: Gyarados & Raichu",
+      "total_products": 61,
+      "products_with_prices": 49
+    },
+    {
+      "name": "Unleashed",
+      "total_products": 98,
+      "products_with_prices": 97
+    },
+    {
+      "name": "HeartGold SoulSilver",
+      "total_products": 126,
+      "products_with_prices": 125
+    },
+    {
+      "name": "HGSS Promos",
+      "total_products": 38,
+      "products_with_prices": 30
+    },
+    {
+      "name": "Rumble",
+      "total_products": 16,
+      "products_with_prices": 16
+    },
+    {
+      "name": "Arceus",
+      "total_products": 117,
+      "products_with_prices": 112
+    },
+    {
+      "name": "Supreme Victors",
+      "total_products": 156,
+      "products_with_prices": 154
+    },
+    {
+      "name": "Rising Rivals",
+      "total_products": 122,
+      "products_with_prices": 120
+    },
+    {
+      "name": "Burger King Promos",
+      "total_products": 24,
+      "products_with_prices": 24
+    },
+    {
+      "name": "Platinum",
+      "total_products": 141,
+      "products_with_prices": 134
+    },
+    {
+      "name": "Stormfront",
+      "total_products": 108,
+      "products_with_prices": 106
+    },
+    {
+      "name": "Countdown Calendar Promos",
+      "total_products": 24,
+      "products_with_prices": 19
+    },
+    {
+      "name": "Legends Awakened",
+      "total_products": 148,
+      "products_with_prices": 147
+    },
+    {
+      "name": "Majestic Dawn",
+      "total_products": 104,
+      "products_with_prices": 101
+    },
+    {
+      "name": "Great Encounters",
+      "total_products": 108,
+      "products_with_prices": 106
+    },
+    {
+      "name": "Secret Wonders",
+      "total_products": 134,
+      "products_with_prices": 132
+    },
+    {
+      "name": "DP Training Kit 1 Blue",
+      "total_products": 0,
+      "products_with_prices": 0
+    },
+    {
+      "name": "DP Training Kit 1 Gold",
+      "total_products": 0,
+      "products_with_prices": 0
+    },
+    {
+      "name": "DP Trainer Kit: Manaphy & Lucario",
+      "total_products": 24,
+      "products_with_prices": 23
+    },
+    {
+      "name": "Mysterious Treasures",
+      "total_products": 128,
+      "products_with_prices": 127
+    },
+    {
+      "name": "Diamond and Pearl",
+      "total_products": 135,
+      "products_with_prices": 131
+    },
+    {
+      "name": "Diamond and Pearl Promos",
+      "total_products": 66,
+      "products_with_prices": 58
+    },
+    {
+      "name": "Power Keepers",
+      "total_products": 111,
+      "products_with_prices": 109
+    },
+    {
+      "name": "Dragon Frontiers",
+      "total_products": 104,
+      "products_with_prices": 100
+    },
+    {
+      "name": "Crystal Guardians",
+      "total_products": 103,
+      "products_with_prices": 101
+    },
+    {
+      "name": "Holon Phantoms",
+      "total_products": 115,
+      "products_with_prices": 111
+    },
+    {
+      "name": "Legend Maker",
+      "total_products": 95,
+      "products_with_prices": 91
+    },
+    {
+      "name": "Delta Species",
+      "total_products": 118,
+      "products_with_prices": 114
+    },
+    {
+      "name": "Unseen Forces",
+      "total_products": 149,
+      "products_with_prices": 142
+    },
+    {
+      "name": "Emerald",
+      "total_products": 111,
+      "products_with_prices": 108
+    },
+    {
+      "name": "Deoxys",
+      "total_products": 112,
+      "products_with_prices": 106
+    },
+    {
+      "name": "Team Rocket Returns",
+      "total_products": 113,
+      "products_with_prices": 108
+    },
+    {
+      "name": "EX Battle Stadium",
+      "total_products": 52,
+      "products_with_prices": 46
+    },
+    {
+      "name": "FireRed & LeafGreen",
+      "total_products": 120,
+      "products_with_prices": 117
+    },
+    {
+      "name": "Kids WB Promos",
+      "total_products": 6,
+      "products_with_prices": 1
+    },
+    {
+      "name": "Hidden Legends",
+      "total_products": 107,
+      "products_with_prices": 102
+    },
+    {
+      "name": "Team Magma vs Team Aqua",
+      "total_products": 102,
+      "products_with_prices": 97
+    },
+    {
+      "name": "Dragon",
+      "total_products": 103,
+      "products_with_prices": 100
+    },
+    {
+      "name": "Sandstorm",
+      "total_products": 103,
+      "products_with_prices": 100
+    },
+    {
+      "name": "Ruby and Sapphire",
+      "total_products": 112,
+      "products_with_prices": 109
+    },
+    {
+      "name": "Skyridge",
+      "total_products": 185,
+      "products_with_prices": 167
+    },
+    {
+      "name": "Aquapolis",
+      "total_products": 187,
+      "products_with_prices": 186
+    },
+    {
+      "name": "Best of Promos",
+      "total_products": 15,
+      "products_with_prices": 15
+    },
+    {
+      "name": "Expedition",
+      "total_products": 168,
+      "products_with_prices": 165
+    },
+    {
+      "name": "e-Reader Sample Cards",
+      "total_products": 0,
+      "products_with_prices": 0
+    },
+    {
+      "name": "Legendary Collection",
+      "total_products": 113,
+      "products_with_prices": 109
+    },
+    {
+      "name": "Neo Destiny",
+      "total_products": 119,
+      "products_with_prices": 113
+    },
+    {
+      "name": "Neo Revelation",
+      "total_products": 69,
+      "products_with_prices": 67
+    },
+    {
+      "name": "Southern Islands",
+      "total_products": 19,
+      "products_with_prices": 19
+    },
+    {
+      "name": "Neo Discovery",
+      "total_products": 80,
+      "products_with_prices": 76
+    },
+    {
+      "name": "Neo Genesis",
+      "total_products": 117,
+      "products_with_prices": 112
+    },
+    {
+      "name": "Gym Challenge",
+      "total_products": 141,
+      "products_with_prices": 135
+    },
+    {
+      "name": "Gym Heroes",
+      "total_products": 140,
+      "products_with_prices": 135
+    },
+    {
+      "name": "Team Rocket",
+      "total_products": 89,
+      "products_with_prices": 85
+    },
+    {
+      "name": "Base Set 2",
+      "total_products": 137,
+      "products_with_prices": 132
+    },
+    {
+      "name": "Fossil",
+      "total_products": 68,
+      "products_with_prices": 66
+    },
+    {
+      "name": "WoTC Promo",
+      "total_products": 70,
+      "products_with_prices": 65
+    },
+    {
+      "name": "Jungle",
+      "total_products": 70,
+      "products_with_prices": 67
+    },
+    {
+      "name": "Base Set",
+      "total_products": 109,
+      "products_with_prices": 103
+    },
+    {
+      "name": "Base Set (Shadowless)",
+      "total_products": 111,
+      "products_with_prices": 103
+    },
+    {
+      "name": "Blister Exclusives",
+      "total_products": 130,
+      "products_with_prices": 128
+    },
+    {
+      "name": "EX Trainer Kit 1: Latias & Latios",
+      "total_products": 21,
+      "products_with_prices": 20
+    },
+    {
+      "name": "EX Trainer Kit 2: Plusle & Minun",
+      "total_products": 25,
+      "products_with_prices": 24
+    },
+    {
+      "name": "Nintendo Promos",
+      "total_products": 95,
+      "products_with_prices": 70
+    },
+    {
+      "name": "POP Series 1",
+      "total_products": 20,
+      "products_with_prices": 20
+    },
+    {
+      "name": "POP Series 2",
+      "total_products": 19,
+      "products_with_prices": 19
+    },
+    {
+      "name": "POP Series 3",
+      "total_products": 19,
+      "products_with_prices": 19
+    },
+    {
+      "name": "POP Series 4",
+      "total_products": 18,
+      "products_with_prices": 18
+    },
+    {
+      "name": "POP Series 5",
+      "total_products": 18,
+      "products_with_prices": 16
+    },
+    {
+      "name": "POP Series 6",
+      "total_products": 19,
+      "products_with_prices": 18
+    },
+    {
+      "name": "POP Series 7",
+      "total_products": 18,
+      "products_with_prices": 17
+    },
+    {
+      "name": "POP Series 8",
+      "total_products": 19,
+      "products_with_prices": 19
+    },
+    {
+      "name": "POP Series 9",
+      "total_products": 18,
+      "products_with_prices": 18
+    }
+  ]
+}

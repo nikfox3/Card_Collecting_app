@@ -1,11 +1,15 @@
 // Card Service - Handles API calls to the database
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_URL } from '../utils/api';
+
+const API_BASE_URL = `${API_URL}/api`;
 
 class CardService {
   // Search cards
   async searchCards(query, limit = 50) {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/cards/search?q=${encodeURIComponent(query)}&limit=${limit}&t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -20,7 +24,9 @@ class CardService {
   // Get all cards with pagination
   async getCards(page = 1, limit = 50) {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards?page=${page}&limit=${limit}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/cards?page=${page}&limit=${limit}&t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -35,7 +41,9 @@ class CardService {
   // Get card by ID
   async getCardById(id) {
     try {
-      const response = await fetch(`${API_BASE_URL}/cards/${id}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/cards/${id}?t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -84,7 +92,9 @@ class CardService {
   // Get all sets
   async getSets() {
     try {
-      const response = await fetch(`${API_BASE_URL}/sets`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/sets?t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -99,7 +109,9 @@ class CardService {
   // Get cards by set
   async getCardsBySet(setId, limit = 50) {
     try {
-      const response = await fetch(`${API_BASE_URL}/sets/${setId}/cards?limit=${limit}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`${API_BASE_URL}/sets/${setId}/cards?limit=${limit}&t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -115,26 +127,48 @@ class CardService {
   transformCard(card) {
     if (!card) return null;
 
-    // Parse JSON fields
-    const attacks = card.attacks ? JSON.parse(card.attacks) : [];
-    const types = card.types ? JSON.parse(card.types) : [];
-    const subtypes = card.subtypes ? JSON.parse(card.subtypes) : [];
-    const weaknesses = card.weaknesses ? JSON.parse(card.weaknesses) : [];
-    const resistances = card.resistances ? JSON.parse(card.resistances) : [];
-    const retreatCost = card.retreat_cost ? JSON.parse(card.retreat_cost) : [];
-    const images = card.images ? JSON.parse(card.images) : {};
-    const tcgplayer = card.tcgplayer ? JSON.parse(card.tcgplayer) : {};
-    const nationalPokedexNumbers = card.national_pokedex_numbers ? JSON.parse(card.national_pokedex_numbers) : [];
+    // Parse JSON fields - handle both string and already-parsed data
+    const parseJSONField = (field) => {
+      if (!field) return null;
+      if (typeof field === 'object') return field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch (e) {
+          return field; // Return as string if parsing fails
+        }
+      }
+      return field;
+    };
 
+    const attacks = parseJSONField(card.attacks) || [];
+    const types = parseJSONField(card.types) || [];
+    const subtypes = parseJSONField(card.subtypes) || [];
+    const weaknesses = parseJSONField(card.weaknesses) || [];
+    const resistances = parseJSONField(card.resistances) || [];
+    const retreatCost = parseJSONField(card.retreat_cost) || [];
+    const images = parseJSONField(card.images) || {};
+    const tcgplayer = parseJSONField(card.tcgplayer) || {};
+    const nationalPokedexNumbers = parseJSONField(card.national_pokedex_numbers) || [];
+    const variants = parseJSONField(card.variants) || ['Normal'];
+    const legalities = parseJSONField(card.legalities) || {};
+
+    // Handle missing release_date in TCGCSV data
+    const releaseDate = card.release_date || card.published_on || null;
+    console.log('CardService transformCard - release_date:', releaseDate, 'for card:', card.name);
+    
     return {
-      id: card.id,
+      id: card.id || card.product_id || card.cardId,
       name: card.name,
       set: card.set_name,
+      set_name: card.set_name, // Preserve original field name
       series: card.series,
-      rarity: card.rarity,
-      number: card.number,
-      formattedNumber: card.formattedNumber || this.formatCardNumber(card.number, card.printed_total),
-      price: card.current_value || 0,
+      release_date: releaseDate, // Use processed release date for regulation mark derivation
+      rarity: card.rarity || card.ext_rarity,
+      number: card.number || card.ext_number,
+      formattedNumber: card.formattedNumber || card.ext_number || this.formatCardNumber(card.number, card.printed_total),
+      price: card.current_value || card.price || card.mid_price || 0,
+      current_value: card.current_value || card.price || card.mid_price || 0, // Preserve original field for trending cards
       change: 0, // We'll calculate this later
       dailyChange: 0, // We'll calculate this later
       quantity: card.quantity || 0,
@@ -142,15 +176,18 @@ class CardService {
       type: 'gain', // Default
       emoji: this.getTypeEmoji(types[0]),
       color: this.getTypeColor(types[0]),
-      cardId: card.id,
-      imageUrl: images.high || images.large || images.small || '',
+      cardId: card.cardId || card.id || card.product_id,
+      image_url: card.image_url, // Preserve TCGCSV image_url
+      imageUrl: card.imageUrl || images.high || images.large || images.small || '',
+      ext_number: card.ext_number, // Preserve TCGCSV ext_number
+      ext_rarity: card.ext_rarity, // Preserve TCGCSV ext_rarity
       images: images,
-      artist: card.artist || 'Unknown',
-      hp: card.hp,
-      type: types[0] || 'Colorless',
+      artist: card.artist || null, // TCGCSV data doesn't include artist information
+      hp: card.hp || card.ext_hp,
+      type: types[0] || card.ext_card_type || 'Colorless',
       supertype: card.supertype,
       subtypes: subtypes,
-      level: card.level,
+      level: card.level || card.ext_stage,
       evolvesFrom: card.evolves_from,
       attacks: attacks,
       weaknesses: weaknesses,
@@ -158,12 +195,12 @@ class CardService {
       retreatCost: retreatCost,
       convertedRetreatCost: card.converted_retreat_cost,
       nationalPokedexNumbers: nationalPokedexNumbers,
-      legalities: card.legalities ? JSON.parse(card.legalities) : {},
+      legalities: legalities,
       tcgplayer: tcgplayer,
       collected: card.collected || false,
       language: card.language || 'en',
       variant: card.variant || 'Normal',
-      variants: card.variants ? JSON.parse(card.variants) : ['Normal'],
+      variants: variants,
       // Variant boolean fields from CSV
       variant_normal: card.variant_normal === true || card.variant_normal === 'true' || card.variant_normal === 1 || card.variant_normal === '1',
       variant_reverse: card.variant_reverse === true || card.variant_reverse === 'true' || card.variant_reverse === 1 || card.variant_reverse === '1',

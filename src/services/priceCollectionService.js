@@ -1,7 +1,7 @@
 // Service for collecting and storing daily pricing data
 class PriceCollectionService {
   constructor() {
-    this.baseUrl = 'http://localhost:3001';
+    this.baseUrl = `${API_URL}`;
     this.collectionInterval = 24 * 60 * 60 * 1000; // 24 hours
     this.isCollecting = false;
   }

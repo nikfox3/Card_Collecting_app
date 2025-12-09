@@ -1,0 +1,16 @@
+# Keystore configuration for signing release APKs
+# Copy this file to key.properties and fill in your values
+# DO NOT commit key.properties to version control!
+
+# Path to your keystore file (relative to android/ directory)
+storeFile=../cardstax-release-key.jks
+
+# Keystore password
+storePassword=YOUR_KEYSTORE_PASSWORD
+
+# Key alias
+keyAlias=cardstax
+
+# Key password
+keyPassword=YOUR_KEY_PASSWORD
+

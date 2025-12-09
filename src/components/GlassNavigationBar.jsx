@@ -16,7 +16,21 @@ const GlassNavigationBar = ({
             setActiveTab('home')
             setNavigationMode('home')
           }}
-          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.currentTarget.blur()
+          }}
+          onTouchStart={(e) => {
+            e.currentTarget.blur()
+          }}
+          aria-label="Navigate to Home"
+          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] outline-none !outline-none focus:outline-none focus-visible:outline-none active:outline-none select-none ${navigationMode === 'home' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          style={{ 
+            WebkitTapHighlightColor: 'transparent', 
+            outline: 'none !important',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none'
+          }}
         >
           <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
             <div className="w-6 h-6">
@@ -45,7 +59,21 @@ const GlassNavigationBar = ({
             setActiveTab('collection')
             setNavigationMode('collection')
           }}
-          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.currentTarget.blur()
+          }}
+          onTouchStart={(e) => {
+            e.currentTarget.blur()
+          }}
+          aria-label="Navigate to Collection"
+          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] outline-none !outline-none focus:outline-none focus-visible:outline-none active:outline-none select-none ${navigationMode === 'collection' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          style={{ 
+            WebkitTapHighlightColor: 'transparent', 
+            outline: 'none !important',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none'
+          }}
         >
           <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
             <div className="w-6 h-6">
@@ -75,7 +103,21 @@ const GlassNavigationBar = ({
             setActiveTab('marketplace')
             setNavigationMode('marketplace')
           }}
-          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'marketplace' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.currentTarget.blur()
+          }}
+          onTouchStart={(e) => {
+            e.currentTarget.blur()
+          }}
+          aria-label="Navigate to Marketplace"
+          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] outline-none !outline-none focus:outline-none focus-visible:outline-none active:outline-none select-none ${navigationMode === 'marketplace' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          style={{ 
+            WebkitTapHighlightColor: 'transparent', 
+            outline: 'none !important',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none'
+          }}
         >
           <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
             <div className="w-6 h-6">
@@ -119,7 +161,21 @@ const GlassNavigationBar = ({
             setActiveTab('profile')
             setNavigationMode('profile')
           }}
-          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.currentTarget.blur()
+          }}
+          onTouchStart={(e) => {
+            e.currentTarget.blur()
+          }}
+          aria-label="Navigate to Profile"
+          className={`flex flex-col gap-[10px] h-[75px] items-center justify-end pb-0 pt-[15px] px-[10px] w-[84px] outline-none !outline-none focus:outline-none focus-visible:outline-none active:outline-none select-none ${navigationMode === 'profile' ? '' : 'justify-center pt-[26px] h-[47px]'}`}
+          style={{ 
+            WebkitTapHighlightColor: 'transparent', 
+            outline: 'none !important',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none'
+          }}
         >
           <div className="flex flex-col gap-[6px] h-[58px] items-center w-[64px]">
             <div className="w-6 h-6">

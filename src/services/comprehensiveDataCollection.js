@@ -1,7 +1,7 @@
 // Comprehensive data collection service for all cards
 class ComprehensiveDataCollection {
   constructor() {
-    this.baseUrl = 'http://localhost:3001';
+    this.baseUrl = `${API_URL}`;
     this.tcgplayerBaseUrl = 'https://api.tcgplayer.com';
     this.apiKey = process.env.REACT_APP_TCGPLAYER_API_KEY || 'your-api-key-here';
     this.batchSize = 50; // Process cards in batches

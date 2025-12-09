@@ -1,4 +1,6 @@
 // TCGPlayer API service for real current market prices
+import { API_URL } from '../utils/api';
+
 class TCGPlayerApiService {
   constructor() {
     this.baseUrl = 'https://api.tcgplayer.com';
@@ -194,7 +196,7 @@ class TCGPlayerApiService {
   // Update card price in database
   async updateCardPrice(cardId, newPrice) {
     try {
-      const response = await fetch('http://localhost:3001/api/cards/update-price', {
+      const response = await fetch(`${API_URL}/api/cards/update-price`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +221,7 @@ class TCGPlayerApiService {
   // Store today's price in historical data
   async storeTodaysPrice(cardId, price) {
     try {
-      const response = await fetch('http://localhost:3001/api/price-history', {
+      const response = await fetch(`${API_URL}/api/price-history`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

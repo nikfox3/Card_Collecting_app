@@ -1,5 +1,7 @@
 // Price Service - Handles real-time and historical price data
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_URL } from '../utils/api';
+
+const API_BASE_URL = `${API_URL}/api`;
 
 class PriceService {
   // Get current price data for a card

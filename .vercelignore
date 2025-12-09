@@ -1,0 +1,8 @@
+# Exclude large files from Vercel deployment
+dist/Assets/
+dist/Pokemon database files/
+dist/*.csv
+dist/.DS_Store
+dist/**/.DS_Store
+node_modules/
+

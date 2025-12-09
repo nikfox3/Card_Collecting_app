@@ -2,6 +2,8 @@
 // Note: TCGPlayer doesn't have a public API, so we'll need to scrape their data
 // This is a simplified approach - in production, you'd want to use their official API or a service like PokéTCG API
 
+import { API_URL } from '../utils/api.js'
+
 class TCGPlayerService {
   constructor() {
     this.baseUrl = 'https://www.tcgplayer.com'
@@ -135,7 +137,7 @@ class TCGPlayerService {
       
       // Use backend API to scrape TCGPlayer data
       try {
-        const response = await fetch(`http://localhost:3001/api/tcgplayer/scrape?productId=${productId}&timeRange=${timeRange}`, {
+        const response = await fetch(`${API_URL}/api/tcgplayer/scrape?productId=${productId}&timeRange=${timeRange}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -311,7 +313,7 @@ class TCGPlayerService {
   async getHistoricalData(productId, timeRange) {
     try {
       console.log(`Fetching historical data for ${productId} with timeRange ${timeRange}`)
-      const response = await fetch(`http://localhost:3001/api/tcgplayer/history?productId=${productId}&timeRange=${timeRange}`)
+      const response = await fetch(`${API_URL}/api/tcgplayer/history?productId=${productId}&timeRange=${timeRange}`)
       if (!response.ok) {
         console.log(`API response not ok: ${response.status}`)
         return null
@@ -334,7 +336,7 @@ class TCGPlayerService {
   // Get current price from API
   async getCurrentPrice(productId) {
     try {
-      const response = await fetch(`http://localhost:3001/api/tcgplayer/current?productId=${productId}`)
+      const response = await fetch(`${API_URL}/api/tcgplayer/current?productId=${productId}`)
       if (!response.ok) {
         return null
       }
@@ -348,68 +350,233 @@ class TCGPlayerService {
   }
 
   // Get historical data from database for any card
-  async getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData) {
+  async getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData, variant = 'Normal') {
     try {
-      // Calculate date range based on timeRange
+      // Use current date as end date to show latest data
       const endDate = new Date()
-      const startDate = new Date()
+      const today = new Date()
+      let startDate
       
+      // For different time ranges, calculate start date
       switch (timeRange) {
-        case '1D':
-          startDate.setDate(endDate.getDate() - 1)
-          break
         case '7D':
-          startDate.setDate(endDate.getDate() - 7)
+          // Last 7 days of data
+          startDate = new Date(today)
+          startDate.setDate(today.getDate() - 7)
           break
         case '1M':
-          startDate.setMonth(endDate.getMonth() - 1)
+          // Last month of data
+          startDate = new Date(today)
+          startDate.setMonth(today.getMonth() - 1)
           break
         case '3M':
-          startDate.setMonth(endDate.getMonth() - 3)
+          // Last 3 months of data
+          startDate = new Date(today)
+          startDate.setMonth(today.getMonth() - 3)
           break
         case '6M':
-          startDate.setMonth(endDate.getMonth() - 6)
+          // Last 6 months of data
+          startDate = new Date(today)
+          startDate.setMonth(today.getMonth() - 6)
           break
         case '1Y':
-          startDate.setFullYear(endDate.getFullYear() - 1)
+          // Last year of data - but fall back to all available data if less than a year
+          startDate = new Date('2025-01-01') // Default to start of year for available data range
           break
-        case 'Max':
-          startDate.setFullYear(2020) // Go back to 2020 for max data
+        case 'All':
+          // Get all available data (start from earliest date in database)
+          startDate = new Date('2025-01-01') // Use actual data range start
           break
         default:
-          startDate.setDate(endDate.getDate() - 7)
-      }
-
-      // Query the database for historical data
-      const response = await fetch(`http://localhost:3001/api/price-history?cardName=${encodeURIComponent(cardName)}&setName=${encodeURIComponent(setName)}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+          // Default to 3 months
+          startDate = new Date(today)
+          startDate.setMonth(today.getMonth() - 3)
       }
       
-      const data = await response.json()
+      // Use cardId if available from cardData, otherwise fall back to name/set lookup
+      let cardIdToUse = null
+      if (cardData) {
+        // Try multiple ID fields in order of preference
+        cardIdToUse = cardData.id || cardData.product_id || cardData.cardId || null
+        // Convert cardId string to number if needed
+        if (cardIdToUse && typeof cardIdToUse === 'string') {
+          const parsed = parseInt(cardIdToUse, 10)
+          if (!isNaN(parsed)) {
+            cardIdToUse = parsed
+          }
+        }
+      }
       
-      if (!data.data || data.data.length === 0) {
-        console.log(`No real historical data found for ${cardName} ${setName}`)
+      if (!cardIdToUse) {
+        // Try to find card by name and set
+        try {
+          const searchResponse = await fetch(`${API_URL}/api/cards?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(setName)}`)
+          const searchData = await searchResponse.json()
+          if (searchData && searchData.length > 0) {
+            cardIdToUse = searchData[0].product_id || searchData[0].id
+          }
+        } catch (error) {
+          console.error('Error finding card by name/set:', error)
+        }
+      }
+      
+      if (!cardIdToUse) {
+        console.log(`No card ID found for ${cardName} ${setName}`)
+        console.log('Card data structure:', {
+          hasCardData: !!cardData,
+          id: cardData?.id,
+          product_id: cardData?.product_id,
+          cardId: cardData?.cardId,
+          keys: cardData ? Object.keys(cardData) : []
+        })
         return null
       }
+      
+      console.log(`Using card ID ${cardIdToUse} for price history`)
+      const url = `${API_URL}/api/cards/price-history/${cardIdToUse}?timeRange=${timeRange}&variant=${encodeURIComponent(variant)}`
+      console.log(`Fetching price history: ${url}`)
+      
+      // Query the database for historical data with timeout
+      console.log(`Attempting to fetch from: ${url}`)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      let response
+      try {
+        response = await fetch(url, { signal: controller.signal })
+        clearTimeout(timeoutId)
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - price history fetch took too long')
+        }
+        throw fetchError
+      }
+      
+      console.log(`Response status: ${response.status} ${response.statusText}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`HTTP error response body:`, errorText)
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
+      }
+      
+      const responseText = await response.text()
+      console.log(`Response received (first 200 chars):`, responseText.substring(0, 200))
+      
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError)
+        console.error('Response text:', responseText)
+        throw new Error(`Failed to parse JSON: ${parseError.message}`)
+      }
+      
+      if (!data.success || !data.data || data.data.length === 0) {
+        console.log(`No real historical data found for ${cardName} ${setName} with variant ${variant}`)
+        console.log('API Response:', data)
+        
+        // Try fallback variants if the requested variant doesn't have data
+        const fallbackVariants = ['normal', 'unlimitedholofoil', '1steditionholofoil', 'holo', 'reverseholo']
+        for (const fallbackVariant of fallbackVariants) {
+          if (fallbackVariant === variant) continue // Skip the variant we already tried
+          
+          console.log(`Trying fallback variant: ${fallbackVariant}`)
+          const fallbackUrl = `${API_URL}/api/cards/price-history/${cardIdToUse}?timeRange=${timeRange}&variant=${encodeURIComponent(fallbackVariant)}`
+          const fallbackController = new AbortController()
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 10000)
+          
+          let fallbackResponse
+          try {
+            fallbackResponse = await fetch(fallbackUrl, { signal: fallbackController.signal })
+            clearTimeout(fallbackTimeoutId)
+            
+            if (fallbackResponse.ok) {
+              const fallbackResponseText = await fallbackResponse.text()
+              let fallbackData
+              try {
+                fallbackData = JSON.parse(fallbackResponseText)
+              } catch (parseError) {
+                console.error(`Failed to parse fallback variant ${fallbackVariant} response:`, parseError)
+                continue // Try next fallback variant
+              }
+              
+              if (fallbackData.success && fallbackData.data && Array.isArray(fallbackData.data) && fallbackData.data.length > 0) {
+                console.log(`Found data with fallback variant: ${fallbackVariant}`)
+                data = fallbackData
+                break
+              }
+            } else {
+              console.log(`Fallback variant ${fallbackVariant} returned status ${fallbackResponse.status}`)
+            }
+          } catch (fallbackError) {
+            clearTimeout(fallbackTimeoutId)
+            if (fallbackError.name !== 'AbortError') {
+              console.error(`Error fetching fallback variant ${fallbackVariant}:`, fallbackError)
+            }
+            continue // Try next fallback variant
+          }
+        }
+        
+        if (!data.success || !data.data || data.data.length === 0) {
+          console.log(`No data found with any variant for ${cardName} ${setName}`)
+          return null
+        }
+      }
+      
+      console.log(`Found ${data.data.length} price history records for ${cardName} ${setName} variant: ${variant}`)
+      
 
       // Sort by date
       const sortedData = data.data.sort((a, b) => new Date(a.date) - new Date(b.date))
       
+      // Group data by date to avoid duplicate dates
+      const groupedData = {}
+      sortedData.forEach(point => {
+        const date = point.date
+        if (!groupedData[date]) {
+          groupedData[date] = []
+        }
+        groupedData[date].push(point)
+      })
+      
+      // Process grouped data - since we already filtered by variant, just use the first record for each date
+      const processedData = Object.keys(groupedData).map(date => {
+        const records = groupedData[date]
+        // Use the first record (already filtered by variant)
+        const primaryRecord = records[0]
+        return {
+          date: date,
+          market_price: primaryRecord.market_price || primaryRecord.mid_price || primaryRecord.low_price
+        }
+      }).sort((a, b) => new Date(a.date) - new Date(b.date))
+      
+      console.log(`Processed ${processedData.length} data points after grouping for variant: ${variant}`)
+      console.log('Sample processed data:', processedData.slice(0, 3))
+      
       // Format data for chart
-      const labels = sortedData.map(point => {
+      const labels = processedData.map(point => {
+        // Parse date as local date to avoid timezone issues
         const date = new Date(point.date)
-        if (timeRange === '1D') {
-          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        } else if (timeRange === '7D' || timeRange === '1M') {
+        
+        if (timeRange === '7D' || timeRange === '1M') {
+          // Short format for 7D and 1M: "Oct 13"
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (timeRange === '3M' || timeRange === '6M') {
+          // Month/day for 3M and 6M: "Oct 13"
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (timeRange === '1Y' || timeRange === 'All') {
+          // Month/day for 1Y and All: "Oct 21" (show actual day, not year)
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         } else {
+          // Default format
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         }
       })
       
-      const prices = sortedData.map(point => point.price)
+      // Use market_price as the primary price, fallback to mid_price
+      const prices = processedData.map(point => point.market_price)
       
       // Calculate changes
       const absoluteChange = prices.length > 1 ? prices[prices.length - 1] - prices[0] : 0
@@ -424,17 +591,51 @@ class TCGPlayerService {
           backgroundColor: 'rgba(136, 113, 255, 0.1)',
           borderWidth: 2,
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4
         }],
         absoluteChange,
         percentageChange
       }
 
+      // Validate chart data structure before returning
+      if (!chartData.labels || !Array.isArray(chartData.labels) || chartData.labels.length === 0) {
+        console.error('Invalid chart data: labels missing or empty', chartData)
+        return null
+      }
+      if (!chartData.datasets || !Array.isArray(chartData.datasets) || chartData.datasets.length === 0) {
+        console.error('Invalid chart data: datasets missing or empty', chartData)
+        return null
+      }
+      if (!chartData.datasets[0].data || !Array.isArray(chartData.datasets[0].data) || chartData.datasets[0].data.length === 0) {
+        console.error('Invalid chart data: dataset data missing or empty', chartData)
+        return null
+      }
+      if (chartData.labels.length !== chartData.datasets[0].data.length) {
+        console.error('Invalid chart data: labels and data length mismatch', {
+          labelsLength: chartData.labels.length,
+          dataLength: chartData.datasets[0].data.length
+        })
+        return null
+      }
+
       console.log(`Generated chart data from REAL historical data for ${cardName}: ${prices.length} data points, change: $${absoluteChange.toFixed(2)}`)
+      console.log('Chart data labels:', labels.slice(0, 5))
+      console.log('Chart data prices:', prices.slice(0, 5))
       return chartData
       
     } catch (error) {
       console.error('Error getting historical data from database:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        url: `${API_URL}/api/cards/price-history/${cardIdToUse}?timeRange=${timeRange}&variant=${encodeURIComponent(variant)}`,
+        cardId: cardIdToUse,
+        cardName,
+        setName
+      })
       return null
     }
   }
@@ -620,28 +821,40 @@ class TCGPlayerService {
   }
 
   // Get chart data formatted for our chart component
-  async getChartData(cardName, setName, timeRange = '7D', cardData = null) {
-    console.log(`Getting chart data for ${cardName} from ${setName} for ${timeRange}`)
+  async getChartData(cardName, setName, timeRange = '7D', cardData = null, variant = 'Normal') {
+    console.log(`Getting chart data for ${cardName} from ${setName} for ${timeRange} variant: ${variant}`)
+    console.log('Card data passed to getChartData:', {
+      hasCardData: !!cardData,
+      id: cardData?.id,
+      product_id: cardData?.product_id,
+      cardId: cardData?.cardId,
+      name: cardData?.name
+    })
     
-    // Try to get real historical data from database first
+    // Only use real historical data from database
     try {
-      const historicalData = await this.getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData)
+      const historicalData = await this.getHistoricalDataFromDatabase(cardName, setName, timeRange, cardData, variant)
       if (historicalData && historicalData.datasets && historicalData.datasets.length > 0) {
-        console.log(`Successfully got real historical data for ${cardName} ${setName}`)
+        console.log(`Successfully got real historical data for ${cardName} ${setName}`, {
+          dataPoints: historicalData.datasets[0]?.data?.length || 0,
+          labels: historicalData.labels?.length || 0
+        })
         return historicalData
+      } else {
+        console.log(`Historical data returned but has no datasets:`, historicalData)
       }
     } catch (error) {
-      console.warn(`Error getting historical data for ${cardName}:`, error)
+      console.error(`Error getting historical data for ${cardName}:`, error)
+      console.error('Error stack:', error.stack)
     }
 
-    // If no real data is available, return empty chart with error message
+    // If no real data is available, return empty chart
     console.log(`No real historical data available for ${cardName} ${setName}`)
     return {
       labels: [],
       datasets: [],
       absoluteChange: 0,
-      percentageChange: 0,
-      error: 'No historical data available'
+      percentageChange: 0
     }
   }
 }

@@ -4,14 +4,22 @@ export default {
       "./index.html",
       "./src/**/*.{js,jsx,ts,tsx}"
     ],
+    darkMode: 'class', // Enable class-based dark mode
     theme: {
       extend: {
         colors: {
-          text: "#D3D0FB",
-          background: "#01010C",
-          accent: "#F9F9F9",
+          // Use CSS variables for theme-aware colors
+          text: {
+            DEFAULT: "var(--text-primary)",
+          },
+          background: {
+            DEFAULT: "var(--bg-primary)",
+          },
+          accent: {
+            DEFAULT: "var(--text-primary)",
+          },
           primary: "#6865E7",
-          secondary: "#4787F3"
+          secondary: "#4787F3",
         },
         fontFamily: {
           sans: [

@@ -1,0 +1,36 @@
+# Pokémon Cards Database Template
+# Use this CSV template to reorganize your card database with better structure
+# 
+# INSTRUCTIONS:
+# 1. Export your current data using the provided export script
+# 2. Clean and reorganize the data using this template
+# 3. Import the cleaned data using the import script
+# 4. Run the indexing improvements
+
+# CORE CARD INFORMATION
+id,set_id,set_name,set_series,set_release_date,set_total_cards,card_number,card_name,supertype,subtypes,level,hp,types,evolves_from,artist,rarity,national_pokedex_numbers
+
+# GAME MECHANICS
+attacks,weaknesses,resistances,retreat_cost,converted_retreat_cost,legalities,regulation_mark,format
+
+# PRICING DATA (Multiple Sources)
+current_value,price_last_updated,tcgplayer_id,tcgplayer_url,tcgplayer_normal_low,tcgplayer_normal_mid,tcgplayer_normal_high,tcgplayer_normal_market,tcgplayer_holofoil_low,tcgplayer_holofoil_mid,tcgplayer_holofoil_high,tcgplayer_holofoil_market,tcgplayer_reverse_holofoil_low,tcgplayer_reverse_holofoil_mid,tcgplayer_reverse_holofoil_high,tcgplayer_reverse_holofoil_market,cardmarket_id,cardmarket_url,cardmarket_average_sell_price,cardmarket_low_price,cardmarket_trend_price
+
+# IMAGE DATA
+image_small,image_large,image_high,image_artwork
+
+# COLLECTION MANAGEMENT
+language,variant,is_collected,quantity,condition,grading_service,grade,notes,date_added,last_updated
+
+# VARIANT FLAGS (Boolean fields for easy filtering)
+variant_normal,variant_holo,variant_reverse_holo,variant_first_edition,variant_shadowless,variant_error
+
+# SEARCH OPTIMIZATION
+search_keywords,popularity_score,trending_score
+
+# EXAMPLE ROW:
+# gym2-2,gym2,Gym Challenge,Gym,2000-10-16,132,002,Blaine's Charizard,Pokémon,"Stage 2",50,100,"Fire",Blaine's Charmeleon,Ken Sugimori,Rare Holo,6,"[{""name"":""Roaring Flames"",""cost"":[""Fire""],""damage"":""20+""}]","[{""type"":""Water"",""value"":""×2""}]","[{""type"":""Fighting"",""value"":""-30""}]","[""Colorless"",""Colorless"",""Colorless""]",3,"{""unlimited"":""Legal""}",A,Unlimited,355.38,2025-09-28,gym2-2,https://prices.pokemontcg.io/tcgplayer/gym2-2,,,,,,,,,767,1123.02,1199.99,528.66,,,,,,,https://assets.tcgdex.net/en/gym/gym2/2/small.webp,https://assets.tcgdex.net/en/gym/gym2/2/large.webp,https://assets.tcgdex.net/en/gym/gym2/2/high.webp,,en,Normal,false,0,Near Mint,,,,2025-09-29,2025-09-29,false,true,false,false,false,false,charizard blaine gym challenge fire pokemon,95,87
+
+
+
+

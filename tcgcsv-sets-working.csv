@@ -1,0 +1,11 @@
+set_id,set_name,api_url,enabled,priority
+604,Base Set,https://tcgcsv.com/tcgplayer/3/604/prices,true,1
+605,Jungle,https://tcgcsv.com/tcgplayer/3/605/prices,true,1
+630,EX Legend Maker,https://tcgcsv.com/tcgplayer/3/630/prices,true,1
+635,Diamond & Pearl,https://tcgcsv.com/tcgplayer/3/635/prices,true,1
+648,Undaunted,https://tcgcsv.com/tcgplayer/3/648/prices,true,1
+
+
+
+
+

@@ -1,4 +1,6 @@
 // TCGdex API service for real current market prices
+import { API_URL } from '../utils/api';
+
 class TCGdexService {
   constructor() {
     this.baseUrl = 'https://api.tcgdex.net/v2';
@@ -227,7 +229,7 @@ class TCGdexService {
   // Update card price in database
   async updateCardPrice(cardId, newPrice) {
     try {
-      const response = await fetch('http://localhost:3001/api/cards/update-price', {
+      const response = await fetch(`${API_URL}/api/cards/update-price`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +254,7 @@ class TCGdexService {
   // Store today's prices for historical tracking
   async storeTodaysPrice(cardId, price) {
     try {
-      const response = await fetch('http://localhost:3001/api/price-history', {
+      const response = await fetch(`${API_URL}/api/price-history`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -283,9 +285,9 @@ class TCGdexService {
       
       // Try multiple possible endpoints
       const endpoints = [
-        'https://api.tcgdx.net/v2/en/cards',
-        'https://api.tcgdx.net/v2/en/cards',
-        'https://api.tcgdx.net/v2/en/cards'
+        'https://api.tcgdex.net/v2/en/cards',
+        'https://api.tcgdex.net/v2/en/cards',
+        'https://api.tcgdex.net/v2/en/cards'
       ];
       
       for (const endpoint of endpoints) {

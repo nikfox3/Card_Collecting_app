@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_URL } from '../utils/api';
 
 /**
  * Custom hook for searching Pokémon cards in the local database
@@ -18,7 +19,7 @@ export const useCardSearch = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/cards/search', {
+      const response = await fetch(`${API_URL}/api/cards/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +47,7 @@ export const useCardSearch = () => {
   // Get card by ID
   const getCardById = useCallback(async (id) => {
     try {
-      const response = await fetch(`/api/cards/${id}`);
+      const response = await fetch(`${API_URL}/api/cards/${id}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch card: ${response.statusText}`);
       }
@@ -60,7 +61,7 @@ export const useCardSearch = () => {
   // Get database statistics
   const getStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/cards/stats');
+      const response = await fetch(`${API_URL}/api/cards/stats`);
       if (!response.ok) {
         throw new Error(`Failed to fetch stats: ${response.statusText}`);
       }
@@ -74,7 +75,7 @@ export const useCardSearch = () => {
   // Get available sets
   const getSets = useCallback(async () => {
     try {
-      const response = await fetch('/api/sets');
+      const response = await fetch(`${API_URL}/api/sets`);
       if (!response.ok) {
         throw new Error(`Failed to fetch sets: ${response.statusText}`);
       }
@@ -88,7 +89,7 @@ export const useCardSearch = () => {
   // Get available rarities
   const getRarities = useCallback(async () => {
     try {
-      const response = await fetch('/api/cards/rarities');
+      const response = await fetch(`${API_URL}/api/cards/rarities`);
       if (!response.ok) {
         throw new Error(`Failed to fetch rarities: ${response.statusText}`);
       }
@@ -102,7 +103,7 @@ export const useCardSearch = () => {
   // Get available types
   const getTypes = useCallback(async () => {
     try {
-      const response = await fetch('/api/cards/types');
+      const response = await fetch(`${API_URL}/api/cards/types`);
       if (!response.ok) {
         throw new Error(`Failed to fetch types: ${response.statusText}`);
       }

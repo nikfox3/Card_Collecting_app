@@ -1,0 +1,9 @@
+version: "2"
+authtoken_from_env: true
+tunnels:
+  frontend:
+    addr: 3000
+    proto: http
+  api:
+    addr: 3001
+    proto: http

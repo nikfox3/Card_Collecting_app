@@ -1,0 +1,123 @@
+set_id,set_name,api_url,enabled,priority
+604,Base Set,https://tcgcsv.com/tcgplayer/3/604/prices,true,1
+605,Jungle,https://tcgcsv.com/tcgplayer/3/605/prices,true,1
+606,Fossil,https://tcgcsv.com/tcgplayer/3/606/prices,true,1
+607,Base Set 2,https://tcgcsv.com/tcgplayer/3/607/prices,true,1
+608,Team Rocket,https://tcgcsv.com/tcgplayer/3/608/prices,true,1
+609,Gym Heroes,https://tcgcsv.com/tcgplayer/3/609/prices,true,1
+610,Gym Challenge,https://tcgcsv.com/tcgplayer/3/610/prices,true,1
+611,Neo Genesis,https://tcgcsv.com/tcgplayer/3/611/prices,true,1
+612,Neo Discovery,https://tcgcsv.com/tcgplayer/3/612/prices,true,1
+613,Neo Revelation,https://tcgcsv.com/tcgplayer/3/613/prices,true,1
+614,Neo Destiny,https://tcgcsv.com/tcgplayer/3/614/prices,true,1
+615,Legendary Collection,https://tcgcsv.com/tcgplayer/3/615/prices,true,1
+616,Expedition Base Set,https://tcgcsv.com/tcgplayer/3/616/prices,true,1
+617,Aquapolis,https://tcgcsv.com/tcgplayer/3/617/prices,true,1
+618,Skyridge,https://tcgcsv.com/tcgplayer/3/618/prices,true,1
+619,EX Ruby & Sapphire,https://tcgcsv.com/tcgplayer/3/619/prices,true,1
+620,EX Sandstorm,https://tcgcsv.com/tcgplayer/3/620/prices,true,1
+621,EX Dragon,https://tcgcsv.com/tcgplayer/3/621/prices,true,1
+622,EX Team Magma vs Team Aqua,https://tcgcsv.com/tcgplayer/3/622/prices,true,1
+623,EX Hidden Legends,https://tcgcsv.com/tcgplayer/3/623/prices,true,1
+624,EX FireRed & LeafGreen,https://tcgcsv.com/tcgplayer/3/624/prices,true,1
+625,EX Team Rocket Returns,https://tcgcsv.com/tcgplayer/3/625/prices,true,1
+626,EX Deoxys,https://tcgcsv.com/tcgplayer/3/626/prices,true,1
+627,EX Emerald,https://tcgcsv.com/tcgplayer/3/627/prices,true,1
+628,EX Unseen Forces,https://tcgcsv.com/tcgplayer/3/628/prices,true,1
+629,EX Delta Species,https://tcgcsv.com/tcgplayer/3/629/prices,true,1
+630,EX Legend Maker,https://tcgcsv.com/tcgplayer/3/630/prices,true,1
+631,EX Holon Phantoms,https://tcgcsv.com/tcgplayer/3/631/prices,true,1
+632,EX Crystal Guardians,https://tcgcsv.com/tcgplayer/3/632/prices,true,1
+633,EX Dragon Frontiers,https://tcgcsv.com/tcgplayer/3/633/prices,true,1
+634,EX Power Keepers,https://tcgcsv.com/tcgplayer/3/634/prices,true,1
+635,Diamond & Pearl,https://tcgcsv.com/tcgplayer/3/635/prices,true,1
+636,Mysterious Treasures,https://tcgcsv.com/tcgplayer/3/636/prices,true,1
+637,Secret Wonders,https://tcgcsv.com/tcgplayer/3/637/prices,true,1
+638,Great Encounters,https://tcgcsv.com/tcgplayer/3/638/prices,true,1
+639,Majestic Dawn,https://tcgcsv.com/tcgplayer/3/639/prices,true,1
+640,Legends Awakened,https://tcgcsv.com/tcgplayer/3/640/prices,true,1
+641,Stormfront,https://tcgcsv.com/tcgplayer/3/641/prices,true,1
+642,Platinum,https://tcgcsv.com/tcgplayer/3/642/prices,true,1
+643,Rising Rivals,https://tcgcsv.com/tcgplayer/3/643/prices,true,1
+644,Supreme Victors,https://tcgcsv.com/tcgplayer/3/644/prices,true,1
+645,Arceus,https://tcgcsv.com/tcgplayer/3/645/prices,true,1
+646,HeartGold SoulSilver,https://tcgcsv.com/tcgplayer/3/646/prices,true,1
+647,Unleashed,https://tcgcsv.com/tcgplayer/3/647/prices,true,1
+648,Undaunted,https://tcgcsv.com/tcgplayer/3/648/prices,true,1
+649,Triumphant,https://tcgcsv.com/tcgplayer/3/649/prices,true,1
+650,Call of Legends,https://tcgcsv.com/tcgplayer/3/650/prices,true,1
+651,Black & White,https://tcgcsv.com/tcgplayer/3/651/prices,true,1
+652,Emerging Powers,https://tcgcsv.com/tcgplayer/3/652/prices,true,1
+653,Noble Victories,https://tcgcsv.com/tcgplayer/3/653/prices,true,1
+654,Next Destinies,https://tcgcsv.com/tcgplayer/3/654/prices,true,1
+655,Dark Explorers,https://tcgcsv.com/tcgplayer/3/655/prices,true,1
+656,Dragons Exalted,https://tcgcsv.com/tcgplayer/3/656/prices,true,1
+657,Boundaries Crossed,https://tcgcsv.com/tcgplayer/3/657/prices,true,1
+658,Plasma Storm,https://tcgcsv.com/tcgplayer/3/658/prices,true,1
+659,Plasma Freeze,https://tcgcsv.com/tcgplayer/3/659/prices,true,1
+660,Plasma Blast,https://tcgcsv.com/tcgplayer/3/660/prices,true,1
+661,Legendary Treasures,https://tcgcsv.com/tcgplayer/3/661/prices,true,1
+662,XY,https://tcgcsv.com/tcgplayer/3/662/prices,true,1
+663,Flashfire,https://tcgcsv.com/tcgplayer/3/663/prices,true,1
+664,Furious Fists,https://tcgcsv.com/tcgplayer/3/664/prices,true,1
+665,Phantom Forces,https://tcgcsv.com/tcgplayer/3/665/prices,true,1
+666,Primal Clash,https://tcgcsv.com/tcgplayer/3/666/prices,true,1
+667,Roaring Skies,https://tcgcsv.com/tcgplayer/3/667/prices,true,1
+668,Ancient Origins,https://tcgcsv.com/tcgplayer/3/668/prices,true,1
+669,BREAKthrough,https://tcgcsv.com/tcgplayer/3/669/prices,true,1
+670,BREAKpoint,https://tcgcsv.com/tcgplayer/3/670/prices,true,1
+671,Fates Collide,https://tcgcsv.com/tcgplayer/3/671/prices,true,1
+672,Steam Siege,https://tcgcsv.com/tcgplayer/3/672/prices,true,1
+673,Evolutions,https://tcgcsv.com/tcgplayer/3/673/prices,true,1
+674,Sun & Moon,https://tcgcsv.com/tcgplayer/3/674/prices,true,1
+675,Guardians Rising,https://tcgcsv.com/tcgplayer/3/675/prices,true,1
+676,Burning Shadows,https://tcgcsv.com/tcgplayer/3/676/prices,true,1
+677,Crimson Invasion,https://tcgcsv.com/tcgplayer/3/677/prices,true,1
+678,Ultra Prism,https://tcgcsv.com/tcgplayer/3/678/prices,true,1
+679,Forbidden Light,https://tcgcsv.com/tcgplayer/3/679/prices,true,1
+680,Celestial Storm,https://tcgcsv.com/tcgplayer/3/680/prices,true,1
+681,Lost Thunder,https://tcgcsv.com/tcgplayer/3/681/prices,true,1
+682,Team Up,https://tcgcsv.com/tcgplayer/3/682/prices,true,1
+683,Detective Pikachu,https://tcgcsv.com/tcgplayer/3/683/prices,true,1
+684,Unbroken Bonds,https://tcgcsv.com/tcgplayer/3/684/prices,true,1
+685,Unified Minds,https://tcgcsv.com/tcgplayer/3/685/prices,true,1
+686,Hidden Fates,https://tcgcsv.com/tcgplayer/3/686/prices,true,1
+687,Cosmic Eclipse,https://tcgcsv.com/tcgplayer/3/687/prices,true,1
+688,Sword & Shield,https://tcgcsv.com/tcgplayer/3/688/prices,true,1
+689,Rebel Clash,https://tcgcsv.com/tcgplayer/3/689/prices,true,1
+690,Darkness Ablaze,https://tcgcsv.com/tcgplayer/3/690/prices,true,1
+691,Champion's Path,https://tcgcsv.com/tcgplayer/3/691/prices,true,1
+692,Vivid Voltage,https://tcgcsv.com/tcgplayer/3/692/prices,true,1
+693,Shining Fates,https://tcgcsv.com/tcgplayer/3/693/prices,true,1
+694,Battle Styles,https://tcgcsv.com/tcgplayer/3/694/prices,true,1
+695,Chilling Reign,https://tcgcsv.com/tcgplayer/3/695/prices,true,1
+696,Evolving Skies,https://tcgcsv.com/tcgplayer/3/696/prices,true,1
+697,Celebrations,https://tcgcsv.com/tcgplayer/3/697/prices,true,1
+698,Fusion Strike,https://tcgcsv.com/tcgplayer/3/698/prices,true,1
+699,Brilliant Stars,https://tcgcsv.com/tcgplayer/3/699/prices,true,1
+700,Astral Radiance,https://tcgcsv.com/tcgplayer/3/700/prices,true,1
+701,Go,https://tcgcsv.com/tcgplayer/3/701/prices,true,1
+702,Lost Origin,https://tcgcsv.com/tcgplayer/3/702/prices,true,1
+703,Silver Tempest,https://tcgcsv.com/tcgplayer/3/703/prices,true,1
+704,Crown Zenith,https://tcgcsv.com/tcgplayer/3/704/prices,true,1
+705,Scarlet & Violet,https://tcgcsv.com/tcgplayer/3/705/prices,true,1
+706,Paldea Evolved,https://tcgcsv.com/tcgplayer/3/706/prices,true,1
+707,Obsidian Flames,https://tcgcsv.com/tcgplayer/3/707/prices,true,1
+708,Paradox Rift,https://tcgcsv.com/tcgplayer/3/708/prices,true,1
+709,Paldean Fates,https://tcgcsv.com/tcgplayer/3/709/prices,true,1
+710,Temporal Forces,https://tcgcsv.com/tcgplayer/3/710/prices,true,1
+711,Twilight Masquerade,https://tcgcsv.com/tcgplayer/3/711/prices,true,1
+712,Shrouded Fable,https://tcgcsv.com/tcgplayer/3/712/prices,true,1
+713,Ancient Roar,https://tcgcsv.com/tcgplayer/3/713/prices,true,1
+714,Future Flash,https://tcgcsv.com/tcgplayer/3/714/prices,true,1
+715,Shrouded Fable,https://tcgcsv.com/tcgplayer/3/715/prices,true,1
+716,Ancient Roar,https://tcgcsv.com/tcgplayer/3/716/prices,true,1
+717,Future Flash,https://tcgcsv.com/tcgplayer/3/717/prices,true,1
+
+
+
+
+
+
+
+

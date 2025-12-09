@@ -16,38 +16,14 @@ class UserDatabaseService {
       const initialData = {
         username: 'Stuart60',
         profilePicture: 'S',
-        collections: [
-          {
-            id: 'pokemon-collection',
-            name: 'Pokemon Collection',
-            totalValue: 0,
-            totalCards: 0,
-            monthlyChange: 0,
-            currency: 'USD',
-            lastUpdated: new Date().toISOString(),
-            cardsAddedThisWeek: 0,
-            valueChangeThisWeek: 0,
-            isUserCreated: false,
-            cards: []
-          }
-        ],
+        collections: [], // No default collection - user must create their first one
         decks: [],
         binders: [],
         folders: [],
         recentActivity: [],
-        portfolioHistory: {
-          'pokemon-collection': {
-            '1D': [],
-            '7D': [],
-            '1M': [],
-            '3M': [],
-            '6M': [],
-            '1Y': [],
-            'MAX': []
-          }
-        },
+        portfolioHistory: {},
         settings: {
-          defaultCollection: 'pokemon-collection',
+          defaultCollection: null,
           currency: 'USD',
           theme: 'dark'
         }

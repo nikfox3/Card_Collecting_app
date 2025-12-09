@@ -1,16 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/Assets/CardStax_logo_light.svg"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="Track and manage your Pokémon card collection with real-time pricing"
+    />
+    <meta name="theme-color" content="#6865E7" />
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple iOS PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="CardStax" />
+
+    <!-- Apple Touch Icons (multiple sizes for different devices) -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/icon-57.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/icon-60.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icon-72.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/icon-76.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/icon-114.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icon-120.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icon-144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
     <title>Card Collecting App</title>
   </head>
   <body class="styles bg-background text-text">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Unregister any existing service workers (especially in Capacitor)
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister().then((success) => {
+              if (success) {
+                console.log("Unregistered old service worker");
+              }
+            });
+          }
+        });
+      }
+
+      // Register Service Worker for PWA (skip in Capacitor native apps)
+      if ("serviceWorker" in navigator) {
+        // Only unregister in Capacitor, register for web PWA
+        if (window.Capacitor) {
+          // In Capacitor, we don't want service worker
+          console.log("Running in Capacitor - service worker disabled");
+        } else {
+          // Register for web PWA
+          window.addEventListener("load", () => {
+            navigator.serviceWorker
+              .register("./sw.js")
+              .then((registration) => {
+                console.log(
+                  "Service Worker registered for PWA: ",
+                  registration
+                );
+              })
+              .catch((registrationError) => {
+                console.log(
+                  "Service Worker registration failed: ",
+                  registrationError
+                );
+              });
+          });
+        }
+      }
+    </script>
   </body>
 </html>
