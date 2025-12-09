@@ -287,21 +287,28 @@ router.get('/google/callback', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Google OAuth callback error:', error);
+    console.error('❌ Error stack:', error.stack);
     console.error('❌ Error details:', {
       message: error.message,
       code: error.code,
-      redirectUri: creds.redirectUri,
+      name: error.name,
+      redirectUri: creds?.redirectUri,
       requestHost: req.get('host'),
-      requestProtocol: req.protocol
+      requestProtocol: req.protocol,
+      hasCode: !!req.query.code,
+      hasState: !!req.query.state
     });
+    
+    // Try to get frontend URL for redirect
     let frontendUrl = process.env.FRONTEND_URL;
     // Ignore ngrok URLs
     if (frontendUrl && (frontendUrl.includes('ngrok') || frontendUrl.includes('ngrok-free') || frontendUrl.includes('ngrok.io') || frontendUrl.includes('ngrok.app'))) {
       frontendUrl = null;
     }
     if (!frontendUrl) {
+      // Try to detect from request
       const referer = req.get('referer');
-      if (referer && !referer.includes('ngrok')) {
+      if (referer && !referer.includes('ngrok') && !referer.includes('google.com')) {
         const match = referer.match(/^(https?:\/\/[^\/]+)/);
         if (match) {
           frontendUrl = match[1];
@@ -309,15 +316,22 @@ router.get('/google/callback', async (req, res) => {
       }
       if (!frontendUrl) {
         const origin = req.get('origin');
-        if (origin && !origin.includes('ngrok')) {
+        if (origin && !origin.includes('ngrok') && !origin.includes('google.com')) {
           frontendUrl = origin;
         }
       }
+      // Default to Vercel PWA if we can't detect
       if (!frontendUrl) {
-        frontendUrl = 'http://localhost:3000';
+        frontendUrl = 'https://cardstax.vercel.app';
       }
     }
-    res.redirect(`${frontendUrl}/login?error=oauth_failed&details=${encodeURIComponent(error.message)}`);
+    
+    // Log the redirect URL we're using
+    console.error(`❌ Redirecting to frontend: ${frontendUrl}/login?error=oauth_failed`);
+    
+    // Redirect with error details
+    const errorMessage = error.message || 'Unknown error';
+    res.redirect(`${frontendUrl}/login?error=oauth_failed&details=${encodeURIComponent(errorMessage)}`);
   }
 });
 
