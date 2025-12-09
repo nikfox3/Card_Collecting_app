@@ -1,0 +1,9 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install --production=false", "npm list puppeteer || npm install puppeteer"]
+
+[start]
+cmd = "node server.js"
+
