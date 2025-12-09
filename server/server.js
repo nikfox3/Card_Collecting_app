@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 import cors from 'cors';
 import { config } from './config.js';
-import { initializeAnalyticsTables } from './utils/database.js';
+import { initializeCoreTables, initializeAnalyticsTables } from './utils/database.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -149,13 +149,18 @@ app.use((req, res) => {
 });
 
 // Initialize database tables (with error handling)
-try {
-  initializeAnalyticsTables();
-  console.log('✅ Database initialized successfully');
-} catch (err) {
-  console.error('⚠️  Database initialization error (non-fatal):', err.message);
-  // Continue anyway - database might be created on first use
-}
+(async () => {
+  try {
+    // Initialize core tables first (users, sessions, etc.)
+    await initializeCoreTables();
+    // Then initialize analytics tables
+    await initializeAnalyticsTables();
+    console.log('✅ Database initialized successfully');
+  } catch (err) {
+    console.error('⚠️  Database initialization error (non-fatal):', err.message);
+    // Continue anyway - database might be created on first use
+  }
+})();
 
 // Start server
 const PORT = config.port || process.env.PORT || 3002;

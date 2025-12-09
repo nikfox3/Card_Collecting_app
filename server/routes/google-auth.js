@@ -113,8 +113,9 @@ router.get('/google', (req, res) => {
 
 // Handle Google OAuth callback
 router.get('/google/callback', async (req, res) => {
+  let creds = null;
   try {
-    const creds = getGoogleCredentials(req);
+    creds = getGoogleCredentials(req);
     
     console.log(`🔐 Google OAuth callback received. Redirect URI: ${creds.redirectUri}`);
     console.log(`🔐 Request host: ${req.get('host')}`);

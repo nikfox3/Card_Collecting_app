@@ -47,6 +47,56 @@ export const run = (sql, params = []) => {
   });
 };
 
+// Initialize core database tables (users, sessions, etc.)
+export const initializeCoreTables = async () => {
+  try {
+    // Create users table with OAuth support
+    await run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password_hash VARCHAR(255),
+        google_id VARCHAR(255) UNIQUE,
+        oauth_provider VARCHAR(50),
+        full_name VARCHAR(100),
+        profile_image TEXT,
+        is_pro BOOLEAN DEFAULT 0,
+        pro_expires_at TIMESTAMP NULL,
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create user_auth_sessions table for OAuth sessions
+    await run(`
+      CREATE TABLE IF NOT EXISTS user_auth_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        session_token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    
+    // Create indexes
+    await run('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+    await run('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
+    await run('CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
+    await run('CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_auth_sessions(session_token)');
+    await run('CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON user_auth_sessions(user_id)');
+    await run('CREATE INDEX IF NOT EXISTS idx_sessions_expires ON user_auth_sessions(expires_at)');
+    
+    console.log('✅ Core database tables initialized');
+  } catch (error) {
+    console.error('❌ Error initializing core tables:', error.message);
+    throw error; // Re-throw so server knows initialization failed
+  }
+};
+
 // Initialize analytics tables
 export const initializeAnalyticsTables = async () => {
   try {
