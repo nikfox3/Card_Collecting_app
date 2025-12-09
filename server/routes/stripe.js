@@ -7,10 +7,20 @@ dotenv.config();
 
 const router = express.Router();
 
-// Initialize Stripe with secret key from environment variables
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-});
+// Initialize Stripe only if API key is provided
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY.trim() !== '') {
+  try {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    });
+    console.log('✅ Stripe initialized');
+  } catch (error) {
+    console.warn('⚠️  Stripe initialization failed:', error.message);
+  }
+} else {
+  console.warn('⚠️  Stripe not configured - STRIPE_SECRET_KEY not set. Stripe features will be disabled.');
+}
 
 // Helper function to get user ID from request
 const getUserId = (req) => {
@@ -26,6 +36,10 @@ const getUserId = (req) => {
 // Create Stripe checkout session
 router.post('/create-checkout-session', async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(503).json({ error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' });
+    }
+
     const userId = getUserId(req);
     
     if (!userId) {
@@ -80,6 +94,10 @@ router.post('/create-checkout-session', async (req, res) => {
 
 // Stripe webhook handler (for production)
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Stripe is not configured' });
+  }
+
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
